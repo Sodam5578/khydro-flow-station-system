@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>전국 자동유량관측시설 통합 관리 시스템 | 한국수자원조사기술원</title>
+  
+  <!-- Pretendard Font CDN -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  
+  <!-- Leaflet GIS CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Chart.js DataLabels Plugin CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+
+  <!-- SheetJS (xlsx) CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/leaflet-custom.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-badge">🌊</div>
+        <div>
+          <div class="sidebar-title">자동유량관측시설</div>
+          <div class="sidebar-subtitle">수자원인프라팀 (2차 개발)</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="dashboard">
+          <span class="nav-icon">📊</span>
+          <span>운영 대시보드</span>
+        </button>
+        <button class="nav-item" data-tab="gis">
+          <span class="nav-icon">🗺️</span>
+          <span>GIS 관측망 지도</span>
+        </button>
+        <button class="nav-item" data-tab="stations">
+          <span class="nav-icon">📋</span>
+          <span>관측시설 목록 관리</span>
+        </button>
+        <button class="nav-item" data-tab="maintenance">
+          <span class="nav-icon">🛠️</span>
+          <span>유지관리 과업</span>
+        </button>
+        <button class="nav-item" data-tab="calibration">
+          <span class="nav-icon">🎯</span>
+          <span>유속계 정도검정</span>
+        </button>
+        <button class="nav-item" data-tab="settings">
+          <span class="nav-icon">⚙️</span>
+          <span>데이터 연동 & 백업</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div style="font-weight: 600; color: #e2e8f0;">한국수자원조사기술원</div>
+        <div>수자원인프라팀 전국 223개소</div>
+        <div style="font-size:0.7rem; color:#64748b; margin-top:0.25rem;">v1.1.0 (Clean GIS & Dual Gauge)</div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="page-title-box">
+          <h1 class="page-title" id="current-page-title">통합 운영 대시보드</h1>
+          <div class="quick-stats-badge">
+            <span>전국 관측시설</span> <b id="topbar-total-badge">223</b>개소
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="btn btn-outline btn-sm" onclick="window.excelManager.exportToExcel(false)">
+            <span>📥</span> <span>엑셀 전체 다운로드</span>
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="window.modalManager.openAdd()">
+            <span>➕</span> <span>신규 관측소 등록</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Views Container -->
+      <div class="views-container">
+        
+        <!-- 1. DASHBOARD VIEW -->
+        <section class="view-panel active" id="view-dashboard">
+          <!-- KPI Metrics Row -->
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-icon blue">📡</div>
+              <div class="kpi-content">
+                <div class="kpi-label">총 관측시설</div>
+                <div class="kpi-value" id="kpi-total-stations">223</div>
+                <div class="kpi-sub">전국 4대강 수계 총괄</div>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-icon green">⚡</div>
+              <div class="kpi-content">
+                <div class="kpi-label">2026년 정상 운영</div>
+                <div class="kpi-value" id="kpi-operating-stations">137개소</div>
+                <div class="kpi-sub" id="kpi-operating-rate">운영율 61%</div>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-icon purple">🌊</div>
+              <div class="kpi-content">
+                <div class="kpi-label">유속계 형식 분포 (단독 / 이중화)</div>
+                <div class="kpi-value" id="kpi-gauge-ewsv" style="font-size:1.1rem; line-height:1.2;">로딩중...</div>
+                <div class="kpi-sub">단독 213개소 + 복합이중화 10개소</div>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-icon amber">🎯</div>
+              <div class="kpi-content">
+                <div class="kpi-label">26년 유속계 검정대상</div>
+                <div class="kpi-value" id="kpi-calib-stations">20개소</div>
+                <div class="kpi-sub">정기정도검정 시행 대상</div>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-icon cyan">☀️</div>
+              <div class="kpi-content">
+                <div class="kpi-label">태양광 발전 설치</div>
+                <div class="kpi-value" id="kpi-solar-stations">45개소</div>
+                <div class="kpi-sub">친환경 독립전원 지점</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Row -->
+          <div class="dashboard-grid">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title"><span>🧭</span> 권역(수계)별 관측시설 분포</div>
+              </div>
+              <div class="card-body" style="height: 280px; position: relative;">
+                <canvas id="chart-region"></canvas>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title"><span>📊</span> 유속계 형식별 현황 (단독 및 이중화 지점)</div>
+              </div>
+              <div class="card-body" style="height: 280px; position: relative;">
+                <canvas id="chart-gauge"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Install Trend Row -->
+          <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-header">
+              <div class="card-title"><span>📈</span> 연도별 자동유량관측시설 설치 추이</div>
+            </div>
+            <div class="card-body" style="height: 250px; position: relative;">
+              <canvas id="chart-year"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. GIS MAP VIEW -->
+        <section class="view-panel" id="view-gis" style="padding: 1rem;">
+          <div class="gis-layout">
+            <div class="gis-map-container">
+              <div id="map"></div>
+
+              <!-- Floating Filter Panel -->
+              <div class="gis-floating-panel">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                  <div style="font-size:0.9rem; font-weight:700; color:#1e293b;">🗺️ GIS 레이어 필터</div>
+                  <button class="btn btn-outline btn-sm" onclick="window.gisManager.resetView()" style="padding:2px 6px; font-size:0.75rem;">뷰 초기화</button>
+                </div>
+
+                <div class="search-input-wrapper" style="margin-bottom:0.75rem; min-width:unset;">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="gis-search-input" class="search-input" placeholder="지점명, 하천명 검색...">
+                </div>
+
+                <div class="filter-section-title">수자원 표준유역</div>
+                <div class="filter-group">
+                  <label class="checkbox-label" style="font-weight:700; color:#1e40af;">
+                    <input type="checkbox" id="gis-check-basins" checked>
+                    <span>🏞️ 공식 표준유역(850개) 경계망 표시</span>
+                  </label>
+                </div>
+
+                <div class="filter-section-title">권역 (수계)</div>
+                <div class="filter-group">
+                  <select id="gis-filter-region" class="filter-select" style="width:100%;">
+                    <option value="all">전체 권역 보기</option>
+                    <option value="한강">한강 권역</option>
+                    <option value="낙동강">낙동강 권역</option>
+                    <option value="금강">금강 권역</option>
+                    <option value="영산강">영산강·섬진강 권역</option>
+                  </select>
+                </div>
+
+                <div class="filter-section-title">유속계 형식</div>
+                <div class="filter-group">
+                  <select id="gis-filter-gauge" class="filter-select" style="width:100%;">
+                    <option value="all">전체 형식 보기</option>
+                    <option value="DUAL">⚡ EWSV + ADVM (이중화 10개소)</option>
+                    <option value="EWSV">EWSV (전자파 단독)</option>
+                    <option value="ADVM">ADVM (초음파 단독)</option>
+                  </select>
+                </div>
+
+                <div class="filter-section-title">지정 및 운영 구분</div>
+                <div class="filter-group">
+                  <label class="checkbox-label" style="font-weight:600; color:#7c3aed;">
+                    <input type="checkbox" id="gis-check-dual">
+                    <span>⚡ 이중화(EWSV+ADVM) 지점만</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="gis-check-operating">
+                    <span>2026년 정상 운영 지점만</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="gis-check-flood">
+                    <span>홍수특보 지정 지점</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="gis-check-drought">
+                    <span>갈수예보 지정 지점</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="gis-check-calib">
+                    <span>26년 검정대상 지점</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="gis-check-solar">
+                    <span>태양광 설치 지점</span>
+                  </label>
+                </div>
+
+                <div style="border-top:1px solid #e2e8f0; padding-top:0.5rem; font-size:0.75rem; color:#64748b; display:flex; justify-content:space-between;">
+                  <span>현재 표시 지점:</span>
+                  <b id="map-visible-count" style="color:#1e40af;">223</b>개소
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. STATIONS LIST VIEW -->
+        <section class="view-panel" id="view-stations">
+          <!-- Table Controls & Filters -->
+          <div class="table-controls">
+            <div class="search-filter-box">
+              <div class="search-input-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="table-search-input" class="search-input" placeholder="지점명, 하천명, 주소, 코드 검색...">
+              </div>
+
+              <select id="table-filter-region" class="filter-select">
+                <option value="all">전체 권역</option>
+                <option value="한강">한강</option>
+                <option value="낙동강">낙동강</option>
+                <option value="금강">금강</option>
+                <option value="영산강">영산강·섬진강</option>
+              </select>
+
+              <select id="table-filter-gauge" class="filter-select">
+                <option value="all">전체 유속계형식</option>
+                <option value="DUAL">⚡ EWSV + ADVM (이중화)</option>
+                <option value="EWSV">EWSV (전자파 단독)</option>
+                <option value="ADVM">ADVM (초음파 단독)</option>
+              </select>
+
+              <select id="table-filter-operating" class="filter-select">
+                <option value="all">전체 운영상태</option>
+                <option value="operating">운영중</option>
+                <option value="non-operating">미운영/대기</option>
+              </select>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <select id="table-page-size" class="filter-select">
+                <option value="25">25개씩 보기</option>
+                <option value="50">50개씩 보기</option>
+                <option value="100">100개씩 보기</option>
+                <option value="all">전체 보기</option>
+              </select>
+
+              <button class="btn btn-outline btn-sm" onclick="window.excelManager.exportToExcel(true)">
+                <span>📊</span> <span>필터 결과 엑셀 추출</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="table-card">
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th onclick="window.tableManager.setSort(seq)" style="cursor:pointer;">연번 ↕</th>
+                    <th onclick="window.tableManager.setSort(region)" style="cursor:pointer;">권역 ↕</th>
+                    <th onclick="window.tableManager.setSort(river)" style="cursor:pointer;">하천명 ↕</th>
+                    <th onclick="window.tableManager.setSort(name)" style="cursor:pointer;">관측소명(지점명) ↕</th>
+                    <th>지점코드</th>
+                    <th>위치 (주소)</th>
+                    <th>유속계 형식</th>
+                    <th>26년 운영</th>
+                    <th>홍수특보</th>
+                    <th>갈수예보</th>
+                    <th>검정대상</th>
+                    <th>관리</th>
+                  </tr>
+                </thead>
+                <tbody id="stations-table-body">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <div class="pagination-wrapper">
+              <div id="table-page-info">1-25 / 총 223개 지점</div>
+              <div class="pagination-buttons">
+                <button class="page-btn" id="btn-prev-page" onclick="window.tableManager.prevPage()">이전</button>
+                <button class="page-btn" id="btn-next-page" onclick="window.tableManager.nextPage()">다음</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+                <!-- 4. MAINTENANCE VIEW (ADMINISTRATOR OVERSIGHT) -->
+        <section class="view-panel" id="view-maintenance">
+          <!-- Top KPI Summary Cards (Overall Project Progress & Overview) -->
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-icon purple">📋</div>
+              <div class="kpi-content">
+                <div class="kpi-label">유지관리 관리 대상 지점</div>
+                <div class="kpi-value" id="kpi-maint-total-stations">176개소</div>
+                <div class="kpi-sub">전국 4대 권역 운영시설</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon amber">🛠️</div>
+              <div class="kpi-content">
+                <div class="kpi-label">2026년 총 조치 필요 과업</div>
+                <div class="kpi-value" id="kpi-maint-total-tasks">로딩중...</div>
+                <div class="kpi-sub">18종 유지관리 과업 총합</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon green">✅</div>
+              <div class="kpi-content">
+                <div class="kpi-label">과업 조치 완료 (진행률)</div>
+                <div class="kpi-value" id="kpi-maint-overall-prog">0% (0건 완료)</div>
+                <div class="kpi-sub">현장 보수 및 비치 이행률</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon blue">🏢</div>
+              <div class="kpi-content">
+                <div class="kpi-label">과업 수행 주체</div>
+                <div class="kpi-value" style="font-size:1.15rem; font-weight:800; color:#1e3a8a;">
+                  RNS <span style="font-size:0.85rem; font-weight:600; color:#b45309;">(용역사)</span> + 기술원
+                </div>
+                <div class="kpi-sub">용역사 이행 과업 및 자체 점검</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: 18 Maintenance Task Cards -->
+          <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-header" style="background:#f8fafc;">
+              <div class="card-title">
+                <span>🛠️</span> 2026년 유지관리 과업별 조치 현황 (카드를 클릭하면 대상 지점만 즉시 필터링됩니다)
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="window.maintenanceManager.filterByTask('all')">전체 과업 보기</button>
+            </div>
+            <div class="card-body">
+              <div class="maint-task-grid" id="maint-task-grid">
+                <!-- Dynamically populated from maintenance.js -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Station Task Table -->
+          <div class="card">
+            <div class="card-header" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem;">
+              <div class="card-title" id="maint-selected-task-title">
+                <span>📋</span> 전체 176개 운영 지점 유지관리 과업 현황
+              </div>
+
+              <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem;">
+                <div class="search-input-wrapper" style="min-width: 220px;">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="maint-search-input" class="search-input" placeholder="지점명, 하천명, 주소 검색...">
+                </div>
+
+                <select id="maint-filter-region" class="filter-select">
+                  <option value="all">전체 권역</option>
+                  <option value="한강">한강</option>
+                  <option value="낙동강">낙동강</option>
+                  <option value="금강">금강</option>
+                  <option value="영산강">영산강·섬진강</option>
+                </select>
+
+                <select id="maint-filter-status" class="filter-select">
+                  <option value="all">전체 상태</option>
+                  <option value="pending">⏳ 조치 대기 지점만</option>
+                  <option value="done">✅ 전체 조치 완료 지점</option>
+                </select>
+
+                <div style="font-size:0.85rem; color:#64748b; white-space:nowrap;">
+                  표시 지점: <b id="maint-table-count" style="color:#1e40af;">176</b>개소
+                </div>
+              </div>
+            </div>
+
+            <div class="card-body" style="padding:0;">
+              <div class="table-responsive" style="max-height:480px;">
+                <table class="custom-table">
+                  <thead>
+                    <tr>
+                      <th>순번</th>
+                      <th>권역</th>
+                      <th>하천명</th>
+                      <th>관측소명(지점명)</th>
+                      <th>국사 / 설치형태</th>
+                      <th>필요과업수</th>
+                      <th>조치 필요 과업 목록 (To-Do)</th>
+                      <th>상세</th>
+                    </tr>
+                  </thead>
+                  <tbody id="maint-table-body">
+                    <!-- Dynamically populated from maintenance.js -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+                <!-- 5. CALIBRATION VIEW (FLOWMETER ACCURACY INSPECTION) -->
+        <section class="view-panel" id="view-calibration">
+          <!-- Top KPI Summary Cards -->
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-icon purple">🎯</div>
+              <div class="kpi-content">
+                <div class="kpi-label">26년 정도검정 대상 지점</div>
+                <div class="kpi-value" id="kpi-calib-total-stations">30개소</div>
+                <div class="kpi-sub">정기정도검정 법정 대상 지점</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon blue">🌊</div>
+              <div class="kpi-content">
+                <div class="kpi-label">검정대상 유속계 총 수량</div>
+                <div class="kpi-value" id="kpi-calib-total-gauges">176대</div>
+                <div class="kpi-sub">EWSV / ADVM 검정 대상 기기</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon green">📊</div>
+              <div class="kpi-content">
+                <div class="kpi-label">검정 추진율 (진행 현황)</div>
+                <div class="kpi-value" id="kpi-calib-progress">0% (0/30개소)</div>
+                <div class="kpi-sub">시험·검정 및 교정 완료율</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Calibration Table -->
+          <div class="card">
+            <div class="card-header" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem;">
+              <div class="card-title">
+                <span>🎯</span> 2026년 유속계 정도검정 대상 지점 관리 (총 30개소)
+              </div>
+
+              <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem;">
+                <div class="search-input-wrapper" style="min-width: 220px;">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="calib-search-input" class="search-input" placeholder="지점명, 하천명, 주소 검색...">
+                </div>
+
+                <select id="calib-filter-region" class="filter-select">
+                  <option value="all">전체 권역</option>
+                  <option value="한강">한강</option>
+                  <option value="낙동강">낙동강</option>
+                  <option value="금강">금강</option>
+                  <option value="영산강">영산강·섬진강</option>
+                </select>
+
+                <select id="calib-filter-status" class="filter-select">
+                  <option value="all">전체 상태</option>
+                  <option value="pending">⏳ 검정 대기</option>
+                  <option value="ongoing">🧪 시험·검정중</option>
+                  <option value="completed">✅ 검정 완료</option>
+                </select>
+
+                <div style="font-size:0.85rem; color:#64748b; white-space:nowrap;">
+                  표시 지점: <b id="calib-table-count" style="color:#1e40af;">30</b>개소
+                </div>
+              </div>
+            </div>
+
+            <div class="card-body" style="padding:0;">
+              <div class="table-responsive" style="max-height:540px;">
+                <table class="custom-table">
+                  <thead>
+                    <tr>
+                      <th>순번</th>
+                      <th>권역</th>
+                      <th>하천명</th>
+                      <th>관측소명(지점명)</th>
+                      <th>유속계 형식 / 검정대수</th>
+                      <th>현재 상태</th>
+                      <th>검정완료일자</th>
+                      <th>상태 변경</th>
+                      <th>상세</th>
+                    </tr>
+                  </thead>
+                  <tbody id="calib-table-body">
+                    <!-- Dynamically populated from calibration.js -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. SETTINGS VIEW -->
+        <section class="view-panel" id="view-settings">
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:1.5rem;">
+            
+            <!-- Excel Sync Card -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title"><span>📑</span> Excel 엑셀 데이터 동기화</div>
+              </div>
+              <div class="card-body">
+                <p style="font-size:0.85rem; color:#64748b; margin-bottom:1.25rem;">
+                  수정된 전체 시설 데이터를 원본 엑셀 형식(.xlsx)으로 내보내거나, 새로운 엑셀 파일을 업로드하여 시스템 데이터를 갱신합니다.
+                </p>
+
+                <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                  <button class="btn btn-primary" onclick="window.excelManager.exportToExcel(false)">
+                    <span>📥</span> <span>최신 현황 엑셀 다운로드 (.xlsx)</span>
+                  </button>
+
+                  <div style="position:relative; margin-top:0.5rem;">
+                    <input type="file" id="excel-file-input" accept=".xlsx, .xls" style="display:none;">
+                    <button class="btn btn-outline" style="width:100%;" onclick="document.getElementById(excel-file-input).click()">
+                      <span>📤</span> <span>엑셀 파일 업로드하여 데이터 갱신</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- JSON Backup Card -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title"><span>💾</span> 시스템 백업 및 복원 (JSON)</div>
+              </div>
+              <div class="card-body">
+                <p style="font-size:0.85rem; color:#64748b; margin-bottom:1.25rem;">
+                  모든 시설 제원과 유지관리 메모를 JSON 파일로 완벽하게 백업하거나 복원합니다.
+                </p>
+
+                <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                  <button class="btn btn-outline" onclick="window.excelManager.exportBackupJSON()">
+                    <span>💾</span> <span>시스템 전체 JSON 백업</span>
+                  </button>
+
+                  <div style="position:relative;">
+                    <input type="file" id="json-file-input" accept=".json" style="display:none;">
+                    <button class="btn btn-outline" style="width:100%;" onclick="document.getElementById(json-file-input).click()">
+                      <span>📂</span> <span>JSON 백업 파일 복원</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Factory Reset Card -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title"><span style="color:#dc2626;">⚠️</span> 데이터 원본 초기화</div>
+              </div>
+              <div class="card-body">
+                <p style="font-size:0.85rem; color:#64748b; margin-bottom:1.25rem;">
+                  사용자가 수정한 모든 내역을 삭제하고, 시스템 배포 당시의 <b>초기 223개소 원본 데이터</b>로 되돌립니다.
+                </p>
+
+                <button class="btn btn-danger" style="width:100%;" onclick="window.app.resetAllData()">
+                  <span>🔄</span> <span>초기 223개소 원본으로 초기화</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: Station Detail View -->
+  <div class="modal-backdrop" id="detail-modal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title" id="detail-modal-title">관측시설 상세 정보</div>
+        <button class="modal-close" onclick="window.modalManager.closeDetail()">✕</button>
+      </div>
+      <div class="modal-body" id="detail-modal-body">
+        <!-- Rendered dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger btn-sm" onclick="window.modalManager.deleteCurrentStation()">삭제</button>
+        <button class="btn btn-outline btn-sm" onclick="window.modalManager.openEdit(window.modalManager.currentStationId)">정보 수정</button>
+        <button class="btn btn-primary btn-sm" onclick="window.modalManager.closeDetail()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Station Edit & Add Form -->
+  <div class="modal-backdrop" id="edit-modal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title" id="edit-modal-title">관측시설 정보 편집</div>
+        <button class="modal-close" onclick="window.modalManager.closeEdit()">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="station-form" onsubmit="event.preventDefault(); window.modalManager.saveStation();">
+          <input type="hidden" id="form-id">
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">연번 (No.)</label>
+              <input type="number" id="form-seq" class="form-input" placeholder="예: 1">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">관할 권역</label>
+              <select id="form-region" class="form-select">
+                <option value="한강">한강</option>
+                <option value="낙동강">낙동강</option>
+                <option value="금강">금강</option>
+                <option value="영산강">영산강</option>
+                <option value="섬진강">섬진강</option>
+                <option value="기타">기타</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">하천명 *</label>
+              <input type="text" id="form-river" class="form-input" required placeholder="예: 송천">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">지점명(관측소명) *</label>
+              <input type="text" id="form-name" class="form-input" required placeholder="예: 정선군(송천교)">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">지점 코드</label>
+              <input type="text" id="form-code" class="form-input" placeholder="예: 1001525">
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label">위치 (주소)</label>
+              <input type="text" id="form-address" class="form-input" placeholder="예: 강원특별자치도 정선군 여량면 유천리 송천교">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">위도 (WGS84 십진수)</label>
+              <input type="number" step="any" id="form-lat" class="form-input" placeholder="예: 37.485556">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">경도 (WGS84 십진수)</label>
+              <input type="number" step="any" id="form-lon" class="form-input" placeholder="예: 128.718611">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">위도 (DMS 도-분-초)</label>
+              <input type="text" id="form-lat-dms" class="form-input" placeholder="예: 37-29-08">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">경도 (DMS 도-분-초)</label>
+              <input type="text" id="form-lon-dms" class="form-input" placeholder="예: 128-43-07">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">형식 (유속계)</label>
+              <input type="text" id="form-gauge-type" class="form-input" placeholder="예: EWSV, ADVM, EWSV, ADVM">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">설치 방향</label>
+              <select id="form-install-direction" class="form-select">
+                <option value="상류">상류</option>
+                <option value="하류">하류</option>
+                <option value="-">-</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">EWSV 수량 (대)</label>
+              <input type="text" id="form-ewsv-count" class="form-input" placeholder="예: 1, 2, -">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ADVM 수량 (대)</label>
+              <input type="text" id="form-advm-count" class="form-input" placeholder="예: 1, -">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">설치 년도</label>
+              <input type="text" id="form-install-year" class="form-input" placeholder="예: 2026">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">관측 개시 년도</label>
+              <input type="text" id="form-obs-year" class="form-input" placeholder="예: 2026, -">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">수위계 방식</label>
+              <input type="text" id="form-waterlevel-type" class="form-input" placeholder="예: 레이더, 압력식, 부자식">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">기준 수위</label>
+              <input type="text" id="form-ref-waterlevel" class="form-input" placeholder="예: 수위관측소">
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label">운영 및 관리 구분</label>
+              <div class="form-checkbox-row">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="form-is-operating"> <b>2026년 정상 운영</b>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="form-flood-alert"> 홍수특보 지정
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="form-drought-alert"> 갈수예보 지정
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="form-pollution-total"> 오염총량 지정
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="form-solar-install"> 태양광 설치
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="form-calib-2026"> 26년 검정대상
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">검정대상 유속계 수량 (대)</label>
+              <input type="text" id="form-calib-count" class="form-input" placeholder="예: 1, 2">
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label">비고 및 특이사항</label>
+              <textarea id="form-memo" class="form-textarea" rows="2" placeholder="유지관리 특이사항, 센서 점검 메모 등"></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline btn-sm" onclick="window.modalManager.closeEdit()">취소</button>
+        <button class="btn btn-primary btn-sm" onclick="window.modalManager.saveStation()">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Initial Dataset Script -->
+  <script src="data/stations_initial.js"></script>
+  <script src="data/real_standard_basins.js"></script>
+
+  <!-- Application Modules -->
+  <script src="js/api.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/gis.js"></script>
+  <script src="js/table.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/maintenance.js"></script>
+  <script src="js/calibration.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/excel.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

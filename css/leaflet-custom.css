@@ -1,0 +1,125 @@
+/* Custom Leaflet Map Styles */
+.station-pin {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffffff;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.station-pin:hover {
+  transform: scale(1.4);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  z-index: 1000 !important;
+}
+
+.pin-river-han { background-color: #2563eb; }
+.pin-river-nakdong { background-color: #ea580c; }
+.pin-river-geum { background-color: #059669; }
+.pin-river-yeongsan { background-color: #9333ea; }
+.pin-river-other { background-color: #64748b; }
+
+/* Dual Gauge (EWSV + ADVM) Highlight Pin */
+.pin-gauge-dual {
+  width: 28px !important;
+  height: 28px !important;
+  background: linear-gradient(135deg, #7c3aed, #d97706) !important;
+  border: 2.5px solid #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.5), 0 4px 10px rgba(0,0,0,0.4) !important;
+  font-size: 13px !important;
+  z-index: 500;
+}
+
+.pin-gauge-dual:hover {
+  transform: scale(1.45) !important;
+}
+
+.badge-dual-chip {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #fbbf24;
+  color: #78350f;
+  padding: 2px 6px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Leaflet Popup Customization */
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 12px 28px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  overflow: hidden;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  min-width: 270px;
+  font-family: "Pretendard", sans-serif;
+}
+
+.custom-map-popup {
+  display: flex;
+  flex-direction: column;
+}
+
+.popup-header {
+  background: linear-gradient(135deg, #1e40af, #2563eb);
+  color: #ffffff;
+  padding: 0.85rem 1rem;
+}
+
+.popup-header.dual {
+  background: linear-gradient(135deg, #6b21a8, #b45309);
+}
+
+.popup-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.popup-subtitle {
+  font-size: 0.75rem;
+  opacity: 0.9;
+}
+
+.popup-body {
+  padding: 0.85rem 1rem;
+  font-size: 0.8rem;
+  color: #334155;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.popup-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.popup-row-label {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.popup-footer {
+  padding: 0.65rem 1rem;
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
