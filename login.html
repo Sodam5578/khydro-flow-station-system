@@ -17,60 +17,39 @@
     }
     .login-box {
       width: 100%;
-      max-width: 440px;
+      max-width: 420px;
       background: #ffffff;
       border-radius: 16px;
-      padding: 2.5rem 2rem;
+      padding: 2.75rem 2.25rem;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
     }
     .login-header {
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 2.25rem;
     }
     .login-logo {
-      width: 56px;
-      height: 56px;
+      width: 60px;
+      height: 60px;
       background: linear-gradient(135deg, #2563eb, #1d4ed8);
-      border-radius: 14px;
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.8rem;
-      margin: 0 auto 1rem;
+      font-size: 2rem;
+      margin: 0 auto 1.25rem;
       box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
     }
     .login-title {
-      font-size: 1.35rem;
+      font-size: 1.4rem;
       font-weight: 800;
       color: #0f172a;
       letter-spacing: -0.02em;
     }
     .login-subtitle {
-      font-size: 0.85rem;
+      font-size: 0.88rem;
       color: #64748b;
-      margin-top: 0.25rem;
-    }
-    .demo-accounts {
-      margin-top: 1.5rem;
-      padding-top: 1.25rem;
-      border-top: 1px dashed #e2e8f0;
-    }
-    .demo-btn {
-      display: inline-block;
-      padding: 0.3rem 0.6rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      background: #f1f5f9;
-      color: #334155;
-      border-radius: 6px;
-      cursor: pointer;
-      margin: 0.2rem;
-      border: 1px solid #e2e8f0;
-      transition: all 0.15s ease;
-    }
-    .demo-btn:hover {
-      background: #e2e8f0;
-      border-color: #cbd5e1;
+      margin-top: 0.35rem;
+      font-weight: 500;
     }
   </style>
 </head>
@@ -83,42 +62,29 @@
     </div>
 
     <form id="login-form" onsubmit="handleLogin(event)">
-      <div class="form-group" style="margin-bottom:1.1rem;">
-        <label class="form-label" style="font-weight:600;">아이디 (Username)</label>
-        <input type="text" id="username" class="form-input" placeholder="아이디를 입력하세요" required style="padding:0.75rem 1rem;">
+      <div class="form-group" style="margin-bottom:1.25rem;">
+        <label class="form-label" style="font-weight:600; color:#334155;">사용자 아이디 (ID)</label>
+        <input type="text" id="username" class="form-input" placeholder="아이디를 입력하세요" required style="padding:0.8rem 1rem; font-size:0.95rem;">
       </div>
 
-      <div class="form-group" style="margin-bottom:1.5rem;">
-        <label class="form-label" style="font-weight:600;">비밀번호 (Password)</label>
-        <input type="password" id="password" class="form-input" placeholder="비밀번호를 입력하세요" required style="padding:0.75rem 1rem;">
+      <div class="form-group" style="margin-bottom:1.75rem;">
+        <label class="form-label" style="font-weight:600; color:#334155;">비밀번호 (Password)</label>
+        <input type="password" id="password" class="form-input" placeholder="비밀번호를 입력하세요" required style="padding:0.8rem 1rem; font-size:0.95rem;">
       </div>
 
-      <div id="login-error" style="display:none; color:#ef4444; font-size:0.85rem; margin-bottom:1rem; text-align:center; font-weight:600;"></div>
+      <div id="login-error" style="display:none; color:#ef4444; font-size:0.85rem; margin-bottom:1.25rem; text-align:center; font-weight:600; background:#fef2f2; padding:0.6rem; border-radius:8px; border:1px solid #fee2e2;"></div>
 
-      <button type="submit" id="btn-submit" class="btn btn-primary" style="width:100%; padding:0.85rem; font-size:1rem; font-weight:700; border-radius:8px;">
+      <button type="submit" id="btn-submit" class="btn btn-primary" style="width:100%; padding:0.9rem; font-size:1.05rem; font-weight:700; border-radius:10px;">
         로그인
       </button>
     </form>
 
-    <div class="demo-accounts">
-      <div style="font-size:0.78rem; font-weight:700; color:#475569; margin-bottom:0.4rem;">💡 빠른 접속 계정 (클릭 시 자동 입력):</div>
-      <div style="display:flex; flex-wrap:wrap;">
-        <span class="demo-btn" onclick="fillDemo("admin", "admin1234")">🔑 최고관리자 (admin)</span>
-        <span class="demo-btn" onclick="fillDemo("han_manager", "user1234")">🌊 한강담당 (han_manager)</span>
-        <span class="demo-btn" onclick="fillDemo("nakdong_manager", "user1234")">🌊 낙동강담당 (nakdong)</span>
-        <span class="demo-btn" onclick="fillDemo("geum_manager", "user1234")">🌊 금강담당 (geum)</span>
-        <span class="demo-btn" onclick="fillDemo("yeongsan_manager", "user1234")">🌊 영산강담당 (yeongsan)</span>
-      </div>
+    <div style="margin-top:2rem; text-align:center; font-size:0.75rem; color:#94a3b8;">
+      © 한국수자원조사기술원 수자원인프라팀 관제시스템
     </div>
   </div>
 
   <script>
-    function fillDemo(u, p) {
-      document.getElementById("username").value = u;
-      document.getElementById("password").value = p;
-      document.getElementById("login-error").style.display = "none";
-    }
-
     async function handleLogin(e) {
       e.preventDefault();
       const username = document.getElementById("username").value.trim();
@@ -127,7 +93,7 @@
       const errEl = document.getElementById("login-error");
 
       btn.disabled = true;
-      btn.textContent = "로그인 중...";
+      btn.textContent = "로그인 인증 중...";
       errEl.style.display = "none";
 
       try {
@@ -143,12 +109,12 @@
           localStorage.setItem("khydro_user_profile", JSON.stringify(data.user));
           window.location.href = "index.html";
         } else {
-          errEl.textContent = data.message || "로그인에 실패했습니다.";
+          errEl.textContent = data.message || "아이디 또는 비밀번호가 올바르지 않습니다.";
           errEl.style.display = "block";
         }
       } catch (err) {
         console.error("Login fetch error:", err);
-        errEl.textContent = "서버와 연결할 수 없습니다. (서버 구동 확인 필요)";
+        errEl.textContent = "서버와 연결할 수 없습니다. (서버 상태 확인 필요)";
         errEl.style.display = "block";
       } finally {
         btn.disabled = false;

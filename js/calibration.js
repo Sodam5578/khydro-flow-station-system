@@ -1,12 +1,14 @@
 /**
  * CalibrationManager
  * Dedicated controller for 2026 Flowmeter Accuracy Inspection & Periodic Calibration (30 Stations).
+ * Features Dedicated Modal-based Inspection Recording and Real-Time Synchronization.
  */
 class CalibrationManager {
   constructor() {
     this.selectedRegion = "all";
     this.selectedStatus = "all"; // all, pending, ongoing, completed
     this.searchTerm = "";
+    this.currentStationId = null;
   }
 
   init() {
@@ -73,18 +75,63 @@ class CalibrationManager {
     if (progEl) progEl.textContent = `${progPct}% (${completedCount}/${totalCount}개소)`;
   }
 
-  updateStatus(stationId, newStatus, date = "", certNo = "") {
+  openModal(stationId) {
     const st = window.dataManager.getById(stationId);
     if (!st) return;
 
-    st.calibrationStatus = newStatus;
-    if (date) st.calibrationDate = date;
-    if (certNo) st.calibrationCertNo = certNo;
+    this.currentStationId = stationId;
 
-    window.dataManager.updateCalibration(stationId, newStatus, date, certNo);
+    const nameEl = document.getElementById("calib-modal-station-name");
+    if (nameEl) nameEl.textContent = `${st.name} (${st.region || "-"} / 코드: ${st.code || "-"})`;
+
+    const gaugeEl = document.getElementById("calib-modal-gauge-info");
+    if (gaugeEl) gaugeEl.textContent = `${st.gaugeType || "-"} (검정대상: ${st.calibCount2026 || 1}대)`;
+
+    document.getElementById("calib-modal-id").value = st.id;
+    document.getElementById("calib-modal-status").value = st.calibrationStatus || "pending";
+    document.getElementById("calib-modal-date").value = st.calibrationDate || "";
+    document.getElementById("calib-modal-cert").value = st.calibrationCertNo || "";
+
+    const modal = document.getElementById("calib-modal");
+    if (modal) modal.classList.add("active");
+  }
+
+  closeModal() {
+    const modal = document.getElementById("calib-modal");
+    if (modal) modal.classList.remove("active");
+    this.currentStationId = null;
+  }
+
+  onStatusChange(statusVal) {
+    const dateInput = document.getElementById("calib-modal-date");
+    if (statusVal === "completed" && dateInput && !dateInput.value) {
+      const today = new Date().toISOString().split("T")[0];
+      dateInput.value = today;
+    }
+  }
+
+  async saveCalib() {
+    if (!this.currentStationId) return;
+    const st = window.dataManager.getById(this.currentStationId);
+    if (!st) return;
+
+    const newStatus = document.getElementById("calib-modal-status").value;
+    const newDate = document.getElementById("calib-modal-date").value;
+    const newCert = document.getElementById("calib-modal-cert").value.trim();
+
+    if (newStatus === "completed" && !newDate) {
+      alert("검정 완료 상태인 경우 [검정 완료일자]를 반드시 입력해주세요.");
+      return;
+    }
+
+    await window.dataManager.updateCalibration(this.currentStationId, newStatus, newDate, newCert);
+    
+    this.closeModal();
     this.renderKPIs();
     this.renderTable();
-    window.app.showToast(`[${st.name}] 유속계 정도검정 상태가 변경되었습니다.`, "success");
+    if (window.statsManager) window.statsManager.update();
+    
+    window.app.showToast(`[${st.name}] 유속계 검정 결과가 성공적으로 기록·저장되었습니다.`, "success");
   }
 
   renderTable() {
@@ -127,7 +174,7 @@ class CalibrationManager {
       return;
     }
 
-    tbody.innerHTML = filtered.map(st => {
+    tbody.innerHTML = filtered.map((st, idx) => {
       const isDual = st.isDualGauge || st.gaugeCategory === "DUAL";
       const status = st.calibrationStatus || "pending";
       const calibDate = st.calibrationDate || "";
@@ -142,9 +189,17 @@ class CalibrationManager {
       if (status === "ongoing") statusBadge = `<span class="badge badge-cyan">🧪 시험·검정중</span>`;
       if (status === "completed") statusBadge = `<span class="badge badge-green">✅ 검정 완료</span>`;
 
+      const dateHtml = calibDate 
+        ? `<b style="color:#059669;">${calibDate}</b>` 
+        : `<span style="color:#94a3b8; font-size:0.85rem;">-</span>`;
+
+      const certHtml = certNo 
+        ? `<code style="font-size:0.75rem; background:#f1f5f9; padding:2px 5px; border-radius:4px;">${certNo}</code>` 
+        : `<span style="color:#94a3b8; font-size:0.85rem;">-</span>`;
+
       return `
         <tr style="${status === "completed" ? "background-color:#f0fdf4;" : ""}">
-          <td><b>${st.seq || "-"}</b></td>
+          <td><b>${idx + 1}</b></td>
           <td><span class="badge ${regionBadgeClass}">${st.region || "-"}</span></td>
           <td><b>${st.river || "-"}</b></td>
           <td>
@@ -159,21 +214,17 @@ class CalibrationManager {
             <div style="font-size:0.75rem; color:#0284c7;">검정대상: <b>${gaugeCount}대</b></div>
           </td>
           <td>${statusBadge}</td>
+          <td>${dateHtml}</td>
+          <td>${certHtml}</td>
           <td>
-            <input type="date" class="form-input" style="padding:4px 6px; font-size:0.8rem; width:130px;" 
-                   value="${calibDate}" 
-                   onchange="window.calibrationManager.updateStatus(${st.id}, 0, this.value, )">
-          </td>
-          <td>
-            <select class="filter-select" style="padding:4px 8px; font-size:0.8rem; font-weight:600;" 
-                    onchange="window.calibrationManager.updateStatus(${st.id}, this.value, , )">
-              <option value="pending" ${status === "pending" ? "selected" : ""}>⏳ 검정 대기</option>
-              <option value="ongoing" ${status === "ongoing" ? "selected" : ""}>🧪 시험·검정중</option>
-              <option value="completed" ${status === "completed" ? "selected" : ""}>✅ 검정 완료</option>
-            </select>
-          </td>
-          <td>
-            <button class="btn btn-outline btn-sm" onclick="window.modalManager.openDetail(${st.id})">상세제원</button>
+            <div style="display:flex; gap:0.35rem;">
+              <button class="btn btn-primary btn-sm" style="font-size:0.75rem; padding:4px 8px;" onclick="window.calibrationManager.openModal(${st.id})">
+                <span>✏️</span> <span>검정기록</span>
+              </button>
+              <button class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:4px 8px;" onclick="window.modalManager.openDetail(${st.id})">
+                상세제원
+              </button>
+            </div>
           </td>
         </tr>
       `;

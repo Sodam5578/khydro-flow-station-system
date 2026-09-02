@@ -41,7 +41,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 2,
@@ -85,7 +88,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 3,
@@ -150,7 +156,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1001529_남평대교_L",
+      "1001529_남평대교_S"
+    ]
   },
   {
     "id": 4,
@@ -194,7 +206,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 5,
@@ -259,7 +274,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1001545_와평교_L",
+      "1001545_와평교_S"
+    ]
   },
   {
     "id": 6,
@@ -324,7 +345,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1001555_정선제1교_L",
+      "1001555_정선제1교_S"
+    ]
   },
   {
     "id": 7,
@@ -389,7 +416,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1001590_영월대교_L",
+      "1001590_영월대교_S"
+    ]
   },
   {
     "id": 8,
@@ -454,7 +487,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1002535_사초교_L",
+      "1002535_사초교_S"
+    ]
   },
   {
     "id": 9,
@@ -519,7 +558,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1002550_평창교_L",
+      "1002550_평창교_S"
+    ]
   },
   {
     "id": 10,
@@ -584,7 +629,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1002585_주천교_L",
+      "1002585_주천교_S"
+    ]
   },
   {
     "id": 11,
@@ -626,7 +677,7 @@ window.INITIAL_STATIONS_DATA = [
       "stationType": "수위관측소 외함",
       "waterLevelInstalled": "X",
       "waterLevelPos": "수위관측소 동일, 하류방향",
-      "taskCount": 8,
+      "taskCount": 7,
       "tasks": {
         "dualGaugeUpdate": "",
         "waterLevelGauge": false,
@@ -637,7 +688,7 @@ window.INITIAL_STATIONS_DATA = [
         "breaker": true,
         "cctvNew": false,
         "nvr": false,
-        "rvBox": true,
+        "rvBox": false,
         "osUpgrade": "O",
         "anemometer": false,
         "logger": false,
@@ -649,7 +700,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1002598_팔괴교_L",
+      "1002598_팔괴교_S"
+    ]
   },
   {
     "id": 12,
@@ -693,7 +750,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 13,
@@ -758,7 +818,10 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 14,
@@ -823,7 +886,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1003545_단양1교_L",
+      "1003545_단양1교_S"
+    ]
   },
   {
     "id": 15,
@@ -888,7 +957,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1003558_부수동교_L",
+      "1003558_부수동교_S"
+    ]
   },
   {
     "id": 16,
@@ -932,7 +1007,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 17,
@@ -997,7 +1075,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1004593_목도교_L",
+      "1004593_목도교_S"
+    ]
   },
   {
     "id": 18,
@@ -1062,7 +1146,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1004595_국원대교_L",
+      "1004595_국원대교_S"
+    ]
   },
   {
     "id": 19,
@@ -1127,7 +1217,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "1005597_남한강대교_L",
+      "1005597_남한강대교_S"
+    ]
   },
   {
     "id": 20,
@@ -1192,7 +1288,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1006565_원주교_L",
+      "1006565_원주교_S"
+    ]
   },
   {
     "id": 21,
@@ -1257,7 +1359,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1006580_지정대교_L",
+      "1006580_지정대교_S"
+    ]
   },
   {
     "id": 22,
@@ -1322,7 +1430,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1006590_문막교_L",
+      "1006590_문막교_S"
+    ]
   },
   {
     "id": 23,
@@ -1387,7 +1501,12 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1007501_대신양수장"
+    ]
   },
   {
     "id": 24,
@@ -1452,7 +1571,12 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1007502_능서1양수장"
+    ]
   },
   {
     "id": 25,
@@ -1517,7 +1641,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1007510_총천교_L",
+      "1007510_총천교_S"
+    ]
   },
   {
     "id": 26,
@@ -1582,7 +1712,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1007515_원부교_L",
+      "1007515_원부교_S"
+    ]
   },
   {
     "id": 27,
@@ -1647,7 +1783,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "1007525_남한강교_L",
+      "1007525_남한강교_S"
+    ]
   },
   {
     "id": 28,
@@ -1712,7 +1854,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "1007535_여주대교_L",
+      "1007535_여주대교_S"
+    ]
   },
   {
     "id": 29,
@@ -1777,7 +1925,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1007540_율극교_L",
+      "1007540_율극교_S"
+    ]
   },
   {
     "id": 30,
@@ -1842,7 +1996,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1007541_여주보(하류)_L",
+      "1007541_여주보(하류)_S"
+    ]
   },
   {
     "id": 31,
@@ -1907,7 +2067,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1007562_이포보(상류)_L",
+      "1007562_이포보(상류)_S"
+    ]
   },
   {
     "id": 32,
@@ -1972,7 +2138,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "1007585_양평교_L",
+      "1007585_양평교_S"
+    ]
   },
   {
     "id": 33,
@@ -2037,7 +2209,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1012530_왕성동교_L",
+      "1012530_왕성동교_S"
+    ]
   },
   {
     "id": 34,
@@ -2102,7 +2280,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1012540_현리교_L",
+      "1012540_현리교_S"
+    ]
   },
   {
     "id": 35,
@@ -2167,7 +2351,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1013555_가평교_L",
+      "1013555_가평교_S"
+    ]
   },
   {
     "id": 36,
@@ -2232,7 +2422,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1014550_홍천교_L",
+      "1014550_홍천교_S"
+    ]
   },
   {
     "id": 37,
@@ -2297,7 +2493,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1015520_대보교_L",
+      "1015520_대보교_S"
+    ]
   },
   {
     "id": 38,
@@ -2341,7 +2543,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 39,
@@ -2385,7 +2590,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 40,
@@ -2450,7 +2658,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1018540_광진교_L",
+      "1018540_광진교_S"
+    ]
   },
   {
     "id": 41,
@@ -2515,7 +2729,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1018555_대곡교_L",
+      "1018555_대곡교_S"
+    ]
   },
   {
     "id": 42,
@@ -2559,7 +2779,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 43,
@@ -2624,7 +2847,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "1018575_중랑교_L",
+      "1018575_중랑교_S"
+    ]
   },
   {
     "id": 44,
@@ -2689,7 +2918,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1018583_한강대교_L",
+      "1018583_한강대교_S"
+    ]
   },
   {
     "id": 45,
@@ -2754,7 +2989,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1018595_너부대교_L",
+      "1018595_너부대교_S"
+    ]
   },
   {
     "id": 46,
@@ -2819,7 +3060,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1018597_오금교_L",
+      "1018597_오금교_S"
+    ]
   },
   {
     "id": 47,
@@ -2884,7 +3131,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "1018598_신대방1교_L",
+      "1018598_신대방1교_S"
+    ]
   },
   {
     "id": 48,
@@ -2949,7 +3202,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1019567_원당교_L",
+      "1019567_원당교_S"
+    ]
   },
   {
     "id": 49,
@@ -3014,7 +3273,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1021550_필승교_L",
+      "1021550_필승교_S"
+    ]
   },
   {
     "id": 50,
@@ -3079,7 +3344,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1021580_임진교_L",
+      "1021580_임진교_S"
+    ]
   },
   {
     "id": 51,
@@ -3123,7 +3394,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 52,
@@ -3188,7 +3462,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1022547_포천대교_L",
+      "1022547_포천대교_S"
+    ]
   },
   {
     "id": 53,
@@ -3232,7 +3512,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 54,
@@ -3297,7 +3580,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1022562_차탄교_L",
+      "1022562_차탄교_S"
+    ]
   },
   {
     "id": 55,
@@ -3341,7 +3630,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 56,
@@ -3406,7 +3698,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1022570_신천교_L",
+      "1022570_신천교_S"
+    ]
   },
   {
     "id": 57,
@@ -3471,7 +3769,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1022580_사랑교_L",
+      "1022580_사랑교_S"
+    ]
   },
   {
     "id": 58,
@@ -3536,7 +3840,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "1023560_비룡대교_L",
+      "1023560_비룡대교_S"
+    ]
   },
   {
     "id": 59,
@@ -3601,7 +3911,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1023570_통일대교_L",
+      "1023570_통일대교_S"
+    ]
   },
   {
     "id": 60,
@@ -3666,7 +3982,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "1101535_군문교_L",
+      "1101535_군문교_S"
+    ]
   },
   {
     "id": 61,
@@ -3731,7 +4053,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1101545_탑동대교_L",
+      "1101545_탑동대교_S"
+    ]
   },
   {
     "id": 62,
@@ -3796,7 +4124,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1101570_동연교_L",
+      "1101570_동연교_S"
+    ]
   },
   {
     "id": 63,
@@ -3861,7 +4195,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1101580_팽성대교_L",
+      "1101580_팽성대교_S"
+    ]
   },
   {
     "id": 64,
@@ -3926,7 +4266,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "1302548_회산교_L",
+      "1302548_회산교_S"
+    ]
   },
   {
     "id": 65,
@@ -3970,7 +4316,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 66,
@@ -4035,7 +4384,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2001510_문화교_L",
+      "2001510_문화교_S"
+    ]
   },
   {
     "id": 67,
@@ -4100,7 +4455,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2003570_구담교_L",
+      "2003570_구담교_S"
+    ]
   },
   {
     "id": 68,
@@ -4144,7 +4505,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 69,
@@ -4188,7 +4552,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 70,
@@ -4253,7 +4620,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2004568_신예천교_L",
+      "2004568_신예천교_S"
+    ]
   },
   {
     "id": 71,
@@ -4318,7 +4691,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2004580_회룡교_L",
+      "2004580_회룡교_S"
+    ]
   },
   {
     "id": 72,
@@ -4383,7 +4762,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2004595_산양교_L",
+      "2004595_산양교_S"
+    ]
   },
   {
     "id": 73,
@@ -4448,7 +4833,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2005560_김용리_L",
+      "2005560_김용리_S"
+    ]
   },
   {
     "id": 74,
@@ -4492,7 +4883,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 75,
@@ -4557,7 +4951,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2006565_후천교_L",
+      "2006565_후천교_S"
+    ]
   },
   {
     "id": 76,
@@ -4601,7 +5001,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 77,
@@ -4666,7 +5069,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2007560_상풍교_L",
+      "2007560_상풍교_S"
+    ]
   },
   {
     "id": 78,
@@ -4731,7 +5140,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2007586_강창교_L",
+      "2007586_강창교_S"
+    ]
   },
   {
     "id": 79,
@@ -4775,7 +5190,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 80,
@@ -4840,7 +5258,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2008533_장송교_L",
+      "2008533_장송교_S"
+    ]
   },
   {
     "id": 81,
@@ -4905,7 +5329,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2008550_무성리_L",
+      "2008550_무성리_S"
+    ]
   },
   {
     "id": 82,
@@ -4970,7 +5400,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2009520_낙단교_L",
+      "2009520_낙단교_S"
+    ]
   },
   {
     "id": 83,
@@ -5035,7 +5471,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2009570_일선교_L",
+      "2009570_일선교_S"
+    ]
   },
   {
     "id": 84,
@@ -5100,7 +5542,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2010550_김천교_L",
+      "2010550_김천교_S"
+    ]
   },
   {
     "id": 85,
@@ -5165,7 +5613,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2011525_양포교_L",
+      "2011525_양포교_S"
+    ]
   },
   {
     "id": 86,
@@ -5230,7 +5684,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2011540_구미대교_L",
+      "2011540_구미대교_S"
+    ]
   },
   {
     "id": 87,
@@ -5295,7 +5755,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2011550_호국의다리_L",
+      "2011550_호국의다리_S"
+    ]
   },
   {
     "id": 88,
@@ -5360,7 +5826,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2011560_성주대교_L",
+      "2011560_성주대교_S"
+    ]
   },
   {
     "id": 89,
@@ -5404,7 +5876,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 90,
@@ -5469,7 +5944,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2012528_영동교_L",
+      "2012528_영동교_S"
+    ]
   },
   {
     "id": 91,
@@ -5534,7 +6015,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2012540_금창교_L",
+      "2012540_금창교_S"
+    ]
   },
   {
     "id": 92,
@@ -5578,7 +6065,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 93,
@@ -5643,7 +6133,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2012560_신암동_L",
+      "2012560_신암동_S"
+    ]
   },
   {
     "id": 94,
@@ -5687,7 +6183,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 95,
@@ -5752,7 +6251,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2012595_강창교_L",
+      "2012595_강창교_S"
+    ]
   },
   {
     "id": 96,
@@ -5817,7 +6322,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2013540_귀원교_L",
+      "2013540_귀원교_S"
+    ]
   },
   {
     "id": 97,
@@ -5882,7 +6393,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2013550_회천교_L",
+      "2013550_회천교_S"
+    ]
   },
   {
     "id": 98,
@@ -5947,7 +6464,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2013590_도진교_L",
+      "2013590_도진교_S"
+    ]
   },
   {
     "id": 99,
@@ -6012,7 +6535,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2014540_고령교_L",
+      "2014540_고령교_S"
+    ]
   },
   {
     "id": 100,
@@ -6077,7 +6606,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2014560_성하리_L",
+      "2014560_성하리_S"
+    ]
   },
   {
     "id": 101,
@@ -6119,7 +6654,7 @@ window.INITIAL_STATIONS_DATA = [
       "stationType": "유량관측소",
       "waterLevelInstalled": "O",
       "waterLevelPos": "수위관측소 동일, 교각",
-      "taskCount": 8,
+      "taskCount": 7,
       "tasks": {
         "dualGaugeUpdate": "",
         "waterLevelGauge": false,
@@ -6130,7 +6665,7 @@ window.INITIAL_STATIONS_DATA = [
         "breaker": true,
         "cctvNew": false,
         "nvr": false,
-        "rvBox": true,
+        "rvBox": false,
         "osUpgrade": "O",
         "anemometer": false,
         "logger": true,
@@ -6142,7 +6677,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2014590_율지교_L",
+      "2014590_율지교_S"
+    ]
   },
   {
     "id": 102,
@@ -6186,7 +6727,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 103,
@@ -6251,7 +6795,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2016580_황강교_L",
+      "2016580_황강교_S"
+    ]
   },
   {
     "id": 104,
@@ -6316,7 +6866,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2017520_적포교_L",
+      "2017520_적포교_S"
+    ]
   },
   {
     "id": 105,
@@ -6381,7 +6937,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2018509_안의교_L",
+      "2018509_안의교_S"
+    ]
   },
   {
     "id": 106,
@@ -6423,7 +6985,7 @@ window.INITIAL_STATIONS_DATA = [
       "stationType": "유량관측소",
       "waterLevelInstalled": "O",
       "waterLevelPos": "수위관측소 상류 약 850m, 구조물",
-      "taskCount": 12,
+      "taskCount": 11,
       "tasks": {
         "dualGaugeUpdate": "O(CM300)",
         "waterLevelGauge": false,
@@ -6434,7 +6996,7 @@ window.INITIAL_STATIONS_DATA = [
         "breaker": true,
         "cctvNew": true,
         "nvr": true,
-        "rvBox": true,
+        "rvBox": false,
         "osUpgrade": "O",
         "anemometer": false,
         "logger": false,
@@ -6446,7 +7008,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2018574_묵곡교_L",
+      "2018574_묵곡교_S"
+    ]
   },
   {
     "id": 107,
@@ -6511,7 +7079,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2019520_송도교_L",
+      "2019520_송도교_S"
+    ]
   },
   {
     "id": 108,
@@ -6555,7 +7129,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 109,
@@ -6599,7 +7176,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 110,
@@ -6664,7 +7244,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2019555_정암교_L",
+      "2019555_정암교_S"
+    ]
   },
   {
     "id": 111,
@@ -6729,7 +7315,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2019580_서촌리_L",
+      "2019580_서촌리_S"
+    ]
   },
   {
     "id": 112,
@@ -6794,7 +7386,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2020515_계내리_L",
+      "2020515_계내리_S"
+    ]
   },
   {
     "id": 113,
@@ -6836,7 +7434,7 @@ window.INITIAL_STATIONS_DATA = [
       "stationType": "유량관측소",
       "waterLevelInstalled": "O",
       "waterLevelPos": "수위관측소 상류 약 900m, 구조물",
-      "taskCount": 11,
+      "taskCount": 10,
       "tasks": {
         "dualGaugeUpdate": "O(CM1200)",
         "waterLevelGauge": false,
@@ -6847,7 +7445,7 @@ window.INITIAL_STATIONS_DATA = [
         "breaker": true,
         "cctvNew": true,
         "nvr": true,
-        "rvBox": true,
+        "rvBox": false,
         "osUpgrade": "O",
         "anemometer": false,
         "logger": false,
@@ -6859,7 +7457,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2020550_청암리_L",
+      "2020550_청암리_S"
+    ]
   },
   {
     "id": 114,
@@ -6924,7 +7528,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2021540_원리_L",
+      "2021540_원리_S"
+    ]
   },
   {
     "id": 115,
@@ -6989,7 +7599,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2021575_용평동_L",
+      "2021575_용평동_S"
+    ]
   },
   {
     "id": 116,
@@ -7033,7 +7649,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 117,
@@ -7098,7 +7717,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2022510_삼랑진교_L",
+      "2022510_삼랑진교_S"
+    ]
   },
   {
     "id": 118,
@@ -7142,7 +7767,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 119,
@@ -7207,7 +7835,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2022578_대동낙동강교_L",
+      "2022578_대동낙동강교_S"
+    ]
   },
   {
     "id": 120,
@@ -7272,7 +7906,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2022580_구포대교_L",
+      "2022580_구포대교_S"
+    ]
   },
   {
     "id": 121,
@@ -7337,7 +7977,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2022585_정천교_L",
+      "2022585_정천교_S"
+    ]
   },
   {
     "id": 122,
@@ -7402,7 +8048,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2101575_강동대교_L",
+      "2101575_강동대교_S"
+    ]
   },
   {
     "id": 123,
@@ -7467,7 +8119,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2101590_형산교_L",
+      "2101590_형산교_S"
+    ]
   },
   {
     "id": 124,
@@ -7532,7 +8190,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2201530_사연교_L",
+      "2201530_사연교_S"
+    ]
   },
   {
     "id": 125,
@@ -7597,7 +8261,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2201570_태화교_L",
+      "2201570_태화교_S"
+    ]
   },
   {
     "id": 126,
@@ -7662,7 +8332,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2201590_병영교_L",
+      "2201590_병영교_S"
+    ]
   },
   {
     "id": 127,
@@ -7727,7 +8403,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2301570_덕신교_L",
+      "2301570_덕신교_S"
+    ]
   },
   {
     "id": 128,
@@ -7792,7 +8474,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2302550_원동교_L",
+      "2302550_원동교_S"
+    ]
   },
   {
     "id": 129,
@@ -7857,7 +8545,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2401516_월변교_L",
+      "2401516_월변교_S"
+    ]
   },
   {
     "id": 130,
@@ -7922,7 +8616,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "2402530_영덕대교_L",
+      "2402530_영덕대교_S"
+    ]
   },
   {
     "id": 131,
@@ -7987,7 +8687,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "2403520_문덕3교_L",
+      "2403520_문덕3교_S"
+    ]
   },
   {
     "id": 132,
@@ -8052,7 +8758,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3001505_운곡교_L",
+      "3001505_운곡교_S"
+    ]
   },
   {
     "id": 133,
@@ -8117,7 +8829,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3003580_취수장_L",
+      "3003580_취수장_S"
+    ]
   },
   {
     "id": 134,
@@ -8182,7 +8900,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3004540_제원대교_L",
+      "3004540_제원대교_S"
+    ]
   },
   {
     "id": 135,
@@ -8247,7 +8971,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3004585_초강교_L",
+      "3004585_초강교_S"
+    ]
   },
   {
     "id": 136,
@@ -8312,7 +9042,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3004590_양강교_L",
+      "3004590_양강교_S"
+    ]
   },
   {
     "id": 137,
@@ -8377,7 +9113,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3006590_구금강2교_L",
+      "3006590_구금강2교_S"
+    ]
   },
   {
     "id": 138,
@@ -8421,7 +9163,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 139,
@@ -8486,7 +9231,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3008530_옥각교_L",
+      "3008530_옥각교_S"
+    ]
   },
   {
     "id": 140,
@@ -8551,7 +9302,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3008570_제원교_L",
+      "3008570_제원교_S"
+    ]
   },
   {
     "id": 141,
@@ -8595,7 +9352,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 142,
@@ -8660,7 +9420,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3009530_복수교_L",
+      "3009530_복수교_S"
+    ]
   },
   {
     "id": 143,
@@ -8704,7 +9470,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 144,
@@ -8769,7 +9538,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3009580_원촌교_L",
+      "3009580_원촌교_S"
+    ]
   },
   {
     "id": 145,
@@ -8834,7 +9609,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3009593_신구교_L",
+      "3009593_신구교_S"
+    ]
   },
   {
     "id": 146,
@@ -8899,7 +9680,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "3010560_명학리_L",
+      "3010560_명학리_S"
+    ]
   },
   {
     "id": 147,
@@ -8943,7 +9730,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 148,
@@ -8987,7 +9777,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 149,
@@ -9052,7 +9845,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3011545_흥덕교_L",
+      "3011545_흥덕교_S"
+    ]
   },
   {
     "id": 150,
@@ -9096,7 +9895,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 151,
@@ -9161,7 +9963,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3011565_청주시(미호강교)_L",
+      "3011565_청주시(미호강교)_S"
+    ]
   },
   {
     "id": 152,
@@ -9226,7 +10034,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3011595_월산교_L",
+      "3011595_월산교_S"
+    ]
   },
   {
     "id": 153,
@@ -9291,7 +10105,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "3012502_햇무리교_L",
+      "3012502_햇무리교_S"
+    ]
   },
   {
     "id": 154,
@@ -9356,7 +10176,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3012507_도암교_L",
+      "3012507_도암교_S"
+    ]
   },
   {
     "id": 155,
@@ -9421,7 +10247,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "3012520_금강교_L",
+      "3012520_금강교_S"
+    ]
   },
   {
     "id": 156,
@@ -9486,7 +10318,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3012525_오인교_L",
+      "3012525_오인교_S"
+    ]
   },
   {
     "id": 157,
@@ -9530,7 +10368,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 158,
@@ -9572,7 +10413,7 @@ window.INITIAL_STATIONS_DATA = [
       "stationType": "유량관측소",
       "waterLevelInstalled": "O",
       "waterLevelPos": "수위관측소 상류 약 2.0km, 구조물",
-      "taskCount": 7,
+      "taskCount": 6,
       "tasks": {
         "dualGaugeUpdate": "",
         "waterLevelGauge": false,
@@ -9583,7 +10424,7 @@ window.INITIAL_STATIONS_DATA = [
         "breaker": true,
         "cctvNew": false,
         "nvr": false,
-        "rvBox": true,
+        "rvBox": false,
         "osUpgrade": "O",
         "anemometer": false,
         "logger": false,
@@ -9595,7 +10436,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3012550_신흥리_L",
+      "3012550_신흥리_S"
+    ]
   },
   {
     "id": 159,
@@ -9660,7 +10507,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3012562_백제보 상_L",
+      "3012562_백제보 상_S"
+    ]
   },
   {
     "id": 160,
@@ -9704,7 +10557,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 161,
@@ -9769,7 +10625,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3012575_백제교_L",
+      "3012575_백제교_S"
+    ]
   },
   {
     "id": 162,
@@ -9834,7 +10696,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3012580_석동교_L",
+      "3012580_석동교_S"
+    ]
   },
   {
     "id": 163,
@@ -9899,7 +10767,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3012590_동성교_L",
+      "3012590_동성교_S"
+    ]
   },
   {
     "id": 164,
@@ -9943,7 +10817,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 165,
@@ -10008,7 +10885,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3013565_풋개다리_L",
+      "3013565_풋개다리_S"
+    ]
   },
   {
     "id": 166,
@@ -10073,7 +10956,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3013570_논산대교_L",
+      "3013570_논산대교_S"
+    ]
   },
   {
     "id": 167,
@@ -10138,7 +11027,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "3014510_황산대교_L",
+      "3014510_황산대교_S"
+    ]
   },
   {
     "id": 168,
@@ -10182,7 +11077,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 169,
@@ -10247,7 +11145,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3101545_구만교_L",
+      "3101545_구만교_S"
+    ]
   },
   {
     "id": 170,
@@ -10312,7 +11216,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "3101550_구양교_L",
+      "3101550_구양교_S"
+    ]
   },
   {
     "id": 171,
@@ -10377,7 +11287,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3101585_충무교_L",
+      "3101585_충무교_S"
+    ]
   },
   {
     "id": 172,
@@ -10442,7 +11358,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3201590_채운교_L",
+      "3201590_채운교_S"
+    ]
   },
   {
     "id": 173,
@@ -10486,7 +11408,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 174,
@@ -10551,7 +11476,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "3301527_어우교_L",
+      "3301527_어우교_S"
+    ]
   },
   {
     "id": 175,
@@ -10616,7 +11547,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3301530_용봉교_L",
+      "3301530_용봉교_S"
+    ]
   },
   {
     "id": 176,
@@ -10681,7 +11618,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3301540_제2소양교_L",
+      "3301540_제2소양교_S"
+    ]
   },
   {
     "id": 177,
@@ -10746,7 +11689,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3301554_세내교_L",
+      "3301554_세내교_S"
+    ]
   },
   {
     "id": 178,
@@ -10811,7 +11760,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3301557_서천교_L",
+      "3301557_서천교_S"
+    ]
   },
   {
     "id": 179,
@@ -10876,7 +11831,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3301565_미산교_L",
+      "3301565_미산교_S"
+    ]
   },
   {
     "id": 180,
@@ -10941,7 +11902,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3301570_삼례교_L",
+      "3301570_삼례교_S"
+    ]
   },
   {
     "id": 181,
@@ -11006,7 +11973,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3302520_거산교_L",
+      "3302520_거산교_S"
+    ]
   },
   {
     "id": 182,
@@ -11071,7 +12044,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3302530_정우교_L",
+      "3302530_정우교_S"
+    ]
   },
   {
     "id": 183,
@@ -11136,7 +12115,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "3302545_죽림교_L",
+      "3302545_죽림교_S"
+    ]
   },
   {
     "id": 184,
@@ -11180,7 +12165,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 185,
@@ -11224,7 +12212,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 186,
@@ -11289,7 +12280,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "4002540_일중리_L",
+      "4002540_일중리_S"
+    ]
   },
   {
     "id": 187,
@@ -11354,7 +12351,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "4003550_신기교_L",
+      "4003550_신기교_S"
+    ]
   },
   {
     "id": 188,
@@ -11398,7 +12401,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 189,
@@ -11442,7 +12448,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 190,
@@ -11486,7 +12495,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 191,
@@ -11551,7 +12563,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "4004590_금곡교_L",
+      "4004590_금곡교_S"
+    ]
   },
   {
     "id": 192,
@@ -11616,7 +12634,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "4005545_월석교_L",
+      "4005545_월석교_S"
+    ]
   },
   {
     "id": 193,
@@ -11681,7 +12705,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "4005570_동림교_L",
+      "4005570_동림교_S"
+    ]
   },
   {
     "id": 194,
@@ -11746,7 +12776,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "4006580_예성교_L",
+      "4006580_예성교_S"
+    ]
   },
   {
     "id": 195,
@@ -11811,7 +12847,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "4008570_태안교_L",
+      "4008570_태안교_S"
+    ]
   },
   {
     "id": 196,
@@ -11876,7 +12918,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "4009510_구례교_L",
+      "4009510_구례교_S"
+    ]
   },
   {
     "id": 197,
@@ -11941,7 +12989,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "4009530_송정리_L",
+      "4009530_송정리_S"
+    ]
   },
   {
     "id": 198,
@@ -11985,7 +13039,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 199,
@@ -12050,7 +13107,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "4009550_고사리_L",
+      "4009550_고사리_S"
+    ]
   },
   {
     "id": 200,
@@ -12115,7 +13178,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "4009565_읍내리_L",
+      "4009565_읍내리_S"
+    ]
   },
   {
     "id": 201,
@@ -12180,7 +13249,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "4009570_대석교_L",
+      "4009570_대석교_S"
+    ]
   },
   {
     "id": 202,
@@ -12245,7 +13320,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "4105530_서산교_L",
+      "4105530_서산교_S"
+    ]
   },
   {
     "id": 203,
@@ -12289,7 +13370,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 204,
@@ -12333,7 +13417,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 205,
@@ -12377,7 +13464,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 206,
@@ -12385,7 +13475,7 @@ window.INITIAL_STATIONS_DATA = [
     "region": "영산강",
     "river": "광주천",
     "name": "광주광역시(유촌교)",
-    "address": "광주광역시 서구 유촌동 30 유촌교",
+    "address": "광주광역시 서구 동천동 336",
     "code": "5001550",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -12442,7 +13532,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "5001550_유촌교_L",
+      "5001550_유촌교_S"
+    ]
   },
   {
     "id": 207,
@@ -12507,7 +13603,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "5001555_풍영정천2교_L",
+      "5001555_풍영정천2교_S"
+    ]
   },
   {
     "id": 208,
@@ -12572,7 +13674,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "5001580_극락교_L",
+      "5001580_극락교_S"
+    ]
   },
   {
     "id": 209,
@@ -12637,7 +13745,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "5002550_제2황룡교_L",
+      "5002550_제2황룡교_S"
+    ]
   },
   {
     "id": 210,
@@ -12681,7 +13795,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 211,
@@ -12746,7 +13863,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "5002577_평림교_L",
+      "5002577_평림교_S"
+    ]
   },
   {
     "id": 212,
@@ -12811,7 +13934,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "5002590_장록교_L",
+      "5002590_장록교_S"
+    ]
   },
   {
     "id": 213,
@@ -12855,7 +13984,10 @@ window.INITIAL_STATIONS_DATA = [
       "waterLevelPos": "",
       "taskCount": 0,
       "tasks": {}
-    }
+    },
+    "rvBoxInstalled": null,
+    "rvBoxStatus": "미운영/대상외",
+    "rvBoxAgents": []
   },
   {
     "id": 214,
@@ -12920,7 +14052,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "5003580_남평교_L",
+      "5003580_남평교_S"
+    ]
   },
   {
     "id": 215,
@@ -12962,7 +14100,7 @@ window.INITIAL_STATIONS_DATA = [
       "stationType": "수위관측소 통합",
       "waterLevelInstalled": "O",
       "waterLevelPos": "수위관측소 상류 약 200m, 구조물",
-      "taskCount": 9,
+      "taskCount": 8,
       "tasks": {
         "dualGaugeUpdate": "",
         "waterLevelGauge": false,
@@ -12973,7 +14111,7 @@ window.INITIAL_STATIONS_DATA = [
         "breaker": true,
         "cctvNew": false,
         "nvr": false,
-        "rvBox": true,
+        "rvBox": false,
         "osUpgrade": "O",
         "anemometer": false,
         "logger": true,
@@ -12985,7 +14123,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "5004520_승용교_L",
+      "5004520_승용교_S"
+    ]
   },
   {
     "id": 216,
@@ -13050,7 +14194,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": false,
+    "rvBoxStatus": "미설치",
+    "rvBoxAgents": [
+      "5004550_나주대교_L",
+      "5004550_나주대교_S"
+    ]
   },
   {
     "id": 217,
@@ -13115,7 +14265,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "5004555_동곡리_L",
+      "5004555_동곡리_S"
+    ]
   },
   {
     "id": 218,
@@ -13180,7 +14336,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "5004590_회진리_L",
+      "5004590_회진리_S"
+    ]
   },
   {
     "id": 219,
@@ -13245,7 +14407,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "5005580_원고막교_L",
+      "5005580_원고막교_S"
+    ]
   },
   {
     "id": 220,
@@ -13310,7 +14478,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "5006510_동강교_L",
+      "5006510_동강교_S"
+    ]
   },
   {
     "id": 221,
@@ -13375,7 +14549,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": true
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "5006530_학야교_L",
+      "5006530_학야교_S"
+    ]
   },
   {
     "id": 222,
@@ -13440,7 +14620,13 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": true,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "5008510_동암교_L",
+      "5008510_동암교_S"
+    ]
   },
   {
     "id": 223,
@@ -13505,6 +14691,12 @@ window.INITIAL_STATIONS_DATA = [
         "cctvWired": false,
         "solar": false
       }
-    }
+    },
+    "rvBoxInstalled": true,
+    "rvBoxStatus": "설치완료",
+    "rvBoxAgents": [
+      "5101550_별천교_L",
+      "5101550_별천교_S"
+    ]
   }
 ];

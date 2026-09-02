@@ -1,10 +1,87 @@
 /**
  * ModalManager
- * Handles Detail View, Edit Form, Add Station, and Delete Confirm modals with Interactive Completion Toggle.
+ * Handles Detail View, Edit Form, Add Station, and Delete Confirm modals with Interactive Completion Toggle
+ * and Real-Time Bidirectional DMS <-> Decimal Coordinate Synchronization.
  */
 class ModalManager {
   constructor() {
     this.currentStationId = null;
+    this.isSyncingCoords = false;
+  }
+
+  init() {
+    this.bindCoordSyncEvents();
+  }
+
+  // --- Coordinate Conversion Utilities ---
+  dmsToDecimal(dmsStr) {
+    if (!dmsStr) return null;
+    const clean = String(dmsStr).replace(/[^0-9.\-+]/g, " ").trim();
+    const parts = clean.split(/\s+/).filter(Boolean).map(Number);
+    if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+      const deg = Math.abs(parts[0]);
+      const min = parts[1];
+      const sec = parts[2] || 0;
+      let dd = deg + (min / 60) + (sec / 3600);
+      if (parts[0] < 0 || String(dmsStr).includes("S") || String(dmsStr).includes("W")) dd = -dd;
+      return parseFloat(dd.toFixed(6));
+    }
+    return null;
+  }
+
+  decimalToDms(dd) {
+    if (isNaN(dd) || dd === null || dd === "") return "";
+    const val = Math.abs(parseFloat(dd));
+    const d = Math.floor(val);
+    const mFloat = (val - d) * 60;
+    const m = Math.floor(mFloat);
+    const s = ((mFloat - m) * 60).toFixed(1);
+    const sign = parseFloat(dd) < 0 ? "-" : "";
+    return sign + d + "-" + String(m).padStart(2, "0") + "-" + String(parseFloat(s) < 10 ? "0" + s : s);
+  }
+
+  bindCoordSyncEvents() {
+    // 1. Latitude DMS -> Decimal
+    const latDmsInput = document.getElementById("form-lat-dms");
+    const latDecInput = document.getElementById("form-lat");
+    if (latDmsInput && latDecInput) {
+      latDmsInput.addEventListener("input", () => {
+        if (this.isSyncingCoords) return;
+        this.isSyncingCoords = true;
+        const dd = this.dmsToDecimal(latDmsInput.value);
+        if (dd !== null) latDecInput.value = dd;
+        this.isSyncingCoords = false;
+      });
+
+      latDecInput.addEventListener("input", () => {
+        if (this.isSyncingCoords) return;
+        this.isSyncingCoords = true;
+        const dms = this.decimalToDms(latDecInput.value);
+        if (dms) latDmsInput.value = dms;
+        this.isSyncingCoords = false;
+      });
+    }
+
+    // 2. Longitude DMS -> Decimal
+    const lonDmsInput = document.getElementById("form-lon-dms");
+    const lonDecInput = document.getElementById("form-lon");
+    if (lonDmsInput && lonDecInput) {
+      lonDmsInput.addEventListener("input", () => {
+        if (this.isSyncingCoords) return;
+        this.isSyncingCoords = true;
+        const dd = this.dmsToDecimal(lonDmsInput.value);
+        if (dd !== null) lonDecInput.value = dd;
+        this.isSyncingCoords = false;
+      });
+
+      lonDecInput.addEventListener("input", () => {
+        if (this.isSyncingCoords) return;
+        this.isSyncingCoords = true;
+        const dms = this.decimalToDms(lonDecInput.value);
+        if (dms) lonDmsInput.value = dms;
+        this.isSyncingCoords = false;
+      });
+    }
   }
 
   openDetail(id) {
@@ -48,9 +125,7 @@ class ModalManager {
     const tasks = m.tasks || {};
     const completedTasks = m.completedTasks || {};
 
-    // Task definition list for this station
     const taskItems = [];
-
     const addTask = (key, name, owner, cat, icon) => {
       const val = tasks[key];
       const isNeeded = (typeof val === "boolean" && val) || (typeof val === "string" && val !== "");
@@ -58,35 +133,36 @@ class ModalManager {
         const isDone = !!(completedTasks[key] && completedTasks[key].completed);
         const doneDate = isDone ? completedTasks[key].completedDate : "";
         const detailStr = (typeof val === "string" && val !== "O" && val !== "true") ? ` (${val})` : "";
+
         taskItems.push({
-          key: key,
-          name: `${name}${detailStr}`,
-          owner: owner,
-          category: cat,
-          icon: icon,
-          isDone: isDone,
-          doneDate: doneDate
+          key,
+          name: name + detailStr,
+          owner,
+          cat,
+          icon,
+          isDone,
+          doneDate
         });
       }
     };
 
-    addTask("breaker", "자동복구 누전차단기", "공통", "전원·안전", "⚡");
-    addTask("battery", "노후 배터리 교체", "공통", "전원·안전", "🔋");
-    addTask("solar", "태양광 설비 정비", "공통", "전원·안전", "☀️");
-    addTask("extinguisherRNS", "소화기 비치 (용역사: 리버앤씨 RNS)", "용역사(RNS)", "전원·안전", "🧯");
-    addTask("extinguisherKIHS", "소화기 비치 (한국수자원조사기술원)", "기술원(자체)", "전원·안전", "🧯");
-    addTask("dpConverter", "DP컨버터 교체/설치", "공통", "통신·데이터", "🔌");
-    addTask("osUpgrade", "OS 업그레이드", "공통", "통신·데이터", "💻");
-    addTask("logger", "Logger(로거) 교체", "공통", "통신·데이터", "📟");
-    addTask("sender", "Sender(센더) 교체", "공통", "통신·데이터", "📡");
-    addTask("rvBox", "RV박스 정비/교체", "공통", "통신·데이터", "📦");
-    addTask("dualGaugeUpdate", "유속계(2대) 현행화", "공통", "센서·계측", "🌊");
-    addTask("waterLevelGauge", "수위계 신설/정비", "공통", "센서·계측", "📏");
-    addTask("anemometer", "풍향풍속계 설치", "공통", "센서·계측", "💨");
-    addTask("infoBoard", "관측소 현황판 설치", "공통", "현장표지", "🪧");
-    addTask("signNakdong", "점용표지판 (낙동강)", "낙동강", "현장표지", "🚩");
-    addTask("signYeongsan", "점용표지판 (영산강)", "영산강", "현장표지", "🚩");
-    addTask("cctvWired", "CCTV 유선 연결", "공통", "영상·감시", "📹");
+    addTask("circuitBreaker", "자동복구 누전차단기", "공통", "전원·보안", "⚡");
+    addTask("battery", "배터리 교체", "공통", "전원·보안", "🔋");
+    addTask("solarPanel", "태양광 판넬 세척/보수", "공통", "전원·보안", "☀️");
+    addTask("extinguisherRns", "소화기 비치 (RNS)", "용역사 (RNS)", "전원·보안", "🧯");
+    addTask("extinguisherKihs", "소화기 비치 (기술원)", "한국수자원조사기술원", "전원·보안", "🏢");
+    addTask("dpConverter", "DP 컨버터(단자대)", "공통", "신호·통신", "🔌");
+    addTask("osUpgrade", "Windows 11 OS 업그레이드", "공통", "신호·통신", "💻");
+    addTask("logger", "자료수집장치(Logger) 정비", "공통", "신호·통신", "📟");
+    addTask("sender", "자료전송장치(Sender) 정비", "공통", "신호·통신", "📡");
+    addTask("rvBox", "리모트뷰(RV) 박스 설치", "공통", "신호·통신", "🎛️");
+    addTask("dualGaugeSync", "유속계 2대 현행화", "공통", "관측기기", "⚡");
+    addTask("waterLevel", "수위계 점검/현행화", "공통", "관측기기", "📏");
+    addTask("anemometer", "풍향풍속계 정비", "공통", "관측기기", "💨");
+    addTask("statusBoard", "관측시설 현황판 정비", "공통", "시설·부대", "📋");
+    addTask("signNakdong", "하천점용표지판 (낙동강)", "낙동강", "시설·부대", "🪧");
+    addTask("signYeongsan", "하천점용표지판 (영산강)", "영산강", "시설·부대", "🪧");
+    addTask("cctvWired", "CCTV 유선연결 정비", "공통", "영상·감시", "📹");
     addTask("cctvNew", "CCTV 신규 설치", "공통", "영상·감시", "🎥");
     addTask("nvr", "NVR(녹화기) 설치", "공통", "영상·감시", "📼");
 
@@ -124,7 +200,7 @@ class ModalManager {
                 <div class="task-item-row ${t.isDone ? "done" : ""}">
                   <div style="display:flex; align-items:center; gap:0.5rem;">
                     <input type="checkbox" id="chk-${st.id}-${t.key}" ${t.isDone ? "checked" : ""} 
-                           onchange="window.modalManager.toggleTask(${st.id}, "${t.key}", this.checked)" 
+                           onchange="window.modalManager.toggleTask(${st.id}, '${t.key}', this.checked)" 
                            style="width:16px; height:16px; cursor:pointer; accent-color:#059669;">
                     <label for="chk-${st.id}-${t.key}" class="task-name" style="font-size:0.85rem; font-weight:600; cursor:pointer; user-select:none;">
                       <span>${t.icon}</span> <span>${t.name}</span>
@@ -141,6 +217,9 @@ class ModalManager {
         </div>
       `;
     }
+
+    const rvHtml = st.rvBoxInstalled === true ? `<span class="badge badge-green">✅ 설치완료</span>` : (st.rvBoxInstalled === false ? `<span class="badge badge-amber">⏳ 미설치 (과업대상)</span>` : `<span class="badge badge-gray">미운영/대상외</span>`);
+    const agentsHtml = (st.rvBoxAgents && st.rvBoxAgents.length > 0) ? `<div style="font-size:0.72rem; color:#64748b; margin-top:2px;">${st.rvBoxAgents.join(", ")}</div>` : "";
 
     modalBody.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding:0.75rem 1rem; background:${isDual ? "#fdf4ff; border:1px solid #f0abfc;" : "#eff6ff; border:1px solid #bfdbfe;"} border-radius:8px;">
@@ -161,20 +240,27 @@ class ModalManager {
           <th>하천명</th><td><b>${st.river || "-"}</b></td>
         </tr>
         <tr>
-          <th>지점명</th><td><b>${st.name || "-"}</b> (연번: ${st.seq || "-"})</td>
+          <th>지점명</th><td><b>${st.name || "-"}</b></td>
           <th>위치(주소)</th><td>${st.address || "-"}</td>
         </tr>
         <tr>
-          <th>국사형태 / 설치방식</th>
-          <td><b>${m.stationType || "-"}</b> / ${m.mountType || "-"}</td>
-          <th>수위계 설치 여부</th>
-          <td>${m.waterLevelInstalled ? "설치됨 (" + (m.waterLevelPos||"") + ")" : "미설치"}</td>
+          <th>경위도 (도분초)</th><td><b>${st.coords?.latDMS || "-"} / ${st.coords?.lonDMS || "-"}</b></td>
+          <th>경위도 (십진수)</th><td>${st.coords?.lat || "-"}, ${st.coords?.lon || "-"}</td>
         </tr>
         <tr>
           <th>설치년도 / 개시년도</th>
           <td>${st.installYear || "-"}년 / ${st.obsStartYear || "-"}년</td>
           <th>유속계 형식</th>
           <td><b>${st.gaugeType || "-"}</b> (EWSV:${st.ewsvCount||"-"}, ADVM:${st.advmCount||"-"})</td>
+        </tr>
+        <tr>
+          <th>RV박스 (리모트뷰)</th>
+          <td>
+            ${rvHtml}
+            ${agentsHtml}
+          </td>
+          <th>수위계 설치 여부</th>
+          <td>${m.waterLevelInstalled ? "설치됨 (" + (m.waterLevelPos||"") + ")" : "미설치"}</td>
         </tr>
         <tr>
           <th>특이사항 및 비고</th>
@@ -209,7 +295,7 @@ class ModalManager {
     if (titleEl) titleEl.textContent = `관측시설 정보 수정 - ${st.name}`;
 
     document.getElementById("form-id").value = st.id;
-    document.getElementById("form-seq").value = st.seq || "";
+    if (document.getElementById("form-seq")) document.getElementById("form-seq").value = st.seq || "";
     document.getElementById("form-region").value = st.region || "한강";
     document.getElementById("form-river").value = st.river || "";
     document.getElementById("form-name").value = st.name || "";
@@ -238,6 +324,14 @@ class ModalManager {
     document.getElementById("form-solar-install").checked = !!st.solarInstall;
     document.getElementById("form-pollution-total").checked = !!st.pollutionTotal;
 
+    // Auto calculate decimal if only DMS is provided or vice versa
+    if (st.coords?.latDMS && !st.coords?.lat) {
+      document.getElementById("form-lat").value = this.dmsToDecimal(st.coords.latDMS) || "";
+    }
+    if (st.coords?.lonDMS && !st.coords?.lon) {
+      document.getElementById("form-lon").value = this.dmsToDecimal(st.coords.lonDMS) || "";
+    }
+
     const modal = document.getElementById("edit-modal");
     if (modal) modal.classList.add("active");
   }
@@ -259,7 +353,7 @@ class ModalManager {
     if (modal) modal.classList.remove("active");
   }
 
-  saveStation() {
+  async saveStation() {
     const id = document.getElementById("form-id").value;
     const name = document.getElementById("form-name").value.trim();
     if (!name) {
@@ -267,30 +361,34 @@ class ModalManager {
       return;
     }
 
-    let lat = parseFloat(document.getElementById("form-lat").value);
-    let lon = parseFloat(document.getElementById("form-lon").value);
     const latDMS = document.getElementById("form-lat-dms").value.trim();
     const lonDMS = document.getElementById("form-lon-dms").value.trim();
+    let lat = parseFloat(document.getElementById("form-lat").value);
+    let lon = parseFloat(document.getElementById("form-lon").value);
 
-    if ((isNaN(lat) || isNaN(lon)) && (latDMS && lonDMS)) {
-      try {
-        const pLat = latDMS.split("-").map(Number);
-        const pLon = lonDMS.split("-").map(Number);
-        if (pLat.length >= 2) lat = pLat[0] + pLat[1]/60 + (pLat[2]||0)/3600;
-        if (pLon.length >= 2) lon = pLon[0] + pLon[1]/60 + (pLon[2]||0)/3600;
-      } catch(e){}
+    // If DMS is provided, prioritize calculating accurate decimal
+    if (latDMS) {
+      const calcLat = this.dmsToDecimal(latDMS);
+      if (calcLat !== null) lat = calcLat;
+    }
+    if (lonDMS) {
+      const calcLon = this.dmsToDecimal(lonDMS);
+      if (calcLon !== null) lon = calcLon;
     }
 
     const gaugeType = document.getElementById("form-gauge-type").value.trim();
     const advmCount = document.getElementById("form-advm-count").value.trim();
     const ewsvCount = document.getElementById("form-ewsv-count").value.trim();
     
-    const isDualGauge = ("EWSV" in gaugeType && "ADVM" in gaugeType) || 
-                        (gaugeType.includes("EWSV") && gaugeType.includes("ADVM")) ||
-                        (gaugeType === "EWSV, ADVM");
+    const isDualGauge = (gaugeType.includes("EWSV") && gaugeType.includes("ADVM")) || 
+                        (gaugeType === "EWSV, ADVM") ||
+                        (gaugeType.includes(","));
+
+    // Preserve existing metadata
+    const existingSt = id ? window.dataManager.getById(id) : null;
 
     const stationData = {
-      seq: parseInt(document.getElementById("form-seq").value, 10) || 1,
+      seq: existingSt ? (existingSt.seq || 1) : (parseInt(document.getElementById("form-seq")?.value, 10) || 999),
       region: document.getElementById("form-region").value,
       river: document.getElementById("form-river").value.trim(),
       name: name,
@@ -314,19 +412,23 @@ class ModalManager {
       calibCount2026: document.getElementById("form-calib-count").value.trim(),
       solarInstall: document.getElementById("form-solar-install").checked,
       pollutionTotal: document.getElementById("form-pollution-total").checked,
+      rvBoxInstalled: existingSt ? existingSt.rvBoxInstalled : null,
+      rvBoxStatus: existingSt ? existingSt.rvBoxStatus : "미운영/대상외",
+      rvBoxAgents: existingSt ? existingSt.rvBoxAgents : [],
+      maintenance: existingSt ? existingSt.maintenance : {},
       coords: {
         lat: isNaN(lat) ? null : lat,
         lon: isNaN(lon) ? null : lon,
-        latDMS: latDMS,
-        lonDMS: lonDMS
+        latDMS: latDMS || (lat ? this.decimalToDms(lat) : ""),
+        lonDMS: lonDMS || (lon ? this.decimalToDms(lon) : "")
       }
     };
 
     if (id) {
-      window.dataManager.update(id, stationData);
+      await window.dataManager.update(id, stationData);
       window.app.showToast("관측시설 정보가 성공적으로 수정되었습니다.", "success");
     } else {
-      window.dataManager.add(stationData);
+      await window.dataManager.add(stationData);
       window.app.showToast("신규 관측시설이 등록되었습니다.", "success");
     }
 

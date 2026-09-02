@@ -37,7 +37,7 @@
   --radius-lg: 14px;
   --radius-full: 9999px;
   
-  --sidebar-width: 260px;
+  --sidebar-width: 280px;
   --header-height: 64px;
   --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
 }
@@ -105,11 +105,15 @@ body {
   font-size: 0.95rem;
   font-weight: 700;
   line-height: 1.25;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
 }
 
 .sidebar-subtitle {
-  font-size: 0.75rem;
-  color: var(--text-light);
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin-top: 2px;
 }
 
 .sidebar-nav {
@@ -180,14 +184,19 @@ body {
 
 /* Top Bar */
 .topbar {
-  height: var(--header-height);
+  min-height: var(--header-height);
+  height: auto;
   background-color: var(--bg-card);
   border-bottom: 1px solid var(--border-color);
-  padding: 0 1.75rem;
+  padding: 0.75rem 1.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   flex-shrink: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
 }
 
 .page-title-box {
@@ -200,6 +209,7 @@ body {
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--text-main);
+  letter-spacing: -0.02em;
 }
 
 .quick-stats-badge {
@@ -217,7 +227,14 @@ body {
 .topbar-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.75rem;
+}
+
+.header-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* Buttons */
@@ -932,4 +949,472 @@ body {
   background: linear-gradient(90deg, #10b981, #059669);
   border-radius: 9999px;
   transition: width 0.3s ease;
+}
+
+/* ==========================================================================
+   Responsive Web Design (Mobile & Tablet UI/UX Overhaul)
+   ========================================================================== */
+
+/* Mobile Menu Button & Backdrop defaults (Hidden on Desktop) */
+.mobile-menu-btn {
+  display: none;
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+.gis-mobile-filter-btn {
+  display: none;
+}
+
+/* 1. Tablet Breakpoint (<= 1024px) */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 220px;
+  }
+  .main-content {
+    margin-left: 220px;
+  }
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 2. Mobile Breakpoint (<= 768px) */
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Slide-in Mobile Drawer Sidebar */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 270px;
+    z-index: 1050;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Backdrop Overlay */
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 1040;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+  }
+
+  .sidebar-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Main Content Full-width */
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    min-height: 100vh;
+  }
+
+  /* Topbar Header Compact Layout */
+  .topbar {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .mobile-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1.25rem;
+    color: #1e293b;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+  }
+
+  .mobile-menu-btn:hover {
+    background: #e2e8f0;
+  }
+
+  .page-title-box {
+    flex: 1;
+  }
+
+  .page-title {
+    font-size: 1.15rem;
+  }
+
+  .quick-stats-badge {
+    display: none;
+  }
+
+  .topbar-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .header-btn-group {
+    display: flex;
+    gap: 0.4rem;
+    width: 100%;
+  }
+
+  .header-btn-group .btn {
+    flex: 1;
+    justify-content: center;
+    font-size: 0.78rem;
+    padding: 6px 8px;
+    white-space: nowrap;
+  }
+
+  /* Dashboard Cards & Charts */
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.65rem;
+  }
+
+  .kpi-card {
+    padding: 0.85rem;
+  }
+
+  .kpi-value {
+    font-size: 1.15rem;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem;
+  }
+
+  .chart-card {
+    min-height: 280px;
+  }
+
+  /* GIS Map Mobile Layer */
+  #view-gis {
+    padding: 0.5rem !important;
+  }
+
+  .gis-map-container {
+    height: calc(100vh - 190px) !important;
+    min-height: 400px;
+  }
+
+  .gis-mobile-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 500;
+    background: #2563eb;
+    color: #ffffff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    border: none;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4);
+    cursor: pointer;
+  }
+
+  .gis-floating-panel {
+    position: absolute !important;
+    bottom: 10px !important;
+    left: 10px !important;
+    right: 10px !important;
+    top: auto !important;
+    width: auto !important;
+    max-height: 60vh !important;
+    overflow-y: auto !important;
+    z-index: 550 !important;
+    display: none;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
+    border: 2px solid #2563eb;
+  }
+
+  .gis-floating-panel.open {
+    display: block;
+    animation: slideUp 0.2s ease;
+  }
+
+  /* Maintenance Cards Grid */
+  .maint-task-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.65rem;
+  }
+
+  /* Tables Horizontal Touch Scroll */
+  .table-responsive {
+    -webkit-overflow-scrolling: touch;
+    max-height: 65vh !important;
+  }
+
+  .custom-table th, .custom-table td {
+    padding: 0.6rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  /* Modal Fullscreen Optimization */
+  .modal-container {
+    width: 95% !important;
+    max-height: 92vh !important;
+    padding: 1rem !important;
+    border-radius: 12px;
+  }
+
+  .modal-body {
+    max-height: 75vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* 3. Small Mobile Screen (<= 480px) */
+@media (max-width: 480px) {
+  .kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .maint-task-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Calendar & Schedule Styles */
+.calendar-week-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #64748b;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border-color);
+  background: #f8fafc;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.calendar-week-header .sun { color: #ef4444; }
+.calendar-week-header .sat { color: #3b82f6; }
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-left: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-color);
+  background: #ffffff;
+}
+
+.calendar-day-cell {
+  min-height: 105px;
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  position: relative;
+}
+
+.calendar-day-cell:hover {
+  background-color: #f1f5f9;
+}
+
+.calendar-day-cell.other-month {
+  background-color: #f8fafc;
+  opacity: 0.45;
+}
+
+.calendar-day-cell.today {
+  background-color: #eff6ff;
+}
+
+.calendar-day-cell.today .day-number {
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.day-number {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.calendar-day-cell.sun .day-number { color: #ef4444; }
+.calendar-day-cell.sat .day-number { color: #3b82f6; }
+
+.day-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 80px;
+}
+
+/* Schedule Event Chips */
+.schedule-chip {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.1s ease;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  line-height: 1.3;
+}
+
+.schedule-chip:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.92);
+}
+
+.chip-type-check { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+.chip-type-maint { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.chip-type-calib { background: #cffafe; color: #155e75; border: 1px solid #a5f3fc; }
+.chip-type-meeting { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+.chip-type-vacation { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.chip-type-emergency { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+.calendar-day-cell.holiday .day-number {
+  color: #ef4444 !important;
+}
+
+.holiday-label {
+  font-size: 0.65rem;
+  color: #dc2626;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70px;
+  background: #fee2e2;
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1.2;
+}
+
+@media (max-width: 768px) {
+  .calendar-day-cell {
+    min-height: 75px;
+    padding: 2px;
+  }
+  .schedule-chip {
+    font-size: 0.65rem;
+    padding: 1px 3px;
+  }
+}
+
+/* Multi-Select Station Picker & Chips */
+.station-tag-chip {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  user-select: none;
+}
+
+.station-tag-chip .remove-chip {
+  cursor: pointer;
+  color: #93c5fd;
+  font-weight: 800;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.station-tag-chip .remove-chip:hover {
+  color: #ef4444;
+}
+
+.station-search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  z-index: 10000;
+  margin-top: 4px;
+}
+
+.station-dropdown-item {
+  padding: 0.55rem 0.75rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.1s ease;
+}
+
+.station-dropdown-item:hover {
+  background: #f8fafc;
+}
+
+.station-dropdown-item.selected {
+  background: #f0fdf4;
+  color: #166534;
+  font-weight: 600;
 }

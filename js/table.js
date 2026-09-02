@@ -1,6 +1,6 @@
 /**
  * TableManager
- * Handles Station List table view, searching, multi-criteria filtering, sorting, pagination.
+ * Handles Station List table view, searching, multi-criteria filtering (Region, Gauge, Operating, Install Year), sorting, pagination.
  */
 class TableManager {
   constructor() {
@@ -13,6 +13,7 @@ class TableManager {
       region: "all",
       gaugeType: "all",
       operating: "all",
+      installYear: "all",
       floodAlert: "all",
       droughtAlert: "all",
       calib2026: "all",
@@ -24,6 +25,29 @@ class TableManager {
   init() {
     this.bindEvents();
     this.render();
+  }
+
+  populateYearFilter() {
+    const yearSelect = document.getElementById("table-filter-year");
+    if (!yearSelect) return;
+
+    const allStations = window.dataManager.getAll();
+    const yearsSet = new Set();
+    allStations.forEach(st => {
+      if (st.installYear) {
+        yearsSet.add(String(st.installYear).trim());
+      }
+    });
+
+    const sortedYears = Array.from(yearsSet).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+    const currentVal = this.filters.installYear;
+
+    let optionsHtml = '<option value="all">전체 설치년도</option>';
+    sortedYears.forEach(y => {
+      optionsHtml += `<option value="${y}" ${currentVal === y ? "selected" : ""}>${y}년 설치</option>`;
+    });
+
+    yearSelect.innerHTML = optionsHtml;
   }
 
   bindEvents() {
@@ -63,6 +87,15 @@ class TableManager {
       });
     }
 
+    const yearSelect = document.getElementById("table-filter-year");
+    if (yearSelect) {
+      yearSelect.addEventListener("change", (e) => {
+        this.filters.installYear = e.target.value;
+        this.currentPage = 1;
+        this.render();
+      });
+    }
+
     const pageSizeSelect = document.getElementById("table-page-size");
     if (pageSizeSelect) {
       pageSizeSelect.addEventListener("change", (e) => {
@@ -85,6 +118,7 @@ class TableManager {
                       (st.region && st.region.toLowerCase().includes(kw)) ||
                       (st.address && st.address.toLowerCase().includes(kw)) ||
                       (st.code && String(st.code).includes(kw)) ||
+                      (st.installYear && String(st.installYear).includes(kw)) ||
                       (st.memo && st.memo.toLowerCase().includes(kw));
         if (!match) return false;
       }
@@ -104,6 +138,11 @@ class TableManager {
       // Operating
       if (this.filters.operating === "operating" && !st.isOperating2026) return false;
       if (this.filters.operating === "non-operating" && st.isOperating2026) return false;
+
+      // Install Year Filter
+      if (this.filters.installYear !== "all") {
+        if (String(st.installYear).trim() !== this.filters.installYear) return false;
+      }
 
       // Flood Alert
       if (this.filters.floodAlert === "yes" && !st.floodAlert) return false;
@@ -134,7 +173,7 @@ class TableManager {
 
       valA = String(valA);
       valB = String(valB);
-      return this.sortAsc ? valA.localeCompare(valB, "ko") : valB.localeCompare(valA, "ko");
+      return this.sortAsc ? valA.localeCompare(valB, "ko", { numeric: true }) : valB.localeCompare(valA, "ko", { numeric: true });
     });
   }
 
@@ -149,6 +188,7 @@ class TableManager {
   }
 
   render() {
+    this.populateYearFilter();
     this.applyFilters();
 
     const totalCount = this.filteredData.length;
@@ -162,9 +202,10 @@ class TableManager {
     if (!tbody) return;
 
     if (pageItems.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 2.5rem; color: #94a3b8;">조건에 해당하는 관측시설이 없습니다.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; padding: 2.5rem; color: #94a3b8;">조건에 해당하는 관측시설이 없습니다.</td></tr>`;
     } else {
-      tbody.innerHTML = pageItems.map(st => {
+      tbody.innerHTML = pageItems.map((st, idx) => {
+        const rowNum = startIdx + idx + 1;
         const isDual = st.isDualGauge || st.gaugeCategory === "DUAL";
         const regionBadgeClass = st.region?.includes("한강") ? "badge-blue" :
                                 (st.region?.includes("낙동강") ? "badge-amber" :
@@ -186,20 +227,22 @@ class TableManager {
         const floodBadge = st.floodAlert ? `<span class="badge badge-red">홍수특보</span>` : `-`;
         const droughtBadge = st.droughtAlert ? `<span class="badge badge-amber">갈수예보</span>` : `-`;
         const calibBadge = st.calib2026 ? `<span class="badge badge-cyan">검정(${st.calibCount2026||1}대)</span>` : `-`;
+        const yearText = st.installYear ? `<b>${st.installYear}년</b>` : `<span style="color:#94a3b8;">-</span>`;
 
         return `
           <tr onclick="window.modalManager.openDetail(${st.id})" style="${isDual ? "background-color: #faf5ff;" : ""}">
-            <td><b>${st.seq || "-"}</b></td>
+            <td><b>${rowNum}</b></td>
             <td><span class="badge ${regionBadgeClass}">${st.region || "-"}</span></td>
             <td><b>${st.river || "-"}</b></td>
             <td>
               <div style="display:flex; align-items:center; gap:0.35rem;">
                 <span style="font-weight: 700; color: #1e40af;">${st.name || "-"}</span>
-                ${isDual ? "<span title=\"EWSV+ADVM 이중화 지점\">⚡</span>" : ""}
+                ${isDual ? '<span title="EWSV+ADVM 이중화 지점">⚡</span>' : ""}
               </div>
             </td>
             <td><code style="font-size:0.75rem; background:#f1f5f9; padding:2px 4px; border-radius:4px;">${st.code || "-"}</code></td>
-            <td style="max-width: 180px; overflow: hidden; text-overflow: ellipsis;" title="${st.address || ""}">${st.address || "-"}</td>
+            <td style="max-width: 170px; overflow: hidden; text-overflow: ellipsis;" title="${st.address || ""}">${st.address || "-"}</td>
+            <td>${yearText}</td>
             <td>${gaugeBadge}</td>
             <td>${operatingBadge}</td>
             <td>${floodBadge}</td>

@@ -56,9 +56,10 @@ class ApiClient {
     const badgeContainer = document.getElementById("header-user-badge");
     if (!badgeContainer || !this.user) return;
 
+    const posText = this.user.position || (this.user.role === "admin" ? "관리자" : "팀원");
     const roleBadge = this.user.role === "admin" 
-      ? `<span class="badge badge-purple" style="font-weight:700;">총괄관리자</span>` 
-      : `<span class="badge badge-blue">${this.user.region || "담당자"}</span>`;
+      ? `<span class="badge badge-purple" style="font-weight:700;">${posText}</span>` 
+      : `<span class="badge badge-blue">${posText}</span>`;
 
     badgeContainer.innerHTML = `
       <div style="display:flex; align-items:center; gap:0.6rem;">
@@ -72,6 +73,24 @@ class ApiClient {
         </button>
       </div>
     `;
+
+    // Only Admin can see Audit Logs Navigation Menu
+    const navLogsBtn = document.getElementById("nav-logs-btn");
+    if (navLogsBtn) {
+      navLogsBtn.style.display = (this.user.role === "admin") ? "flex" : "none";
+    }
+
+    // Only Admin can access Data Import, Restore, and Reset controls
+    const isAdmin = this.user && this.user.role === "admin";
+    const excelImportEl = document.getElementById("setting-admin-excel-import");
+    const jsonRestoreEl = document.getElementById("setting-admin-json-restore");
+    const factoryResetEl = document.getElementById("setting-admin-factory-reset");
+    const memberNoticeEl = document.getElementById("setting-member-notice");
+
+    if (excelImportEl) excelImportEl.style.display = isAdmin ? "block" : "none";
+    if (jsonRestoreEl) jsonRestoreEl.style.display = isAdmin ? "block" : "none";
+    if (factoryResetEl) factoryResetEl.style.display = isAdmin ? "block" : "none";
+    if (memberNoticeEl) memberNoticeEl.style.display = isAdmin ? "none" : "block";
   }
 
   logout() {
@@ -130,12 +149,72 @@ class ApiClient {
     return await res.json();
   }
 
+  // REST API: Audit Activity Logs
+  async getLogs(username = "all", actionType = "all", limit = 200) {
+    const res = await fetch(`${this.baseUrl}/logs?username=${username}&actionType=${actionType}&limit=${limit}`, {
+      headers: this.getHeaders()
+    });
+    return await res.json();
+  }
+
   // REST API: Calibration Status Update
   async updateCalibration(stationId, status, date = "", certNo = "") {
     const res = await fetch(`${this.baseUrl}/stations/${stationId}/calibration/update`, {
       method: "POST",
       headers: this.getHeaders(),
       body: JSON.stringify({ status, date, certNo })
+    });
+    return await res.json();
+  }
+
+  // REST API: Schedules Management
+  async getSchedules(assignee = "all", scheduleType = "all", status = "all") {
+    const res = await fetch(`${this.baseUrl}/schedules?assignee=${assignee}&scheduleType=${scheduleType}&status=${status}`, {
+      headers: this.getHeaders()
+    });
+    return await res.json();
+  }
+
+  async createSchedule(scheduleData) {
+    const res = await fetch(`${this.baseUrl}/schedules`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify(scheduleData)
+    });
+    return await res.json();
+  }
+
+  async updateSchedule(id, scheduleData) {
+    const res = await fetch(`${this.baseUrl}/schedules/${id}`, {
+      method: "PUT",
+      headers: this.getHeaders(),
+      body: JSON.stringify(scheduleData)
+    });
+    return await res.json();
+  }
+
+  async deleteSchedule(id) {
+    const res = await fetch(`${this.baseUrl}/schedules/${id}`, {
+      method: "DELETE",
+      headers: this.getHeaders()
+    });
+    return await res.json();
+  }
+
+  // REST API: Admin Only Batch Update & Reset
+  async batchUpdateStations(stations) {
+    const res = await fetch(`${this.baseUrl}/stations/batch`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify({ stations })
+    });
+    return await res.json();
+  }
+
+  async resetStations() {
+    const res = await fetch(`${this.baseUrl}/stations/reset`, {
+      method: "POST",
+      headers: this.getHeaders()
     });
     return await res.json();
   }

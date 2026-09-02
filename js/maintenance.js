@@ -225,7 +225,7 @@ class MaintenanceManager {
       return;
     }
 
-    tbody.innerHTML = filtered.map(st => {
+    tbody.innerHTML = filtered.map((st, idx) => {
       const m = st.maintenance || {};
       const tasks = m.tasks || {};
       const completed = m.completedTasks || {};
@@ -267,7 +267,7 @@ class MaintenanceManager {
 
       return `
         <tr onclick="window.modalManager.openDetail(${st.id})" style="${isAllDone ? "background-color:#f0fdf4;" : ""}">
-          <td><b>${st.seq || "-"}</b></td>
+          <td><b>${idx + 1}</b></td>
           <td><span class="badge ${regionBadgeClass}">${st.region || "-"}</span></td>
           <td><b>${st.river || "-"}</b></td>
           <td><span style="font-weight:700; color:#1e40af;">${st.name || "-"}</span></td>

@@ -1,6 +1,7 @@
 /**
  * ExcelManager
  * Handles Excel (.xlsx) and JSON Import/Export using SheetJS.
+ * Strict Role-based Permission Control (Admin-only for Data Modification).
  */
 class ExcelManager {
   exportToExcel(onlyFiltered = false) {
@@ -52,35 +53,59 @@ class ExcelManager {
     window.app.showToast(`[${fileName}] 엑셀 파일이 다운로드되었습니다.`, "success");
   }
 
+  triggerExcelUpload() {
+    if (window.apiClient && window.apiClient.user?.role !== "admin") {
+      alert("엑셀 파일 업로드 및 데이터 일괄 갱신은 최고 관리자(admin)만 가능합니다.");
+      return;
+    }
+    const input = document.getElementById("excel-file-input");
+    if (input) input.click();
+  }
+
+  triggerJSONUpload() {
+    if (window.apiClient && window.apiClient.user?.role !== "admin") {
+      alert("JSON 백업 파일 복원은 최고 관리자(admin)만 가능합니다.");
+      return;
+    }
+    const input = document.getElementById("json-file-input");
+    if (input) input.click();
+  }
+
   importExcel(file) {
+    if (window.apiClient && window.apiClient.user?.role !== "admin") {
+      alert("데이터 업로드 및 갱신은 최고 관리자(admin) 계정만 실행할 수 있습니다.");
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: "array" });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        const jsonRows = XLSX.utils.sheet_to_json(worksheet);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const rawRows = XLSX.utils.sheet_to_json(worksheet);
 
-        if (!jsonRows || jsonRows.length === 0) {
-          alert("엑셀 파일에 데이터가 없습니다.");
+        if (!rawRows || rawRows.length === 0) {
+          alert("유효한 데이터 행을 찾을 수 없습니다.");
           return;
         }
 
-        const parseDMS = (dms) => {
-          if (!dms) return null;
-          try {
-            const p = String(dms).trim().split("-").map(Number);
-            if (p.length === 3) return Number((p[0] + p[1]/60 + p[2]/3600).toFixed(6));
-            if (p.length === 2) return Number((p[0] + p[1]/60).toFixed(6));
-            if (p.length === 1) return Number(p[0]);
-          } catch(e){}
+        const parseDMS = (dmsStr) => {
+          if (!dmsStr) return null;
+          const parts = String(dmsStr).split("-").map(p => parseFloat(p.trim()));
+          if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+            return Number((parts[0] + parts[1] / 60 + parts[2] / 3600).toFixed(6));
+          }
           return null;
         };
 
-        const newStations = jsonRows.map((r, idx) => {
+        const newStations = rawRows.map((r, idx) => {
           const lonDMS = String(r["경도"] || "").trim();
           const latDMS = String(r["위도"] || "").trim();
+          const gaugeType = String(r["형식(유속계)"] || "").trim();
+          const isDual = (gaugeType.includes("EWSV") && gaugeType.includes("ADVM")) || gaugeType.includes(",");
+
           return {
             id: idx + 1,
             seq: parseInt(r["연번"], 10) || (idx + 1),
@@ -98,7 +123,9 @@ class ExcelManager {
             drainage: ["○", "O", "o", "1", "Y", "y"].includes(String(r["배수"] || "").trim()),
             tide: ["○", "O", "o", "1", "Y", "y"].includes(String(r["조위"] || "").trim()),
             pollutionTotal: ["○", "O", "o", "1", "Y", "y"].includes(String(r["오염총량"] || "").trim()),
-            gaugeType: String(r["형식(유속계)"] || "").trim(),
+            gaugeType: gaugeType,
+            gaugeCategory: isDual ? "DUAL" : (gaugeType.includes("EWSV") ? "EWSV" : "ADVM"),
+            isDualGauge: isDual,
             advmCount: String(r["ADVM (대)"] || "").trim(),
             ewsvCount: String(r["EWSV (대)"] || "").trim(),
             calib2026: ["○", "O", "o", "1", "Y", "y"].includes(String(r["26년 유속계 검정지점"] || "").trim()),
@@ -113,14 +140,17 @@ class ExcelManager {
               lon: parseDMS(lonDMS),
               lat: parseDMS(latDMS)
             },
-            maintenance: { history: [] }
+            maintenance: { completedTasks: {} }
           };
         });
 
-        if (confirm(`엑셀 파일에서 ${newStations.length}개의 지점 데이터를 읽어왔습니다. 시스템 데이터로 일괄 적용하시겠습니까?`)) {
+        if (confirm(`엑셀 파일에서 ${newStations.length}개의 지점 데이터를 읽어왔습니다. 시스템 데이터로 일괄 갱신하시겠습니까?`)) {
           window.dataManager.importAll(newStations);
+          if (window.apiClient) {
+            await window.apiClient.batchUpdateStations(newStations);
+          }
           window.app.refreshAll();
-          window.app.showToast(`${newStations.length}개 지점이 성공적으로 동기화되었습니다.`, "success");
+          window.app.showToast(`${newStations.length}개 지점이 성공적으로 갱신되었습니다.`, "success");
         }
       } catch (err) {
         console.error("Excel import failed:", err);
@@ -142,13 +172,21 @@ class ExcelManager {
   }
 
   importBackupJSON(file) {
+    if (window.apiClient && window.apiClient.user?.role !== "admin") {
+      alert("JSON 데이터 복원은 최고 관리자(admin) 계정만 실행할 수 있습니다.");
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const parsed = JSON.parse(e.target.result);
         if (Array.isArray(parsed) && parsed.length > 0) {
           if (confirm(`JSON 파일에서 ${parsed.length}개의 지점 데이터를 복원하시겠습니까?`)) {
             window.dataManager.importAll(parsed);
+            if (window.apiClient) {
+              await window.apiClient.batchUpdateStations(parsed);
+            }
             window.app.refreshAll();
             window.app.showToast(`${parsed.length}개 지점이 복원되었습니다.`, "success");
           }

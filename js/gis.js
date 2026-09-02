@@ -13,6 +13,7 @@ class GISManager {
     this.filters = {
       region: "all",
       gaugeType: "all",
+      installYear: "all",
       operatingOnly: false,
       floodOnly: false,
       droughtOnly: false,
@@ -176,6 +177,29 @@ class GISManager {
     this.renderMarkers();
   }
 
+  populateYearFilter() {
+    const yearSelect = document.getElementById("gis-filter-year");
+    if (!yearSelect) return;
+
+    const allStations = window.dataManager.getAll();
+    const yearsSet = new Set();
+    allStations.forEach(st => {
+      if (st.installYear) {
+        yearsSet.add(String(st.installYear).trim());
+      }
+    });
+
+    const sortedYears = Array.from(yearsSet).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+    const currentVal = this.filters.installYear;
+
+    let optionsHtml = '<option value="all">전체 설치년도 보기</option>';
+    sortedYears.forEach(y => {
+      optionsHtml += `<option value="${y}" ${currentVal === y ? "selected" : ""}>${y}년 설치</option>`;
+    });
+
+    yearSelect.innerHTML = optionsHtml;
+  }
+
   setFilters(newFilters) {
     this.filters = { ...this.filters, ...newFilters };
     this.renderMarkers();
@@ -184,6 +208,7 @@ class GISManager {
   renderMarkers() {
     if (!this.map || !this.markersLayer) return;
 
+    this.populateYearFilter();
     this.markersLayer.clearLayers();
     this.allMarkers = [];
 
@@ -208,6 +233,11 @@ class GISManager {
         if (this.filters.gaugeType === "DUAL" && !isDual) return;
         if (this.filters.gaugeType === "EWSV" && (isDual || !st.gaugeType?.includes("EWSV"))) return;
         if (this.filters.gaugeType === "ADVM" && (isDual || !st.gaugeType?.includes("ADVM"))) return;
+      }
+
+      // Filter: Install Year
+      if (this.filters.installYear !== "all") {
+        if (String(st.installYear).trim() !== this.filters.installYear) return;
       }
 
       // Filter: Checkboxes

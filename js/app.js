@@ -56,13 +56,27 @@ class App {
     try {
       window.calibrationManager.init();
     } catch(e) {
-      console.error("Failed to init calibrationManager:", e);
+      console.error(e);
+    }
+    try {
+      window.logsManager.init();
+    } catch(e) {
+      console.error("Failed to init logsManager:", e);
     }
 
-    // 7. Bind Additional Event Listeners
+    // 8. Initialize Schedule Manager
     try {
+      if (window.scheduleManager) window.scheduleManager.init();
+    } catch(e) {
+      console.error("Failed to init scheduleManager:", e);
+    }
+
+    // 8. Bind Mobile & Modal Specific Events
+    try {
+      this.bindMobileEvents();
       this.bindGISEvents();
       this.bindSettingsEvents();
+      if (window.modalManager) window.modalManager.init();
     } catch(e) {
       console.error("Failed to bind events:", e);
     }
@@ -70,14 +84,57 @@ class App {
     console.log("K-Hydro Flow Station Management System Initialized Successfully.");
   }
 
+  bindMobileEvents() {
+    const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+    const sidebar = document.querySelector(".sidebar");
+    const backdrop = document.getElementById("sidebar-backdrop");
+
+    if (mobileMenuBtn && sidebar && backdrop) {
+      mobileMenuBtn.addEventListener("click", () => {
+        const isOpen = sidebar.classList.toggle("open");
+        backdrop.classList.toggle("active", isOpen);
+      });
+
+      backdrop.addEventListener("click", () => {
+        sidebar.classList.remove("open");
+        backdrop.classList.remove("active");
+      });
+    }
+
+    // GIS Mobile Filter Toggle
+    const gisFilterBtn = document.getElementById("gis-mobile-filter-btn");
+    const gisCloseBtn = document.getElementById("gis-mobile-close-btn");
+    const gisPanel = document.getElementById("gis-floating-panel");
+
+    if (gisFilterBtn && gisPanel) {
+      gisFilterBtn.addEventListener("click", () => {
+        gisPanel.classList.toggle("open");
+      });
+    }
+
+    if (gisCloseBtn && gisPanel) {
+      gisCloseBtn.addEventListener("click", () => {
+        gisPanel.classList.remove("open");
+      });
+    }
+  }
+
   bindNavigation() {
     const navItems = document.querySelectorAll(".nav-item[data-tab]");
+    const sidebar = document.querySelector(".sidebar");
+    const backdrop = document.getElementById("sidebar-backdrop");
+
     navItems.forEach(item => {
       item.addEventListener("click", (e) => {
         e.preventDefault();
         const tab = item.getAttribute("data-tab");
         if (tab) {
           this.switchTab(tab);
+          // Auto close mobile drawer on tab selection
+          if (window.innerWidth <= 768 && sidebar && backdrop) {
+            sidebar.classList.remove("open");
+            backdrop.classList.remove("active");
+          }
         }
       });
     });
@@ -104,7 +161,9 @@ class App {
       "gis": "전국 GIS 관측망 현황",
       "stations": "관측시설 목록 및 상세 관리",
       "maintenance": "2026년 유지관리 과업 총괄 관제",
-      "calibration": "2026년 유속계 정도검정 관리",
+      "calibration": "2026년 유속계 검정 관리",
+      "schedules": "팀원 업무 및 현장점검 일정 관리",
+      "logs": "팀원 작업 이력 및 감사 로그",
       "settings": "데이터 백업 및 시스템 설정"
     };
     const titleEl = document.getElementById("current-page-title");
@@ -133,6 +192,14 @@ class App {
       if (window.calibrationManager) {
         window.calibrationManager.renderKPIs();
         window.calibrationManager.renderTable();
+      }
+    } else if (tabName === "schedules") {
+      if (window.scheduleManager) {
+        window.scheduleManager.loadSchedules();
+      }
+    } else if (tabName === "logs") {
+      if (window.logsManager) {
+        window.logsManager.fetchLogs();
       }
     } else if (tabName === "dashboard") {
       if (window.statsManager) {
@@ -171,6 +238,13 @@ class App {
     if (gaugeFilter) {
       gaugeFilter.addEventListener("change", (e) => {
         window.gisManager.setFilters({ gaugeType: e.target.value });
+      });
+    }
+
+    const yearFilter = document.getElementById("gis-filter-year");
+    if (yearFilter) {
+      yearFilter.addEventListener("change", (e) => {
+        window.gisManager.setFilters({ installYear: e.target.value });
       });
     }
 
@@ -215,38 +289,46 @@ class App {
       });
     }
 
-    const btnImportExcel = document.getElementById("btn-import-excel");
     const excelInput = document.getElementById("excel-file-input");
-    if (btnImportExcel && excelInput) {
-      btnImportExcel.addEventListener("click", () => excelInput.click());
+    if (excelInput) {
       excelInput.addEventListener("change", (e) => {
         if (e.target.files.length > 0) {
-          window.excelManager.importFromExcel(e.target.files[0]);
+          window.excelManager.importExcel(e.target.files[0]);
         }
       });
     }
 
-    const btnImportJson = document.getElementById("btn-import-json");
     const jsonInput = document.getElementById("json-file-input");
-    if (btnImportJson && jsonInput) {
-      btnImportJson.addEventListener("click", () => jsonInput.click());
+    if (jsonInput) {
       jsonInput.addEventListener("change", (e) => {
         if (e.target.files.length > 0) {
-          window.excelManager.importFromJson(e.target.files[0]);
+          window.excelManager.importBackupJSON(e.target.files[0]);
         }
       });
+    }
+  }
+
+  async resetAllData() {
+    if (window.apiClient && window.apiClient.user?.role !== "admin") {
+      alert("데이터 원본 초기화는 최고 관리자(admin) 계정만 실행할 수 있습니다.");
+      return;
     }
 
-    const btnResetData = document.getElementById("btn-reset-data");
-    if (btnResetData) {
-      btnResetData.addEventListener("click", () => {
-        if (confirm("모든 데이터를 초기 원본 상태로 복원하시겠습니까? 수정한 내역이 초기화됩니다.")) {
-          window.dataManager.resetToInitial();
-          this.refreshAll();
-          this.showToast("데이터가 초기 상태로 초기화되었습니다.", "info");
-        }
-      });
+    if (!confirm("⚠️ 정말로 모든 시설 데이터를 초기 배포 원본(223개소)으로 초기화하시겠습니까?\n모든 수정 내역이 원본 상태로 되돌아갑니다.")) {
+      return;
     }
+
+    if (window.apiClient) {
+      try {
+        await window.apiClient.resetStations();
+      } catch(e) {
+        console.error("Server reset failed:", e);
+      }
+    }
+
+    window.dataManager.resetToInitial();
+    this.refreshAll();
+    this.showToast("초기 223개소 원본 데이터로 초기화되었습니다.", "info");
   }
 
   refreshAll() {

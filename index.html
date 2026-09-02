@@ -32,8 +32,8 @@
       <div class="sidebar-header">
         <div class="logo-badge">🌊</div>
         <div>
-          <div class="sidebar-title">자동유량관측시설</div>
-          <div class="sidebar-subtitle">수자원인프라팀 (2차 개발)</div>
+          <div class="sidebar-title">자동유량관측시설 관리시스템</div>
+          <div class="sidebar-subtitle">수자원인프라팀</div>
         </div>
       </div>
 
@@ -56,7 +56,15 @@
         </button>
         <button class="nav-item" data-tab="calibration">
           <span class="nav-icon">🎯</span>
-          <span>유속계 정도검정</span>
+          <span>유속계 검정</span>
+        </button>
+        <button class="nav-item" data-tab="schedules">
+          <span class="nav-icon">📅</span>
+          <span>업무·점검 일정</span>
+        </button>
+        <button class="nav-item" data-tab="logs" id="nav-logs-btn">
+          <span class="nav-icon">📜</span>
+          <span>작업 이력 관리</span>
         </button>
         <button class="nav-item" data-tab="settings">
           <span class="nav-icon">⚙️</span>
@@ -71,24 +79,40 @@
       </div>
     </aside>
 
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
     <!-- Main Content Area -->
     <main class="main-content">
       <!-- Topbar -->
       <header class="topbar">
-        <div class="page-title-box">
-          <h1 class="page-title" id="current-page-title">통합 운영 대시보드</h1>
-          <div class="quick-stats-badge">
-            <span>전국 관측시설</span> <b id="topbar-total-badge">223</b>개소
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <!-- Mobile Hamburger Toggle Button -->
+          <button id="mobile-menu-btn" class="mobile-menu-btn" title="메뉴 열기/닫기">
+            <span>☰</span>
+          </button>
+
+          <div class="page-title-box">
+            <h1 class="page-title" id="current-page-title">통합 운영 대시보드</h1>
+            <div class="quick-stats-badge">
+              <span>전국 관측시설</span> <b id="topbar-total-badge">223</b>개소
+            </div>
           </div>
         </div>
 
         <div class="topbar-actions">
-          <button class="btn btn-outline btn-sm" onclick="window.excelManager.exportToExcel(false)">
-            <span>📥</span> <span>엑셀 전체 다운로드</span>
-          </button>
-          <button class="btn btn-primary btn-sm" onclick="window.modalManager.openAdd()">
-            <span>➕</span> <span>신규 관측소 등록</span>
-          </button>
+          <!-- User Profile Badge & Logout -->
+          <div id="header-user-badge"></div>
+
+          <!-- Quick Action Buttons -->
+          <div class="header-btn-group">
+            <button class="btn btn-outline btn-sm" onclick="window.excelManager.exportToExcel(false)" title="전국 관측시설 엑셀 다운로드">
+              <span>📥</span> <span>엑셀 전체 다운로드</span>
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="window.modalManager.openAdd()" title="신규 관측소 등록">
+              <span>➕</span> <span>신규 관측소 등록</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -131,7 +155,7 @@
               <div class="kpi-content">
                 <div class="kpi-label">26년 유속계 검정대상</div>
                 <div class="kpi-value" id="kpi-calib-stations">20개소</div>
-                <div class="kpi-sub">정기정도검정 시행 대상</div>
+                <div class="kpi-sub">정기검정 시행 대상</div>
               </div>
             </div>
 
@@ -183,11 +207,19 @@
             <div class="gis-map-container">
               <div id="map"></div>
 
+              <!-- Mobile Floating Toggle Button for Map Filter -->
+              <button id="gis-mobile-filter-btn" class="gis-mobile-filter-btn" title="필터 및 레이어 열기">
+                <span>🔍 필터/레이어</span>
+              </button>
+
               <!-- Floating Filter Panel -->
-              <div class="gis-floating-panel">
+              <div class="gis-floating-panel" id="gis-floating-panel">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
                   <div style="font-size:0.9rem; font-weight:700; color:#1e293b;">🗺️ GIS 레이어 필터</div>
-                  <button class="btn btn-outline btn-sm" onclick="window.gisManager.resetView()" style="padding:2px 6px; font-size:0.75rem;">뷰 초기화</button>
+                  <div style="display:flex; gap:4px;">
+                    <button class="btn btn-outline btn-sm" onclick="window.gisManager.resetView()" style="padding:2px 6px; font-size:0.75rem;">뷰 초기화</button>
+                    <button class="btn btn-outline btn-sm gis-mobile-close-btn" id="gis-mobile-close-btn" style="padding:2px 6px; font-size:0.75rem; display:none;">✕ 닫기</button>
+                  </div>
                 </div>
 
                 <div class="search-input-wrapper" style="margin-bottom:0.75rem; min-width:unset;">
@@ -224,15 +256,22 @@
                   </select>
                 </div>
 
+                <div class="filter-section-title">설치 년도</div>
+                <div class="filter-group">
+                  <select id="gis-filter-year" class="filter-select" style="width:100%;">
+                    <option value="all">전체 설치년도 보기</option>
+                  </select>
+                </div>
+
                 <div class="filter-section-title">지정 및 운영 구분</div>
                 <div class="filter-group">
                   <label class="checkbox-label" style="font-weight:600; color:#7c3aed;">
                     <input type="checkbox" id="gis-check-dual">
-                    <span>⚡ 이중화(EWSV+ADVM) 지점만</span>
+                    <span>⚡ 이중화(EWSV+ADVM) 지점</span>
                   </label>
                   <label class="checkbox-label">
                     <input type="checkbox" id="gis-check-operating">
-                    <span>2026년 정상 운영 지점만</span>
+                    <span>2026년 정상 운영 지점</span>
                   </label>
                   <label class="checkbox-label">
                     <input type="checkbox" id="gis-check-flood">
@@ -291,6 +330,10 @@
                 <option value="operating">운영중</option>
                 <option value="non-operating">미운영/대기</option>
               </select>
+
+              <select id="table-filter-year" class="filter-select">
+                <option value="all">전체 설치년도</option>
+              </select>
             </div>
 
             <div style="display:flex; align-items:center; gap:0.5rem;">
@@ -313,12 +356,13 @@
               <table class="custom-table">
                 <thead>
                   <tr>
-                    <th onclick="window.tableManager.setSort(seq)" style="cursor:pointer;">연번 ↕</th>
-                    <th onclick="window.tableManager.setSort(region)" style="cursor:pointer;">권역 ↕</th>
-                    <th onclick="window.tableManager.setSort(river)" style="cursor:pointer;">하천명 ↕</th>
-                    <th onclick="window.tableManager.setSort(name)" style="cursor:pointer;">관측소명(지점명) ↕</th>
+                    <th style="width: 55px;">순번</th>
+                    <th onclick="window.tableManager.setSort('region')" style="cursor:pointer;">권역 ↕</th>
+                    <th onclick="window.tableManager.setSort('river')" style="cursor:pointer;">하천명 ↕</th>
+                    <th onclick="window.tableManager.setSort('name')" style="cursor:pointer;">관측소명(지점명) ↕</th>
                     <th>지점코드</th>
                     <th>위치 (주소)</th>
+                    <th onclick="window.tableManager.setSort('installYear')" style="cursor:pointer;">설치년도 ↕</th>
                     <th>유속계 형식</th>
                     <th>26년 운영</th>
                     <th>홍수특보</th>
@@ -463,9 +507,9 @@
             <div class="kpi-card">
               <div class="kpi-icon purple">🎯</div>
               <div class="kpi-content">
-                <div class="kpi-label">26년 정도검정 대상 지점</div>
+                <div class="kpi-label">26년 유속계 검정 대상 지점</div>
                 <div class="kpi-value" id="kpi-calib-total-stations">30개소</div>
-                <div class="kpi-sub">정기정도검정 법정 대상 지점</div>
+                <div class="kpi-sub">정기검정 법정 대상 지점</div>
               </div>
             </div>
             <div class="kpi-card">
@@ -490,7 +534,7 @@
           <div class="card">
             <div class="card-header" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem;">
               <div class="card-title">
-                <span>🎯</span> 2026년 유속계 정도검정 대상 지점 관리 (총 30개소)
+                <span>🎯</span> 2026년 유속계 검정 대상 지점 관리 (총 30개소)
               </div>
 
               <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem;">
@@ -530,14 +574,103 @@
                       <th>하천명</th>
                       <th>관측소명(지점명)</th>
                       <th>유속계 형식 / 검정대수</th>
-                      <th>현재 상태</th>
+                      <th>검정 진행 상태</th>
                       <th>검정완료일자</th>
-                      <th>상태 변경</th>
-                      <th>상세</th>
+                      <th>검정 성적서 번호</th>
+                      <th>검정결과 관리</th>
                     </tr>
                   </thead>
                   <tbody id="calib-table-body">
                     <!-- Dynamically populated from calibration.js -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+                <!-- 6. AUDIT ACTIVITY LOGS VIEW -->
+        <section class="view-panel" id="view-logs">
+          <!-- Top KPI Summary Cards -->
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-icon purple">📜</div>
+              <div class="kpi-content">
+                <div class="kpi-label">총 누적 작업 이력</div>
+                <div class="kpi-value" id="kpi-log-total">0건</div>
+                <div class="kpi-sub">팀원 전체 작업 활동 기록</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon amber">🛠️</div>
+              <div class="kpi-content">
+                <div class="kpi-label">유지관리 과업 조치 이력</div>
+                <div class="kpi-value" id="kpi-log-maint">0건</div>
+                <div class="kpi-sub">과업 완료/대기 변경 건수</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon cyan">🎯</div>
+              <div class="kpi-content">
+                <div class="kpi-label">유속계 검정 이력</div>
+                <div class="kpi-value" id="kpi-log-calib">0건</div>
+                <div class="kpi-sub">검정 단계 및 완료일자 기록</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Audit Log Table -->
+          <div class="card">
+            <div class="card-header" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem;">
+              <div class="card-title">
+                <span>📜</span> 시스템 작업 이력 및 감사 로그 (실시간 기록)
+              </div>
+
+              <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem;">
+                <select id="log-filter-user" class="filter-select">
+                  <option value="all">전체 작업자 보기</option>
+                  <option value="admin">관리자 (총괄)</option>
+                  <option value="kihs01">윤영선 (팀장)</option>
+                  <option value="kihs02">이동오 (팀원)</option>
+                  <option value="kihs03">나형욱 (팀원)</option>
+                  <option value="kihs04">박세찬 (팀원)</option>
+                </select>
+
+                <select id="log-filter-action" class="filter-select">
+                  <option value="all">전체 작업 유형</option>
+                  <option value="유지관리">🛠️ 유지관리 과업 조치</option>
+                  <option value="유속계 검정">🎯 유속계 검정 상태 변경</option>
+                  <option value="관측소등록">➕ 신규 관측소 등록</option>
+                  <option value="제원수정">✏️ 관측소 제원 수정</option>
+                  <option value="관측소삭제">🗑️ 관측소 삭제</option>
+                  <option value="로그인">🔑 시스템 로그인</option>
+                </select>
+
+                <button class="btn btn-outline btn-sm" onclick="window.logsManager.fetchLogs()">
+                  <span>🔄</span> 새로고침
+                </button>
+
+                <div style="font-size:0.85rem; color:#64748b; white-space:nowrap;">
+                  표시 건수: <b id="log-table-count" style="color:#1e40af;">0</b>건
+                </div>
+              </div>
+            </div>
+
+            <div class="card-body" style="padding:0;">
+              <div class="table-responsive" style="max-height:560px;">
+                <table class="custom-table">
+                  <thead>
+                    <tr>
+                      <th style="width:60px;">ID</th>
+                      <th style="width:160px;">작업 일시</th>
+                      <th style="width:140px;">작업자 (직책)</th>
+                      <th style="width:120px;">작업 유형</th>
+                      <th style="width:180px;">대상 관측소</th>
+                      <th>상세 변경 내용 및 비고</th>
+                    </tr>
+                  </thead>
+                  <tbody id="log-table-body">
+                    <!-- Dynamically populated from logs.js -->
                   </tbody>
                 </table>
               </div>
@@ -552,11 +685,11 @@
             <!-- Excel Sync Card -->
             <div class="card">
               <div class="card-header">
-                <div class="card-title"><span>📑</span> Excel 엑셀 데이터 동기화</div>
+                <div class="card-title"><span>📑</span> Excel 엑셀 데이터 연동</div>
               </div>
               <div class="card-body">
                 <p style="font-size:0.85rem; color:#64748b; margin-bottom:1.25rem;">
-                  수정된 전체 시설 데이터를 원본 엑셀 형식(.xlsx)으로 내보내거나, 새로운 엑셀 파일을 업로드하여 시스템 데이터를 갱신합니다.
+                  수정된 전체 시설 데이터를 원본 엑셀 형식(.xlsx)으로 다운로드하거나, 관리자 권한으로 신규 엑셀을 업로드하여 데이터를 갱신합니다.
                 </p>
 
                 <div style="display:flex; flex-direction:column; gap:0.75rem;">
@@ -564,10 +697,10 @@
                     <span>📥</span> <span>최신 현황 엑셀 다운로드 (.xlsx)</span>
                   </button>
 
-                  <div style="position:relative; margin-top:0.5rem;">
+                  <div id="setting-admin-excel-import" style="position:relative; margin-top:0.5rem;">
                     <input type="file" id="excel-file-input" accept=".xlsx, .xls" style="display:none;">
-                    <button class="btn btn-outline" style="width:100%;" onclick="document.getElementById(excel-file-input).click()">
-                      <span>📤</span> <span>엑셀 파일 업로드하여 데이터 갱신</span>
+                    <button class="btn btn-outline" style="width:100%;" onclick="window.excelManager.triggerExcelUpload()">
+                      <span>📤</span> <span>엑셀 파일 업로드하여 데이터 갱신 (관리자 전용)</span>
                     </button>
                   </div>
                 </div>
@@ -581,18 +714,18 @@
               </div>
               <div class="card-body">
                 <p style="font-size:0.85rem; color:#64748b; margin-bottom:1.25rem;">
-                  모든 시설 제원과 유지관리 메모를 JSON 파일로 완벽하게 백업하거나 복원합니다.
+                  모든 시설 제원과 유지관리 메모를 JSON 파일로 백업하거나, 관리자 권한으로 백업 파일을 복원합니다.
                 </p>
 
                 <div style="display:flex; flex-direction:column; gap:0.75rem;">
                   <button class="btn btn-outline" onclick="window.excelManager.exportBackupJSON()">
-                    <span>💾</span> <span>시스템 전체 JSON 백업</span>
+                    <span>💾</span> <span>시스템 전체 JSON 백업 다운로드</span>
                   </button>
 
-                  <div style="position:relative;">
+                  <div id="setting-admin-json-restore" style="position:relative;">
                     <input type="file" id="json-file-input" accept=".json" style="display:none;">
-                    <button class="btn btn-outline" style="width:100%;" onclick="document.getElementById(json-file-input).click()">
-                      <span>📂</span> <span>JSON 백업 파일 복원</span>
+                    <button class="btn btn-outline" style="width:100%;" onclick="window.excelManager.triggerJSONUpload()">
+                      <span>📂</span> <span>JSON 백업 파일 복원 (관리자 전용)</span>
                     </button>
                   </div>
                 </div>
@@ -600,9 +733,9 @@
             </div>
 
             <!-- Factory Reset Card -->
-            <div class="card">
+            <div class="card" id="setting-admin-factory-reset">
               <div class="card-header">
-                <div class="card-title"><span style="color:#dc2626;">⚠️</span> 데이터 원본 초기화</div>
+                <div class="card-title"><span style="color:#dc2626;">⚠️</span> 데이터 원본 초기화 (관리자 전용)</div>
               </div>
               <div class="card-body">
                 <p style="font-size:0.85rem; color:#64748b; margin-bottom:1.25rem;">
@@ -615,6 +748,168 @@
               </div>
             </div>
 
+            <!-- Non-Admin Notice Card -->
+            <div class="card" id="setting-member-notice" style="display:none; background:#f8fafc; border:1px dashed #cbd5e1;">
+              <div class="card-header">
+                <div class="card-title" style="color:#64748b;"><span>🔒</span> 관리자 권한 안내</div>
+              </div>
+              <div class="card-body">
+                <p style="font-size:0.85rem; color:#64748b; line-height:1.6;">
+                  현재 <b>일반 팀원 계정</b>으로 접속 중입니다.<br>
+                  데이터의 무결성과 안전한 보존을 위해 <b>[엑셀 업로드 갱신]</b>, <b>[JSON 데이터 복원]</b>, <b>[원본 데이터 초기화]</b> 기능은 <b>최고 관리자(admin)</b> 계정으로 로그인한 경우에만 실행할 수 있습니다.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- 7. SCHEDULES & CALENDAR VIEW -->
+        <section class="view-panel" id="view-schedules">
+          <!-- Schedules KPI Row -->
+          <div class="kpi-grid" style="margin-bottom: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+            <div class="kpi-card">
+              <div class="kpi-icon blue">📅</div>
+              <div class="kpi-info">
+                <div class="kpi-value" id="kpi-sched-total">0건</div>
+                <div class="kpi-label">이번 달 전체 업무·일정</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon cyan">🚗</div>
+              <div class="kpi-info">
+                <div class="kpi-value" id="kpi-sched-check">0건</div>
+                <div class="kpi-label">현장 점검 및 출장</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon amber">🛠️</div>
+              <div class="kpi-info">
+                <div class="kpi-value" id="kpi-sched-maint">0건</div>
+                <div class="kpi-label">유지관리 조치 작업</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon purple">🎯</div>
+              <div class="kpi-info">
+                <div class="kpi-value" id="kpi-sched-calib">0건</div>
+                <div class="kpi-label">유속계 검정 입회</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon green">🌴</div>
+              <div class="kpi-info">
+                <div class="kpi-value" id="kpi-sched-vacation">0건</div>
+                <div class="kpi-label">팀원 휴가</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Schedule Action Bar & Filters -->
+          <div class="table-controls-card" style="margin-bottom: 1rem;">
+            <div class="controls-row" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem;">
+              <div style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+                <!-- View Mode Switch -->
+                <div class="btn-group" style="display:inline-flex; border:1px solid var(--border-color); border-radius:var(--radius-sm); overflow:hidden;">
+                  <button class="btn btn-sm page-btn active" id="sched-btn-cal-view" onclick="window.scheduleManager.switchView('calendar')" style="border:none; border-radius:0;">📅 월간 달력</button>
+                  <button class="btn btn-sm page-btn" id="sched-btn-list-view" onclick="window.scheduleManager.switchView('list')" style="border:none; border-radius:0;">📋 일정 목록</button>
+                </div>
+
+                <!-- Assignee Filter -->
+                <select id="sched-filter-assignee" class="filter-select" style="min-width:130px;" onchange="window.scheduleManager.onFilterChange()">
+                  <option value="all">👥 전체 팀원</option>
+                  <option value="윤영선">윤영선 팀장</option>
+                  <option value="이동오">이동오 팀원</option>
+                  <option value="나형욱">나형욱 팀원</option>
+                  <option value="박세찬">박세찬 팀원</option>
+                </select>
+
+                <!-- Schedule Type Filter -->
+                <select id="sched-filter-type" class="filter-select" style="min-width:130px;" onchange="window.scheduleManager.onFilterChange()">
+                  <option value="all">🏷️ 전체 일정 유형</option>
+                  <option value="check">🚗 현장 점검·출장</option>
+                  <option value="maint">🛠️ 유지관리 조치</option>
+                  <option value="calib">🎯 유속계 검정</option>
+                  <option value="meeting">💻 회의 및 내부업무</option>
+                  <option value="vacation">🌴 휴가</option>
+                  <option value="emergency">🚨 긴급 보수</option>
+                </select>
+
+                <!-- Search Input -->
+                <div class="search-input-wrapper" style="min-width: 200px;">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="sched-search-input" class="search-input" placeholder="일정명, 관측소명 검색...">
+                </div>
+              </div>
+
+              <div style="display:flex; gap:0.5rem;">
+                <button class="btn btn-primary btn-sm" onclick="window.scheduleManager.openAddModal()">
+                  <span>➕</span> <span>새 일정 등록</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 1) Calendar Grid View -->
+          <div id="sched-calendar-container" class="card" style="padding:1.25rem;">
+            <!-- Calendar Navigation Header -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-bottom:0.75rem; border-bottom:1px solid var(--border-color);">
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <button class="btn btn-outline btn-sm" onclick="window.scheduleManager.prevMonth()">◀ 이전달</button>
+                <button class="btn btn-outline btn-sm" onclick="window.scheduleManager.nextMonth()">다음달 ▶</button>
+                <button class="btn btn-outline btn-sm" onclick="window.scheduleManager.today()" style="font-weight:700; color:#1e40af;">오늘</button>
+              </div>
+              <h2 id="calendar-current-month" style="font-size:1.35rem; font-weight:800; color:#0f172a; margin:0;">2026년 9월</h2>
+              <div style="display:flex; gap:0.5rem; font-size:0.75rem; color:#64748b;">
+                <span style="display:flex; align-items:center; gap:3px;"><span style="width:10px; height:10px; border-radius:50%; background:#2563eb; display:inline-block;"></span> 점검</span>
+                <span style="display:flex; align-items:center; gap:3px;"><span style="width:10px; height:10px; border-radius:50%; background:#f59e0b; display:inline-block;"></span> 유지관리</span>
+                <span style="display:flex; align-items:center; gap:3px;"><span style="width:10px; height:10px; border-radius:50%; background:#06b6d4; display:inline-block;"></span> 검정</span>
+                <span style="display:flex; align-items:center; gap:3px;"><span style="width:10px; height:10px; border-radius:50%; background:#8b5cf6; display:inline-block;"></span> 회의</span>
+              </div>
+            </div>
+
+            <!-- Weekday Header -->
+            <div class="calendar-week-header">
+              <div class="sun">일</div>
+              <div>월</div>
+              <div>화</div>
+              <div>수</div>
+              <div>목</div>
+              <div>금</div>
+              <div class="sat">토</div>
+            </div>
+
+            <!-- Calendar Days Grid -->
+            <div class="calendar-grid" id="calendar-days-grid">
+              <!-- Rendered Dynamically by JS -->
+            </div>
+          </div>
+
+          <!-- 2) List View (Alternate) -->
+          <div id="sched-list-container" class="card" style="display:none; padding:1.25rem;">
+            <div style="font-size:1rem; font-weight:700; color:#0f172a; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
+              <span>📋 업무·점검 일정 전체 목록</span>
+              <span style="font-size:0.8rem; color:#64748b;">총 <b id="sched-list-count" style="color:#1e40af;">0</b>건</span>
+            </div>
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th style="width:50px;">No.</th>
+                    <th>기간 / 일자</th>
+                    <th>유형</th>
+                    <th>일정 제목</th>
+                    <th>관련 관측소</th>
+                    <th>담당자</th>
+                    <th>상태</th>
+                    <th>관리</th>
+                  </tr>
+                </thead>
+                <tbody id="sched-list-tbody">
+                  <!-- Rendered Dynamically -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
@@ -652,11 +947,6 @@
           <input type="hidden" id="form-id">
 
           <div class="form-grid">
-            <div class="form-group">
-              <label class="form-label">연번 (No.)</label>
-              <input type="number" id="form-seq" class="form-input" placeholder="예: 1">
-            </div>
-
             <div class="form-group">
               <label class="form-label">관할 권역</label>
               <select id="form-region" class="form-select">
@@ -796,6 +1086,179 @@
     </div>
   </div>
 
+  <!-- MODAL: Calibration Edit -->
+  <div class="modal-backdrop" id="calib-modal">
+    <div class="modal-dialog" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-title" id="calib-modal-title">🎯 유속계 검정 결과 및 완료일자 기록</div>
+        <button class="modal-close" onclick="window.calibrationManager.closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="calib-modal-id">
+        
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.85rem; margin-bottom:1.15rem;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem;">
+            <span style="font-size:0.8rem; color:#64748b; font-weight:600;">대상 관측소</span>
+            <span style="font-weight:700; color:#1e40af;" id="calib-modal-station-name">-</span>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="font-size:0.8rem; color:#64748b; font-weight:600;">유속계 형식 및 검정대수</span>
+            <span style="font-weight:700; color:#0f172a;" id="calib-modal-gauge-info">-</span>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label class="form-label" style="font-weight:700;">검정 진행 상태</label>
+          <select id="calib-modal-status" class="filter-select" style="width:100%; padding:0.55rem 0.75rem; font-size:0.9rem; font-weight:600;" onchange="window.calibrationManager.onStatusChange(this.value)">
+            <option value="pending">⏳ 검정 대기 (미실시)</option>
+            <option value="ongoing">🧪 시험·검정중</option>
+            <option value="completed">✅ 검정 완료</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label class="form-label" style="font-weight:700;">검정 완료일자</label>
+          <input type="date" id="calib-modal-date" class="form-input" style="width:100%;">
+          <small style="color:#64748b; font-size:0.75rem; margin-top:4px; display:block;">* 검정 완료 시 공식 시험성적서 발급일자를 입력하세요.</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="font-weight:700;">검정 성적서 번호 / 비고</label>
+          <input type="text" id="calib-modal-cert" class="form-input" placeholder="예: K-HYDRO-2026-CAL-042">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline btn-sm" onclick="window.calibrationManager.closeModal()">취소</button>
+        <button class="btn btn-primary btn-sm" onclick="window.calibrationManager.saveCalib()">💾 검정 결과 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Schedule Add / Edit -->
+  <div class="modal-backdrop" id="schedule-modal">
+    <div class="modal-dialog" style="max-width: 540px;">
+      <div class="modal-header">
+        <div class="modal-title" id="schedule-modal-title">📅 업무·점검 일정 등록</div>
+        <button class="modal-close" onclick="window.scheduleManager.closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="schedule-form" onsubmit="event.preventDefault(); window.scheduleManager.saveSchedule();">
+          <input type="hidden" id="sched-form-id">
+
+          <!-- Read-only banner for other member's schedule -->
+          <div id="sched-readonly-notice" style="display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:0.6rem 0.8rem; margin-bottom:1rem; font-size:0.8rem; color:#991b1b;">
+            <span>🔒 <b>조회 전용 모드</b>: 본인 계정으로 작성한 일정만 수정 및 삭제가 가능합니다.</span>
+          </div>
+
+          <div class="form-group" style="margin-bottom:1rem;">
+            <label class="form-label" style="font-weight:700;">일정 제목 *</label>
+            <input type="text" id="sched-form-title" class="form-input" required placeholder="예: 한강권역 주요 관측소 현장 점검">
+          </div>
+
+          <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:0.75rem;">
+            <div class="form-group">
+              <label class="form-label" style="font-weight:700;">일정 유형 *</label>
+              <select id="sched-form-type" class="form-select" required>
+                <option value="check">🚗 현장 점검·출장</option>
+                <option value="maint">🛠️ 유지관리 조치</option>
+                <option value="calib">🎯 유속계 검정</option>
+                <option value="meeting">💻 회의 및 내부업무</option>
+                <option value="vacation">🌴 휴가</option>
+                <option value="emergency">🚨 긴급 보수</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight:700;">등록자 *</label>
+              <select id="sched-form-assignee" class="form-select" required>
+                <option value="윤영선">윤영선 팀장</option>
+                <option value="이동오">이동오 팀원</option>
+                <option value="나형욱">나형욱 팀원</option>
+                <option value="박세찬">박세찬 팀원</option>
+                <option value="전체">👥 전체/공동</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:1rem;">
+            <label class="form-label" style="font-weight:700; display:flex; justify-content:space-between;">
+              <span>동행자 / 동반 출장자 (선택)</span>
+              <span style="font-size:0.75rem; color:#64748b; font-weight:normal;">* 버튼 클릭으로 빠른 추가 가능</span>
+            </label>
+            <input type="text" id="sched-form-attendees" class="form-input" placeholder="예: 이동오, 박세찬 (직접 입력 또는 아래 버튼 클릭)">
+            
+            <div style="display:flex; align-items:center; gap:6px; margin-top:0.4rem;">
+              <span style="font-size:0.72rem; color:#64748b; font-weight:600;">팀원 추가:</span>
+              <button type="button" class="btn btn-outline btn-sm" style="padding:1px 7px; font-size:0.72rem; border-radius:12px;" onclick="window.scheduleManager.toggleAttendee('윤영선')">+ 윤영선</button>
+              <button type="button" class="btn btn-outline btn-sm" style="padding:1px 7px; font-size:0.72rem; border-radius:12px;" onclick="window.scheduleManager.toggleAttendee('이동오')">+ 이동오</button>
+              <button type="button" class="btn btn-outline btn-sm" style="padding:1px 7px; font-size:0.72rem; border-radius:12px;" onclick="window.scheduleManager.toggleAttendee('나형욱')">+ 나형욱</button>
+              <button type="button" class="btn btn-outline btn-sm" style="padding:1px 7px; font-size:0.72rem; border-radius:12px;" onclick="window.scheduleManager.toggleAttendee('박세찬')">+ 박세찬</button>
+            </div>
+          </div>
+
+          <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:1rem;">
+            <div class="form-group">
+              <label class="form-label" style="font-weight:700;">시작일자 *</label>
+              <input type="date" id="sched-form-start" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="font-weight:700;">종료일자 (선택)</label>
+              <input type="date" id="sched-form-end" class="form-input">
+            </div>
+          </div>
+
+          <!-- Multi-Select Searchable Stations -->
+          <div class="form-group" style="margin-bottom:1rem; position:relative;">
+            <label class="form-label" style="font-weight:700; display:flex; justify-content:space-between;">
+              <span>관련 관측시설 선택 (다중 선택 가능)</span>
+              <span id="sched-selected-station-count" style="font-size:0.75rem; color:#2563eb; font-weight:600;">0개소 선택됨</span>
+            </label>
+
+            <!-- Selected Station Tag Chips -->
+            <div id="sched-selected-stations-chips" style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px; min-height:28px;">
+              <!-- Tag chips rendered dynamically -->
+            </div>
+
+            <!-- Search input -->
+            <div class="search-input-wrapper" style="width:100%;">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="sched-station-search-input" class="search-input" placeholder="관측소명, 하천명, 권역을 검색하여 클릭 추가..." onfocus="window.scheduleManager.showStationDropdown()" oninput="window.scheduleManager.onStationSearch(this.value)">
+            </div>
+
+            <!-- Station search results dropdown -->
+            <div id="sched-station-dropdown" class="station-search-dropdown" style="display:none;">
+              <!-- Dropdown items rendered dynamically -->
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:1rem;">
+            <label class="form-label" style="font-weight:700;">진행 상태</label>
+            <select id="sched-form-status" class="form-select">
+              <option value="scheduled">⏳ 예정 (대기)</option>
+              <option value="in_progress">🔄 진행중</option>
+              <option value="completed">✅ 완료</option>
+              <option value="cancelled">🚫 취소/연기</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">상세 내용 및 비고</label>
+            <textarea id="sched-form-desc" class="form-textarea" rows="3" placeholder="점검 내용, 동행자, 준비물, 특이사항 등"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between;">
+        <div>
+          <button type="button" class="btn btn-danger btn-sm" id="sched-btn-delete" style="display:none;" onclick="window.scheduleManager.deleteCurrentSchedule()">🗑️ 삭제</button>
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="window.scheduleManager.closeModal()">취소</button>
+          <button type="button" class="btn btn-primary btn-sm" id="sched-btn-save" onclick="window.scheduleManager.saveSchedule()">💾 일정 저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container"></div>
 
@@ -811,6 +1274,8 @@
   <script src="js/stats.js"></script>
   <script src="js/maintenance.js"></script>
   <script src="js/calibration.js"></script>
+  <script src="js/schedule.js"></script>
+  <script src="js/logs.js"></script>
   <script src="js/modal.js"></script>
   <script src="js/excel.js"></script>
   <script src="js/app.js"></script>

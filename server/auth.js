@@ -7,9 +7,10 @@ function generateToken(user) {
       id: user.id,
       username: user.username,
       name: user.name,
+      position: user.position || "팀원",
       role: user.role,
-      region: user.region,
-      team: user.team
+      region: user.region || "all",
+      team: user.team || "수자원인프라팀"
     },
     JWT_SECRET,
     { expiresIn: "7d" }
