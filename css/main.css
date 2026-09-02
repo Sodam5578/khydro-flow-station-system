@@ -1001,6 +1001,8 @@ body {
     transform: translateX(-100%);
     transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+    padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
   }
 
   .sidebar.open {
@@ -1032,9 +1034,12 @@ body {
     min-height: 100vh;
   }
 
-  /* Topbar Header Compact Layout */
+  /* Topbar Header Compact Layout with Safe-Area Status Bar Insets */
   .topbar {
-    padding: 0.75rem 1rem;
+    padding-top: max(0.85rem, calc(0.6rem + env(safe-area-inset-top, 0px))) !important;
+    padding-left: max(0.85rem, calc(0.6rem + env(safe-area-inset-left, 0px))) !important;
+    padding-right: max(0.85rem, calc(0.6rem + env(safe-area-inset-right, 0px))) !important;
+    padding-bottom: 0.75rem !important;
     flex-direction: column;
     align-items: stretch;
     gap: 0.65rem;
