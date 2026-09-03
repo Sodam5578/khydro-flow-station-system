@@ -417,13 +417,82 @@ class ScheduleManager {
     const filteredSchedules = this.getFilteredSchedules();
     let gridHtml = "";
 
-    // 1. Previous month trailing days
+    // Calculate grid start date (first day of previous month trailing if any, else firstDay)
+    let gridFirstDateStr = "";
+    if (startingDay > 0) {
+      const prevMonthIdx = month === 0 ? 12 : month;
+      const prevYear = month === 0 ? year - 1 : year;
+      const firstTrailingDay = prevLastDate - (startingDay - 1);
+      gridFirstDateStr = `${prevYear}-${String(prevMonthIdx).padStart(2, "0")}-${String(firstTrailingDay).padStart(2, "0")}`;
+    } else {
+      gridFirstDateStr = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+    }
+
+    const renderCellEvents = (dateStr) => {
+      // Find events that start on this date, OR started before gridFirstDateStr and span into this grid
+      const dayEvents = filteredSchedules.filter(s => {
+        const start = s.startDate;
+        const end = s.endDate || s.startDate;
+        if (dateStr === start) return true;
+        if (dateStr === gridFirstDateStr && start < gridFirstDateStr && end >= gridFirstDateStr) return true;
+        return false;
+      });
+
+      return dayEvents.map(s => {
+        let chipClass = "chip-type-check";
+        let icon = "🚗";
+        if (s.scheduleType === "maint") { chipClass = "chip-type-maint"; icon = "🛠️"; }
+        else if (s.scheduleType === "calib") { chipClass = "chip-type-calib"; icon = "🎯"; }
+        else if (s.scheduleType === "meeting") { chipClass = "chip-type-meeting"; icon = "💻"; }
+        else if (s.scheduleType === "vacation") { chipClass = "chip-type-vacation"; icon = "🌴"; }
+        else if (s.scheduleType === "emergency") { chipClass = "chip-type-emergency"; icon = "🚨"; }
+
+        const statusDone = s.status === "completed" ? "✓" : "";
+        let peopleLabel = `[${s.assignee}]`;
+        if (s.attendees) {
+          const count = s.attendees.split(",").filter(Boolean).length;
+          peopleLabel = `[${s.assignee}+${count}]`;
+        }
+
+        const stCount = (s.stationIds && s.stationIds.length > 1) ? ` (+${s.stationIds.length})` : "";
+        
+        // Multi-day duration label
+        let rangeLabel = "";
+        const end = s.endDate || s.startDate;
+        if (s.startDate !== end) {
+          const sM = parseInt(s.startDate.split("-")[1], 10);
+          const sD = parseInt(s.startDate.split("-")[2], 10);
+          const eM = parseInt(end.split("-")[1], 10);
+          const eD = parseInt(end.split("-")[2], 10);
+          const d1 = new Date(s.startDate);
+          const d2 = new Date(end);
+          const diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+          rangeLabel = ` (${sM}/${sD}~${eM}/${eD}, ${diffDays}일간)`;
+        }
+
+        const fullTitle = `${s.title}${stCount}${rangeLabel}`;
+
+        return `
+          <div class="schedule-chip ${chipClass}" 
+               title="${s.title}${rangeLabel} (${s.assignee}${s.attendees ? `, 동행:${s.attendees}` : ""}) - ${s.stationName ? `관측소: ${s.stationName}` : "내부일정"}"
+               onclick="event.stopPropagation(); window.scheduleManager.openEditModal(${s.id})">
+            <span style="flex-shrink:0;">${icon}</span>
+            <span style="font-weight:700; flex-shrink:0;">${peopleLabel}</span>
+            <span class="chip-title">${fullTitle}</span>
+            ${statusDone ? `<span style="flex-shrink:0; font-weight:700;">${statusDone}</span>` : ""}
+          </div>
+        `;
+      }).join("");
+    };
+
+    // 1. Previous month trailing days (With Events Rendered!)
     for (let i = startingDay - 1; i >= 0; i--) {
       const d = prevLastDate - i;
       const prevMonthIdx = month === 0 ? 12 : month;
       const prevYear = month === 0 ? year - 1 : year;
       const dateStr = `${prevYear}-${String(prevMonthIdx).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       const holidayName = KOREAN_HOLIDAYS[dateStr] || "";
+      const eventsHtml = renderCellEvents(dateStr);
       
       gridHtml += `
         <div class="calendar-day-cell other-month ${holidayName ? "holiday" : ""}" onclick="window.scheduleManager.openAddModal('${dateStr}')">
@@ -431,7 +500,9 @@ class ScheduleManager {
             <span class="day-number">${d}</span>
             ${holidayName ? `<span class="holiday-label" title="${holidayName}">${holidayName}</span>` : ""}
           </div>
-          <div class="day-events"></div>
+          <div class="day-events">
+            ${eventsHtml}
+          </div>
         </div>
       `;
     }
@@ -449,48 +520,13 @@ class ScheduleManager {
       if (dayOfWeek === 6) cellClasses += " sat";
       if (holidayName) cellClasses += " holiday";
 
-      const dayEvents = filteredSchedules.filter(s => {
-        const start = s.startDate;
-        const end = s.endDate || s.startDate;
-        return dateStr >= start && dateStr <= end;
-      });
-
-      const eventsHtml = dayEvents.map(s => {
-        let chipClass = "chip-type-check";
-        let icon = "🚗";
-        if (s.scheduleType === "maint") { chipClass = "chip-type-maint"; icon = "🛠️"; }
-        else if (s.scheduleType === "calib") { chipClass = "chip-type-calib"; icon = "🎯"; }
-        else if (s.scheduleType === "meeting") { chipClass = "chip-type-meeting"; icon = "💻"; }
-        else if (s.scheduleType === "vacation") { chipClass = "chip-type-vacation"; icon = "🌴"; }
-        else if (s.scheduleType === "emergency") { chipClass = "chip-type-emergency"; icon = "🚨"; }
-
-        const statusDone = s.status === "completed" ? "✓" : "";
-        let peopleLabel = `[${s.assignee}]`;
-        if (s.attendees) {
-          const count = s.attendees.split(",").filter(Boolean).length;
-          peopleLabel = `[${s.assignee}+${count}]`;
-        }
-
-        const stCount = (s.stationIds && s.stationIds.length > 1) ? ` (+${s.stationIds.length})` : "";
-
-        return `
-          <div class="schedule-chip ${chipClass}" 
-               title="${s.title} (${s.assignee}${s.attendees ? `, 동행:${s.attendees}` : ""}) - ${s.stationName ? `관측소: ${s.stationName}` : "내부일정"}"
-               onclick="event.stopPropagation(); window.scheduleManager.openEditModal(${s.id})">
-            <span style="flex-shrink:0;">${icon}</span>
-            <span style="font-weight:700; flex-shrink:0;">${peopleLabel}</span>
-            <span class="chip-title">${s.title}${stCount}</span>
-            ${statusDone ? `<span style="flex-shrink:0; font-weight:700;">${statusDone}</span>` : ""}
-          </div>
-        `;
-      }).join("");
+      const eventsHtml = renderCellEvents(dateStr);
 
       gridHtml += `
         <div class="${cellClasses}" onclick="window.scheduleManager.openAddModal('${dateStr}')">
           <div class="day-header">
             <span class="day-number">${day}</span>
             ${holidayName ? `<span class="holiday-label" title="${holidayName}">${holidayName}</span>` : ""}
-            ${dayEvents.length > 0 ? `<span style="font-size:0.7rem; font-weight:700; color:#3b82f6;">${dayEvents.length}</span>` : ""}
           </div>
           <div class="day-events">
             ${eventsHtml}
@@ -499,7 +535,7 @@ class ScheduleManager {
       `;
     }
 
-    // 3. Next month leading days
+    // 3. Next month leading days (With Events Rendered!)
     const totalRendered = startingDay + lastDate;
     const remaining = (7 - (totalRendered % 7)) % 7;
     for (let nextDay = 1; nextDay <= remaining; nextDay++) {
@@ -507,6 +543,7 @@ class ScheduleManager {
       const nextYear = month + 2 > 12 ? year + 1 : year;
       const dateStr = `${nextYear}-${String(nextMonthIdx).padStart(2, "0")}-${String(nextDay).padStart(2, "0")}`;
       const holidayName = KOREAN_HOLIDAYS[dateStr] || "";
+      const eventsHtml = renderCellEvents(dateStr);
 
       gridHtml += `
         <div class="calendar-day-cell other-month ${holidayName ? "holiday" : ""}" onclick="window.scheduleManager.openAddModal('${dateStr}')">
@@ -514,13 +551,16 @@ class ScheduleManager {
             <span class="day-number">${nextDay}</span>
             ${holidayName ? `<span class="holiday-label" title="${holidayName}">${holidayName}</span>` : ""}
           </div>
-          <div class="day-events"></div>
+          <div class="day-events">
+            ${eventsHtml}
+          </div>
         </div>
       `;
     }
 
     grid.innerHTML = gridHtml;
   }
+
 
   renderList() {
     const tbody = document.getElementById("sched-list-tbody");
