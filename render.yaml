@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: khydro-flow-stations-system
+    name: khydro-flow-station-system
     env: node
     plan: free
     buildCommand: npm install
