@@ -477,10 +477,10 @@ class ScheduleManager {
           <div class="schedule-chip ${chipClass}" 
                title="${s.title} (${s.assignee}${s.attendees ? `, 동행:${s.attendees}` : ""}) - ${s.stationName ? `관측소: ${s.stationName}` : "내부일정"}"
                onclick="event.stopPropagation(); window.scheduleManager.openEditModal(${s.id})">
-            <span>${icon}</span>
-            <span style="font-weight:700;">${peopleLabel}</span>
-            <span>${s.title}${stCount}</span>
-            <span>${statusDone}</span>
+            <span style="flex-shrink:0;">${icon}</span>
+            <span style="font-weight:700; flex-shrink:0;">${peopleLabel}</span>
+            <span class="chip-title">${s.title}${stCount}</span>
+            ${statusDone ? `<span style="flex-shrink:0; font-weight:700;">${statusDone}</span>` : ""}
           </div>
         `;
       }).join("");
