@@ -821,16 +821,30 @@ class ScheduleManager {
       description: desc
     };
 
-    if (this.currentEditingId) {
-      if (window.apiClient) {
-        await window.apiClient.updateSchedule(this.currentEditingId, payload);
+    try {
+      if (this.currentEditingId) {
+        if (window.apiClient) {
+          const res = await window.apiClient.updateSchedule(this.currentEditingId, payload);
+          if (res && res.success === false) {
+            alert(res.message || "일정 수정에 실패하였습니다.");
+            return;
+          }
+        }
+        window.app.showToast(`[${title}] 일정이 성공적으로 수정되었습니다.`, "success");
+      } else {
+        if (window.apiClient) {
+          const res = await window.apiClient.createSchedule(payload);
+          if (res && res.success === false) {
+            alert(res.message || "일정 등록에 실패하였습니다.");
+            return;
+          }
+        }
+        window.app.showToast(`[${title}] 신규 일정이 성공적으로 등록되었습니다.`, "success");
       }
-      window.app.showToast(`[${title}] 일정이 성공적으로 수정되었습니다.`, "success");
-    } else {
-      if (window.apiClient) {
-        await window.apiClient.createSchedule(payload);
-      }
-      window.app.showToast(`[${title}] 신규 일정이 성공적으로 등록되었습니다.`, "success");
+    } catch (e) {
+      console.error("Save schedule error:", e);
+      alert("일정 저장 중 서버 통신 오류가 발생했습니다.");
+      return;
     }
 
     this.closeModal();

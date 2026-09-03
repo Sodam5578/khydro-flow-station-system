@@ -229,7 +229,16 @@ router.get("/schedules", verifyToken, async (req, res) => {
 // 8. Schedules: Create New Schedule
 router.post("/schedules", verifyToken, async (req, res) => {
   try {
-    const { title, station_id, station_name, schedule_type, start_date, end_date, assignee, attendees, status, description } = req.body;
+    const title = req.body.title;
+    const schedule_type = req.body.schedule_type || req.body.scheduleType;
+    const start_date = req.body.start_date || req.body.startDate;
+    const end_date = req.body.end_date || req.body.endDate || start_date;
+    const station_id = req.body.station_id || req.body.stationId || "";
+    const station_name = req.body.station_name || req.body.stationName || "";
+    const assignee = req.body.assignee;
+    const attendees = req.body.attendees || "";
+    const status = req.body.status || "scheduled";
+    const description = req.body.description || "";
 
     if (!title || !schedule_type || !start_date || !assignee) {
       return res.status(400).json({ success: false, message: "필수 항목(제목, 구분, 시작일, 담당자)을 모두 입력해주세요." });
@@ -264,8 +273,6 @@ router.post("/schedules", verifyToken, async (req, res) => {
 router.put("/schedules/:id", verifyToken, async (req, res) => {
   try {
     const id = req.params.id;
-    const { title, station_id, station_name, schedule_type, start_date, end_date, assignee, attendees, status, description } = req.body;
-
     const schedules = await dbService.getAllSchedules();
     const existing = schedules.find(s => String(s.id) === String(id));
 
@@ -282,17 +289,28 @@ router.put("/schedules/:id", verifyToken, async (req, res) => {
       return res.status(403).json({ success: false, message: "해당 일정을 수정할 권한이 없습니다. (등록자, 담당자, 동행자 또는 관리자만 수정 가능)" });
     }
 
+    const title = req.body.title || existing.title;
+    const schedule_type = req.body.schedule_type || req.body.scheduleType || existing.schedule_type;
+    const start_date = req.body.start_date || req.body.startDate || existing.start_date;
+    const end_date = req.body.end_date || req.body.endDate || start_date || existing.end_date;
+    const station_id = req.body.station_id !== undefined ? String(req.body.station_id) : (req.body.stationId !== undefined ? String(req.body.stationId) : existing.station_id);
+    const station_name = req.body.station_name !== undefined ? req.body.station_name : (req.body.stationName !== undefined ? req.body.stationName : existing.station_name);
+    const assignee = req.body.assignee || existing.assignee;
+    const attendees = req.body.attendees !== undefined ? req.body.attendees : existing.attendees;
+    const status = req.body.status || existing.status;
+    const description = req.body.description !== undefined ? req.body.description : existing.description;
+
     const updateData = {
-      title: title || existing.title,
-      station_id: station_id !== undefined ? String(station_id) : existing.station_id,
-      station_name: station_name !== undefined ? station_name : existing.station_name,
-      schedule_type: schedule_type || existing.schedule_type,
-      start_date: start_date || existing.start_date,
-      end_date: end_date || start_date || existing.end_date,
-      assignee: assignee || existing.assignee,
-      attendees: attendees !== undefined ? attendees : existing.attendees,
-      status: status || existing.status,
-      description: description !== undefined ? description : existing.description
+      title,
+      station_id,
+      station_name,
+      schedule_type,
+      start_date,
+      end_date,
+      assignee,
+      attendees,
+      status,
+      description
     };
 
     const updated = await dbService.updateSchedule(id, updateData);
