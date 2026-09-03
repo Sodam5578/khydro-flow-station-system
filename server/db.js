@@ -10,8 +10,17 @@ const SUPABASE_KEY = process.env.SUPABASE_KEY || "sb_publishable_xydgPFAE_mWsyDJ
 
 let supabase = null;
 if (SUPABASE_URL && SUPABASE_KEY) {
-  supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-  console.log("☁️ Supabase PostgreSQL Cloud DB Client Initialized.");
+  try {
+    supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    });
+    console.log("☁️ Supabase PostgreSQL Cloud DB Client Initialized.");
+  } catch (e) {
+    console.warn("⚠️ Supabase init warning:", e.message);
+  }
 }
 
 // 2. Local SQLite Fallback
