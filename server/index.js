@@ -3,12 +3,14 @@ const cors = require("cors");
 const path = require("path");
 const { initDb } = require("./db");
 const apiRouter = require("./api");
+const monitorService = require("./monitor");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize Database
+// Initialize Database & Live Monitoring Service
 initDb();
+monitorService.init();
 
 // Middlewares
 app.use(cors());

@@ -64,14 +64,15 @@ class App {
       console.error("Failed to init logsManager:", e);
     }
 
-    // 8. Initialize Schedule Manager
+    // 8. Initialize Schedule & Monitor Managers
     try {
       if (window.scheduleManager) window.scheduleManager.init();
+      if (window.monitorManager) window.monitorManager.init();
     } catch(e) {
-      console.error("Failed to init scheduleManager:", e);
+      console.error("Failed to init schedule/monitor manager:", e);
     }
 
-    // 8. Bind Mobile & Modal Specific Events
+    // 9. Bind Mobile & Modal Specific Events
     try {
       this.bindMobileEvents();
       this.bindGISEvents();
@@ -163,6 +164,7 @@ class App {
       "maintenance": "2026년 유지관리 과업 총괄 관제",
       "calibration": "2026년 유속계 검정 관리",
       "schedules": "팀원 업무 및 현장점검 일정 관리",
+      "monitor": "전국 자동유량 실시간 관측자료 품질 모니터링",
       "logs": "팀원 작업 이력 및 감사 로그",
       "settings": "데이터 백업 및 시스템 설정"
     };
@@ -196,6 +198,10 @@ class App {
     } else if (tabName === "schedules") {
       if (window.scheduleManager) {
         window.scheduleManager.loadSchedules();
+      }
+    } else if (tabName === "monitor") {
+      if (window.monitorManager) {
+        window.monitorManager.loadData();
       }
     } else if (tabName === "logs") {
       if (window.logsManager) {
@@ -245,6 +251,13 @@ class App {
     if (yearFilter) {
       yearFilter.addEventListener("change", (e) => {
         window.gisManager.setFilters({ installYear: e.target.value });
+      });
+    }
+
+    const monitorFilter = document.getElementById("gis-filter-monitor");
+    if (monitorFilter) {
+      monitorFilter.addEventListener("change", (e) => {
+        window.gisManager.setFilters({ monitorStatus: e.target.value });
       });
     }
 

@@ -94,7 +94,7 @@ class StatsManager {
     const dataValues = [];
     const colors = [];
     const colorPalette = {
-      "낙동강권역": "#ea580c",
+      "낙동강권역": "#b45309",
       "한강권역": "#2563eb",
       "영산강·섬진강": "#9333ea",
       "금강권역": "#059669",

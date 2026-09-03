@@ -22,7 +22,7 @@
 }
 
 .pin-river-han { background-color: #2563eb; }
-.pin-river-nakdong { background-color: #ea580c; }
+.pin-river-nakdong { background-color: #b45309; }
 .pin-river-geum { background-color: #059669; }
 .pin-river-yeongsan { background-color: #9333ea; }
 .pin-river-other { background-color: #64748b; }
@@ -122,4 +122,50 @@
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
+}
+
+/* Real-time Monitor Abnormal Pin & Pulse Animation */
+.pin-issue-abnormal {
+  background-color: #dc2626 !important;
+  border: 2.5px solid #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.4), 0 4px 10px rgba(0, 0, 0, 0.35) !important;
+  animation: pulseWarning 1.8s infinite ease-in-out;
+  z-index: 600 !important;
+}
+
+@keyframes pulseWarning {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.popup-warning-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-top: 6px;
+}
+.popup-warning-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #b91c1c;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.popup-warning-item {
+  font-size: 0.72rem;
+  color: #7f1d1d;
+  margin-top: 3px;
+  line-height: 1.35;
 }

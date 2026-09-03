@@ -1,6 +1,7 @@
 /**
  * GISManager
  * Leaflet-based map manager for Flow Stations with Clean Basemap & Official 850 Standard Watershed Boundaries
+ * Enhanced with Dynamic Station Counts in all Filter Layer options & Real-time Diagnostic Pin Alerts (🚨 Pulse).
  */
 class GISManager {
   constructor() {
@@ -14,6 +15,7 @@ class GISManager {
       region: "all",
       gaugeType: "all",
       installYear: "all",
+      monitorStatus: "all", // "all", "normal", "abnormal"
       operatingOnly: false,
       floodOnly: false,
       droughtOnly: false,
@@ -34,7 +36,7 @@ class GISManager {
       zoomControl: true
     });
 
-    // 1. Create Dedicated Basins Pane (Between tiles and markers)
+    // 1. Create Dedicated Basins Pane
     this.map.createPane("basinsPane");
     this.map.getPane("basinsPane").style.zIndex = 350;
 
@@ -103,37 +105,29 @@ class GISManager {
         };
       },
       onEachFeature: (feature, layer) => {
-        const p = feature.properties;
-        const tooltipHtml = `
-          <div style="font-family: Pretendard, sans-serif; padding: 4px 6px;">
-            <div style="font-size: 0.88rem; font-weight: 800; color: ${p.color};">
-              🏞️ [${p.code}] ${p.name}
-            </div>
-            <div style="font-size: 0.75rem; color: #334155; margin-top: 3px;">
-              권역: <b>${p.region}</b> | 중권역코드: <b>${p.midCode}</b>
-            </div>
+        const props = feature.properties || {};
+        const title = props.name || "표준유역";
+        const code = props.code || "";
+        const area = props.area ? `${props.area.toLocaleString()} ㎢` : "-";
+        const mainRiver = props.mainRiver || "-";
+
+        layer.bindTooltip(`
+          <div style="font-family:'Pretendard',sans-serif; font-size:12px; line-height:1.4;">
+            <div style="font-weight:700; color:#1e3a8a;">🌊 ${title} <span style="font-size:10px; color:#64748b;">(${code})</span></div>
+            <div style="color:#475569; font-size:11px;">본류: <b>${mainRiver}</b> | 면적: <b>${area}</b></div>
           </div>
-        `;
-        layer.bindTooltip(tooltipHtml, {
-          sticky: true,
-          direction: "top",
-          opacity: 0.95
+        `, { sticky: true, className: 'basin-leaflet-tooltip' });
+
+        layer.on("mouseover", () => {
+          layer.setStyle({
+            weight: 2.5,
+            opacity: 1,
+            fillOpacity: 0.2
+          });
         });
 
-        layer.on({
-          mouseover: (e) => {
-            const l = e.target;
-            l.setStyle({
-              weight: 3.0,
-              opacity: 1,
-              fillOpacity: 0.28
-            });
-          },
-          mouseout: (e) => {
-            if (this.basinsLayer) {
-              this.basinsLayer.resetStyle(e.target);
-            }
-          }
+        layer.on("mouseout", () => {
+          this.basinsLayer.resetStyle(layer);
         });
       }
     });
@@ -145,12 +139,7 @@ class GISManager {
 
   toggleBasins(show) {
     this.showBasins = show;
-    if (!this.map) return;
-
-    if (!this.basinsLayer) {
-      this.initBasinsLayer();
-      return;
-    }
+    if (!this.map || !this.basinsLayer) return;
 
     if (show) {
       if (!this.map.hasLayer(this.basinsLayer)) {
@@ -177,27 +166,119 @@ class GISManager {
     this.renderMarkers();
   }
 
-  populateYearFilter() {
-    const yearSelect = document.getElementById("gis-filter-year");
-    if (!yearSelect) return;
+  updateFilterLabelsWithCounts() {
+    const allStations = window.dataManager ? window.dataManager.getAll() : [];
+    if (!allStations || allStations.length === 0) return;
+    const liveIssuesMap = window.liveIssuesMap || {};
+    const totalCount = allStations.length;
 
-    const allStations = window.dataManager.getAll();
-    const yearsSet = new Set();
+    // 1. Region Counts
+    let hanCount = 0, nakdongCount = 0, geumCount = 0, yeongsanCount = 0;
     allStations.forEach(st => {
-      if (st.installYear) {
-        yearsSet.add(String(st.installYear).trim());
+      const reg = st.region || "";
+      if (reg.includes("한강")) hanCount++;
+      else if (reg.includes("낙동강")) nakdongCount++;
+      else if (reg.includes("금강")) geumCount++;
+      else if (reg.includes("영산강") || reg.includes("섬진강")) yeongsanCount++;
+    });
+
+    const regionSelect = document.getElementById("gis-filter-region");
+    if (regionSelect) {
+      const cur = this.filters.region;
+      regionSelect.innerHTML = `
+        <option value="all" ${cur === "all" ? "selected" : ""}>전체 권역 보기 (${totalCount}개소)</option>
+        <option value="한강" ${cur === "한강" ? "selected" : ""}>한강 권역 (${hanCount}개소)</option>
+        <option value="낙동강" ${cur === "낙동강" ? "selected" : ""}>낙동강 권역 (${nakdongCount}개소)</option>
+        <option value="금강" ${cur === "금강" ? "selected" : ""}>금강 권역 (${geumCount}개소)</option>
+        <option value="영산강" ${cur === "영산강" ? "selected" : ""}>영산강·섬진강 권역 (${yeongsanCount}개소)</option>
+      `;
+    }
+
+    // 2. Gauge Type Counts
+    let dualCount = 0, ewsvCount = 0, advmCount = 0;
+    allStations.forEach(st => {
+      const isDual = !!st.isDualGauge || st.gaugeCategory === "DUAL" || (st.gaugeType && st.gaugeType.includes("EWSV") && st.gaugeType.includes("ADVM"));
+      if (isDual) dualCount++;
+      else if (st.gaugeType && st.gaugeType.includes("EWSV")) ewsvCount++;
+      else if (st.gaugeType && st.gaugeType.includes("ADVM")) advmCount++;
+    });
+
+    const gaugeSelect = document.getElementById("gis-filter-gauge");
+    if (gaugeSelect) {
+      const cur = this.filters.gaugeType;
+      gaugeSelect.innerHTML = `
+        <option value="all" ${cur === "all" ? "selected" : ""}>전체 형식 보기 (${totalCount}개소)</option>
+        <option value="DUAL" ${cur === "DUAL" ? "selected" : ""}>⚡ EWSV + ADVM (이중화 ${dualCount}개소)</option>
+        <option value="EWSV" ${cur === "EWSV" ? "selected" : ""}>EWSV (전자파 단독 ${ewsvCount}개소)</option>
+        <option value="ADVM" ${cur === "ADVM" ? "selected" : ""}>ADVM (초음파 단독 ${advmCount}개소)</option>
+      `;
+    }
+
+    // 3. Monitor Status Counts
+    let abnormalCount = 0;
+    allStations.forEach(st => {
+      const stCodeStr = String(st.code || "").trim();
+      const stNameStr = String(st.name || "").trim();
+      const cleanName = stNameStr.replace(/[\(\)\s]/g, "");
+      const hasIssue = (stCodeStr && liveIssuesMap[stCodeStr]) || (stNameStr && liveIssuesMap[stNameStr]) || (cleanName && liveIssuesMap[cleanName]);
+      if (hasIssue) abnormalCount++;
+    });
+    const normalCount = Math.max(0, totalCount - abnormalCount);
+
+    const monitorSelect = document.getElementById("gis-filter-monitor");
+    if (monitorSelect) {
+      const cur = this.filters.monitorStatus;
+      monitorSelect.innerHTML = `
+        <option value="all" ${cur === "all" ? "selected" : ""}>전체 관측상태 보기 (${totalCount}개소)</option>
+        <option value="abnormal" ${cur === "abnormal" ? "selected" : ""} style="color:#b91c1c; font-weight:700;">🚨 이상 발생 지점만 보기 (${abnormalCount}개소)</option>
+        <option value="normal" ${cur === "normal" ? "selected" : ""}>✅ 정상 수신 지점만 보기 (${normalCount}개소)</option>
+      `;
+    }
+
+    // 4. Designated Checkboxes Counts
+    let operatingCount = 0, floodCount = 0, droughtCount = 0, calibCount = 0, solarCount = 0;
+    allStations.forEach(st => {
+      if (st.isOperating2026) operatingCount++;
+      if (st.floodAlert) floodCount++;
+      if (st.droughtAlert) droughtCount++;
+      if (st.calib2026) calibCount++;
+      if (st.solarInstall) solarCount++;
+    });
+
+    const setCheckLabel = (checkId, labelText) => {
+      const input = document.getElementById(checkId);
+      if (input && input.parentElement) {
+        const span = input.parentElement.querySelector("span");
+        if (span) span.textContent = labelText;
       }
-    });
+    };
 
-    const sortedYears = Array.from(yearsSet).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
-    const currentVal = this.filters.installYear;
+    setCheckLabel("gis-check-dual", `⚡ 이중화(EWSV+ADVM) 지점 (${dualCount}개소)`);
+    setCheckLabel("gis-check-operating", `2026년 정상 운영 지점 (${operatingCount}개소)`);
+    setCheckLabel("gis-check-flood", `홍수특보 지정 지점 (${floodCount}개소)`);
+    setCheckLabel("gis-check-drought", `갈수예보 지정 지점 (${droughtCount}개소)`);
+    setCheckLabel("gis-check-calib", `26년 검정대상 지점 (${calibCount}개소)`);
+    setCheckLabel("gis-check-solar", `태양광 설치 지점 (${solarCount}개소)`);
 
-    let optionsHtml = '<option value="all">전체 설치년도 보기</option>';
-    sortedYears.forEach(y => {
-      optionsHtml += `<option value="${y}" ${currentVal === y ? "selected" : ""}>${y}년 설치</option>`;
-    });
+    // 5. Install Year Counts
+    const yearSelect = document.getElementById("gis-filter-year");
+    if (yearSelect) {
+      const yearsMap = {};
+      allStations.forEach(st => {
+        if (st.installYear) {
+          const y = String(st.installYear).trim();
+          yearsMap[y] = (yearsMap[y] || 0) + 1;
+        }
+      });
+      const sortedYears = Object.keys(yearsMap).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+      const currentVal = this.filters.installYear;
 
-    yearSelect.innerHTML = optionsHtml;
+      let optionsHtml = `<option value="all" ${currentVal === "all" ? "selected" : ""}>전체 설치년도 보기 (${totalCount}개소)</option>`;
+      sortedYears.forEach(y => {
+        optionsHtml += `<option value="${y}" ${currentVal === y ? "selected" : ""}>${y}년 설치 (${yearsMap[y]}개소)</option>`;
+      });
+      yearSelect.innerHTML = optionsHtml;
+    }
   }
 
   setFilters(newFilters) {
@@ -208,11 +289,12 @@ class GISManager {
   renderMarkers() {
     if (!this.map || !this.markersLayer) return;
 
-    this.populateYearFilter();
+    this.updateFilterLabelsWithCounts();
     this.markersLayer.clearLayers();
     this.allMarkers = [];
 
     const stations = this.currentStations.length > 0 ? this.currentStations : window.dataManager.getAll();
+    const liveIssuesMap = window.liveIssuesMap || {};
 
     let visibleCount = 0;
 
@@ -222,6 +304,21 @@ class GISManager {
       if (!lat || !lon) return;
 
       const isDual = !!st.isDualGauge || st.gaugeCategory === "DUAL" || (st.gaugeType && st.gaugeType.includes("EWSV") && st.gaugeType.includes("ADVM"));
+
+      // Check real-time issues by code and name
+      let issues = [];
+      const stCodeStr = String(st.code || "").trim();
+      const stNameStr = String(st.name || "").trim();
+      const cleanName = stNameStr.replace(/[\(\)\s]/g, "");
+
+      if (stCodeStr && liveIssuesMap[stCodeStr]) {
+        issues = liveIssuesMap[stCodeStr];
+      } else if (stNameStr && liveIssuesMap[stNameStr]) {
+        issues = liveIssuesMap[stNameStr];
+      } else if (cleanName && liveIssuesMap[cleanName]) {
+        issues = liveIssuesMap[cleanName];
+      }
+      const isAbnormal = issues.length > 0;
 
       // Filter: Region
       if (this.filters.region !== "all" && !st.region.includes(this.filters.region)) {
@@ -240,13 +337,17 @@ class GISManager {
         if (String(st.installYear).trim() !== this.filters.installYear) return;
       }
 
-      // Filter: Checkboxes
-      if (this.filters.dualOnly && !isDual) return;
+      // Filter: Real-time Monitor Status
+      if (this.filters.monitorStatus === "abnormal" && !isAbnormal) return;
+      if (this.filters.monitorStatus === "normal" && isAbnormal) return;
+
+      // Filter: Designated Flags
       if (this.filters.operatingOnly && !st.isOperating2026) return;
       if (this.filters.floodOnly && !st.floodAlert) return;
       if (this.filters.droughtOnly && !st.droughtAlert) return;
       if (this.filters.calibOnly && !st.calib2026) return;
       if (this.filters.solarOnly && !st.solarInstall) return;
+      if (this.filters.dualOnly && !isDual) return;
 
       // Filter: Keyword search
       if (this.filters.searchKeyword) {
@@ -264,7 +365,13 @@ class GISManager {
       const regionClass = this.getRegionClass(st.region);
       
       let markerHtml = "";
-      if (isDual) {
+      if (isAbnormal) {
+        markerHtml = `
+          <div class="station-pin pin-issue-abnormal" title="🚨 실시간 이상 감지: ${st.name} (${issues.length}건 이상)">
+            <span>🚨</span>
+          </div>
+        `;
+      } else if (isDual) {
         markerHtml = `
           <div class="station-pin pin-gauge-dual" title="⚡ 이중화: ${st.name} (${st.gaugeType})">
             <span>⚡</span>
@@ -289,17 +396,46 @@ class GISManager {
 
       const marker = L.marker([lat, lon], { icon: customIcon });
 
+      // Real-time issues alert card in popup
+      let warningBoxHtml = "";
+      if (isAbnormal) {
+        const firstIssue = issues[0];
+        warningBoxHtml = `
+          <div class="popup-warning-box">
+            <div class="popup-warning-header">
+              <span>🚨 실시간 관측 이상 감지 (${issues.length}건)</span>
+            </div>
+            ${issues.slice(0, 3).map(iss => `
+              <div class="popup-warning-item">
+                • <b>[${iss.ruleId}] ${iss.problem}</b>: ${iss.detail} <span style="color:#b91c1c; font-weight:700;">(연속 ${iss.continuousCount}회)</span>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      }
+
+      const primaryIssue = isAbnormal ? issues[0] : null;
+      const scheduleBtnAction = primaryIssue 
+        ? `window.scheduleManager.openAddModalWithStation(${st.id}, '${st.name}', '[${primaryIssue.ruleId}] ${primaryIssue.problem}', '${primaryIssue.detail} (연속 ${primaryIssue.continuousCount}회)')`
+        : `window.scheduleManager.openAddModalWithStation(${st.id}, '${st.name}', '', '')`;
+
+      const headerBadge = isAbnormal 
+        ? '<span class="badge" style="background:#fef2f2; color:#b91c1c; font-weight:700;">🚨 조치 필요</span>' 
+        : (isDual ? '<span class="badge-dual-chip">⚡ 이중화 지점</span>' : '');
+
       const popupHtml = `
         <div class="custom-map-popup">
-          <div class="popup-header ${isDual ? "dual" : ""}">
+          <div class="popup-header ${isAbnormal ? "abnormal" : (isDual ? "dual" : "")}" style="${isAbnormal ? "background: linear-gradient(135deg, #b91c1c, #991b1b); color: white;" : ""}">
             <div class="popup-title">
               <span>${st.name || "-"}</span>
-              ${isDual ? "<span class=\"badge-dual-chip\">⚡ 이중화 지점</span>" : ""}
+              ${headerBadge}
             </div>
-            <div class="popup-subtitle">${st.region || "-"}권역 | ${st.river || "-"}천 (코드: ${st.code || "-"})</div>
+            <div class="popup-subtitle" style="${isAbnormal ? "color:#fecaca;" : ""}">${st.region || "-"}권역 | ${st.river || "-"}천 (코드: ${st.code || "-"})</div>
           </div>
+          
           <div class="popup-body">
-            <div class="popup-row"><span class="popup-row-label">위치(주소):</span> <span style="font-weight:500;">${st.address || "-"}</span></div>
+            ${warningBoxHtml}
+            <div class="popup-row" style="margin-top:4px;"><span class="popup-row-label">위치(주소):</span> <span style="font-weight:500;">${st.address || "-"}</span></div>
             <div class="popup-row">
               <span class="popup-row-label">유속계 형식:</span> 
               <span><b style="color:${isDual ? "#7c3aed" : "#1d4ed8"};">${st.gaugeType || "-"}</b> ${isDual ? "(EWSV+ADVM 복합)" : ""}</span>
@@ -312,8 +448,12 @@ class GISManager {
             <div class="popup-row"><span class="popup-row-label">26년 운영여부:</span> <span>${st.isOperating2026 ? "<span class=\"badge badge-green\">운영중</span>" : "<span class=\"badge badge-gray\">미운영/대기</span>"}</span></div>
             <div class="popup-row"><span class="popup-row-label">지정 구분:</span> <span>${st.floodAlert ? "<span class=\"badge badge-red\">홍수</span> " : ""}${st.droughtAlert ? "<span class=\"badge badge-amber\">갈수</span> " : ""}${st.calib2026 ? "<span class=\"badge badge-cyan\">검정</span>" : ""}${!st.floodAlert && !st.droughtAlert && !st.calib2026 ? "-" : ""}</span></div>
           </div>
+          
           <div class="popup-footer">
-            <button class="btn btn-primary btn-sm" onclick="window.modalManager.openDetail(${st.id})">상세정보 및 편집</button>
+            <button class="btn btn-outline btn-sm" onclick="window.modalManager.openDetail(${st.id})">상세정보 & 편집</button>
+            <button class="btn btn-primary btn-sm" style="${isAbnormal ? "background:#dc2626; border-color:#dc2626;" : ""}" onclick="${scheduleBtnAction}">
+              🚗 점검일정 잡기
+            </button>
           </div>
         </div>
       `;

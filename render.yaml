@@ -10,3 +10,8 @@ services:
         value: 3000
       - key: NODE_ENV
         value: production
+      - key: SUPABASE_URL
+        value: https://yillotmxhrchjvslgvym.supabase.co
+      - key: SUPABASE_KEY
+        value: sb_publishable_xydgPFAE_mWsyDJYnawu1g_yzJDOCR_
+

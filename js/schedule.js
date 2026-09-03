@@ -649,6 +649,46 @@ class ScheduleManager {
     if (modal) modal.classList.add("active");
   }
 
+  openAddModalWithStation(stId, stName, issueTitle = "", issueDetail = "") {
+    if (window.app && window.app.switchTab) {
+      window.app.switchTab("schedules");
+    }
+
+    this.openAddModal();
+
+    const titleInput = document.getElementById("sched-form-title");
+    if (titleInput) {
+      titleInput.value = issueTitle ? `[긴급/점검] ${stName} - ${issueTitle}` : `[현장점검] ${stName} 점검 출장`;
+    }
+
+    const typeSelect = document.getElementById("sched-form-type");
+    if (typeSelect) {
+      typeSelect.value = issueTitle ? "emergency" : "check";
+    }
+
+    const descInput = document.getElementById("sched-form-desc");
+    if (descInput && (issueTitle || issueDetail)) {
+      descInput.value = `[실시간 모니터링 이상 감지 연계]\n- 이상 항목: ${issueTitle}\n- 상세 내용: ${issueDetail}`;
+    }
+
+    let st = null;
+    if (stId) {
+      st = window.dataManager.getById(stId) || window.dataManager.getAll().find(s => String(s.code) === String(stId) || s.name === stName);
+    } else if (stName) {
+      st = window.dataManager.getAll().find(s => s.name === stName);
+    }
+
+    if (st) {
+      this.selectedStations = [{
+        id: st.id,
+        name: st.name,
+        river: st.river,
+        region: st.region
+      }];
+      this.renderSelectedStationChips(false);
+    }
+  }
+
   openEditModal(scheduleId) {
     const s = this.schedules.find(item => item.id === scheduleId);
     if (!s) return;

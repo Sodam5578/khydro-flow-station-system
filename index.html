@@ -62,6 +62,10 @@
           <span class="nav-icon">📅</span>
           <span>업무·점검 일정</span>
         </button>
+        <button class="nav-item" data-tab="monitor">
+          <span class="nav-icon">🛰️</span>
+          <span>실시간 관측 모니터링</span>
+        </button>
         <button class="nav-item" data-tab="logs" id="nav-logs-btn">
           <span class="nav-icon">📜</span>
           <span>작업 이력 관리</span>
@@ -260,6 +264,15 @@
                 <div class="filter-group">
                   <select id="gis-filter-year" class="filter-select" style="width:100%;">
                     <option value="all">전체 설치년도 보기</option>
+                  </select>
+                </div>
+
+                <div class="filter-section-title" style="color:#b91c1c;">🚨 실시간 관측 모니터링 상태</div>
+                <div class="filter-group">
+                  <select id="gis-filter-monitor" class="filter-select" style="width:100%; border-color:#dc2626; font-weight:600;">
+                    <option value="all">전체 관측상태 보기</option>
+                    <option value="abnormal" style="color:#b91c1c; font-weight:700;">🚨 이상 발생 지점만 보기 (조치 필요)</option>
+                    <option value="normal">✅ 정상 수신 지점만 보기</option>
                   </select>
                 </div>
 
@@ -913,6 +926,141 @@
           </div>
         </section>
 
+        <!-- 8. REAL-TIME DATA & DIAGNOSTIC MONITOR VIEW -->
+        <section class="view-panel" id="view-monitor">
+          <!-- Monitor Header Bar with Target Time & Manual Sync -->
+          <div class="table-controls-card" style="margin-bottom: 1.25rem; background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; border: none; border-radius:12px; padding:1.25rem;">
+            <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:1rem;">
+              <div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:1.5rem;">🛰️</span>
+                  <h2 style="font-size:1.25rem; font-weight:800; margin:0; color:#ffffff;">전국 자동유량 실시간 관측자료 품질 모니터링</h2>
+                </div>
+                <div style="font-size:0.85rem; color:#bfdbfe; margin-top:4px;">
+                  최신 관측 대상시각: <strong id="monitor-target-time" style="color:#ffffff; background:rgba(255,255,255,0.2); padding:2px 6px; border-radius:4px;">로딩중...</strong> 
+                  <span style="margin: 0 6px; opacity:0.6;">|</span>
+                  동기화 시각: <span id="monitor-last-sync-time" style="color:#ffffff;">-</span> (10분 주기 자동 검증)
+                </div>
+              </div>
+
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <button class="btn btn-sm" id="monitor-btn-sync" onclick="window.monitorManager.syncNow()" style="background:#ffffff; color:#1e40af; font-weight:700; border:none;">
+                  🔄 실시간 데이터 갱신
+                </button>
+                <a href="http://183.96.156.168:8080/" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="color:#ffffff; border-color:rgba(255,255,255,0.5);">
+                  🌐 원본 모니터링 서버
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Monitor KPI Summary Cards -->
+          <div class="kpi-grid" style="margin-bottom: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+            <div class="kpi-card">
+              <div class="kpi-icon blue">📡</div>
+              <div class="kpi-info">
+                <div class="kpi-value" id="kpi-mon-target">187개소</div>
+                <div class="kpi-label">실시간 관측 대상 지점</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon green">✅</div>
+              <div class="kpi-info">
+                <div class="kpi-value" id="kpi-mon-normal">147개소</div>
+                <div class="kpi-label" id="kpi-mon-normal-sub">정상 수신 및 운영 지점</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon red">🚨</div>
+              <div class="kpi-info">
+                <div class="kpi-value" id="kpi-mon-issues" style="color:#dc2626;">40개소</div>
+                <div class="kpi-label" id="kpi-mon-issues-sub">확인·조치 필요 지점 (54건)</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon amber">⚠️</div>
+              <div class="kpi-info">
+                <div class="kpi-value" id="kpi-mon-new">0건</div>
+                <div class="kpi-label">신규 및 재발 이상</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon cyan">📊</div>
+              <div class="kpi-info">
+                <div class="kpi-value" id="kpi-mon-rx-rate">99.5%</div>
+                <div class="kpi-label">원시자료 실시간 수신율</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter & Control Card -->
+          <div class="table-controls-card" style="margin-bottom: 1rem;">
+            <div class="controls-row" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem;">
+              <div style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+                <!-- Method Filter -->
+                <select id="monitor-filter-method" class="filter-select" style="min-width:130px;" onchange="window.monitorManager.onFilterChange()">
+                  <option value="all">전체 관측방식</option>
+                  <option value="ADVM">ADVM (초음파)</option>
+                  <option value="EWSV">EWSV (전자파)</option>
+                </select>
+
+                <!-- Basin Filter -->
+                <select id="monitor-filter-basin" class="filter-select" style="min-width:130px;" onchange="window.monitorManager.onFilterChange()">
+                  <option value="all">전체 관할 권역</option>
+                  <option value="한강">한강 권역</option>
+                  <option value="낙동강">낙동강 권역</option>
+                  <option value="금강">금강 권역</option>
+                  <option value="영산강">영산강·섬진강 권역</option>
+                </select>
+
+                <!-- Status Filter -->
+                <select id="monitor-filter-status" class="filter-select" style="min-width:130px;" onchange="window.monitorManager.onFilterChange()">
+                  <option value="all">전체 이상 상태</option>
+                  <option value="ongoing">지속 이상</option>
+                  <option value="new">🚨 신규 이상</option>
+                  <option value="reopened">⚠️ 재발 이상</option>
+                  <option value="resolved">✓ 해소</option>
+                </select>
+
+                <!-- Search Input -->
+                <div class="search-input-wrapper" style="min-width: 220px;">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="monitor-search-input" class="search-input" placeholder="관측소명, 지점코드, Rule ID 검색...">
+                </div>
+              </div>
+
+              <div style="font-size:0.8rem; color:#64748b;">
+                <span>조회된 이상 결과: </span><b id="monitor-table-count" style="color:#dc2626;">0개소 (총 0건)</b>
+              </div>
+            </div>
+          </div>
+
+          <!-- Issues Table Card -->
+          <div class="table-container-card">
+            <div class="table-responsive">
+              <table class="custom-table" style="width:100%;">
+                <thead>
+                  <tr>
+                    <th style="width:45px; text-align:center;">No.</th>
+                    <th style="width:65px; text-align:center;">구분</th>
+                    <th style="width:75px; text-align:center;">방식</th>
+                    <th style="width:75px; text-align:center;">권역</th>
+                    <th style="min-width:150px;">관측소명 (코드)</th>
+                    <th style="width:60px; text-align:center;">센서</th>
+                    <th style="width:95px; text-align:center;">Rule ID</th>
+                    <th style="min-width:260px;">진단 문제명 및 상세 내용</th>
+                    <th style="width:80px; text-align:center;">연속발생</th>
+                    <th style="width:140px; text-align:center;">조치 및 연계</th>
+                  </tr>
+                </thead>
+                <tbody id="monitor-table-tbody">
+                  <!-- Dynamic Rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
       </div>
     </main>
   </div>
@@ -1275,6 +1423,7 @@
   <script src="js/maintenance.js"></script>
   <script src="js/calibration.js"></script>
   <script src="js/schedule.js"></script>
+  <script src="js/monitor.js"></script>
   <script src="js/logs.js"></script>
   <script src="js/modal.js"></script>
   <script src="js/excel.js"></script>

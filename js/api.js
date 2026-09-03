@@ -218,6 +218,28 @@ class ApiClient {
     });
     return await res.json();
   }
+
+  // REST API: Live Monitoring (HydroMonitor)
+  async getMonitorSummary() {
+    const res = await fetch(`${this.baseUrl}/monitor/summary`, { headers: this.getHeaders() });
+    return await res.json();
+  }
+
+  async getMonitorIssues(filters = {}) {
+    const query = new URLSearchParams(filters).toString();
+    const res = await fetch(`${this.baseUrl}/monitor/issues?${query}`, { headers: this.getHeaders() });
+    return await res.json();
+  }
+
+  async syncLiveMonitor() {
+    const res = await fetch(`${this.baseUrl}/monitor/sync`, { method: "POST", headers: this.getHeaders() });
+    return await res.json();
+  }
+
+  async getStationLiveStatus(stCode) {
+    const res = await fetch(`${this.baseUrl}/monitor/station/${stCode}`, { headers: this.getHeaders() });
+    return await res.json();
+  }
 }
 
 window.apiClient = new ApiClient();
