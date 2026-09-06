@@ -365,20 +365,33 @@ class App {
     if (!window.apiClient) return;
     try {
       const res = await window.apiClient.getNotificationConfig();
+      const isAdmin = window.apiClient?.user?.role === "admin";
+
+      const threshEl = document.getElementById("smtp-threshold");
+      const hostEl = document.getElementById("smtp-host");
+      const portEl = document.getElementById("smtp-port");
+      const userEl = document.getElementById("smtp-user");
+      const passEl = document.getElementById("smtp-pass");
+      const recipEl = document.getElementById("smtp-recipients");
+      const badgeEl = document.getElementById("smtp-status-badge");
+      const noticeEl = document.getElementById("smtp-member-readonly-notice");
+      const saveBtn = document.getElementById("smtp-btn-save");
+
+      // UI Admin Enforcement
+      if (noticeEl) noticeEl.style.display = isAdmin ? "none" : "block";
+      if (saveBtn) saveBtn.style.display = isAdmin ? "inline-flex" : "none";
+
+      [threshEl, hostEl, portEl, userEl, passEl, recipEl].forEach(el => {
+        if (el) el.disabled = !isAdmin;
+      });
+
       if (res.success && res.config) {
         const c = res.config;
-        const threshEl = document.getElementById("smtp-threshold");
-        const hostEl = document.getElementById("smtp-host");
-        const portEl = document.getElementById("smtp-port");
-        const userEl = document.getElementById("smtp-user");
-        const recipEl = document.getElementById("smtp-recipients");
-        const badgeEl = document.getElementById("smtp-status-badge");
-
         if (threshEl && c.thresholdCount) threshEl.value = String(c.thresholdCount);
-        if (hostEl) hostEl.value = c.host || "smtp.gmail.com";
-        if (portEl) portEl.value = c.port || 587;
+        if (hostEl) hostEl.value = c.host || "smtp.naver.com";
+        if (portEl) portEl.value = c.port || 465;
         if (userEl && !userEl.value) userEl.placeholder = c.user ? `현재 설정됨 (${c.user})` : "발신 계정 이메일";
-        if (recipEl) recipEl.value = c.recipients || "kihs_infra@kihs.re.kr, sechan@kihs.re.kr";
+        if (recipEl) recipEl.value = c.recipients || "psn5578@naver.com, psn5578@kihs.re.kr";
         
         if (badgeEl) {
           if (c.isConfigured) {

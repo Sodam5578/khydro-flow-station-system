@@ -1,31 +1,79 @@
 const nodemailer = require("nodemailer");
+const fs = require("fs");
+const path = require("path");
 
 class SmartNotifierService {
   constructor() {
+    this.configFilePath = path.join(__dirname, "../data/notification_config.json");
+
     // Alert state tracker: key -> { level: "WARNING"|"NORMAL", count: number, lastNotifiedLevel: "", lastNotifiedTime: "" }
     this.alertStates = new Map();
     this.notificationLogs = [];
     this.maxLogs = 500;
 
-    // User-configurable alert threshold count (default: 3 times = 30 mins)
+    // Default values
     this.thresholdCount = parseInt(process.env.ALERT_THRESHOLD_COUNT, 10) || 3;
-
-    // Default SMTP config (Can be overridden via env or admin settings)
     this.smtpConfig = {
-      host: process.env.SMTP_HOST || "smtp.gmail.com",
-      port: parseInt(process.env.SMTP_PORT, 10) || 587,
-      secure: false,
+      host: process.env.SMTP_HOST || "smtp.naver.com",
+      port: parseInt(process.env.SMTP_PORT, 10) || 465,
+      secure: true,
       auth: {
         user: process.env.SMTP_USER || "",
         pass: process.env.SMTP_PASS || ""
       },
-      from: process.env.SMTP_FROM || "자동유량관측 이상알림 <noreply@kihs.re.kr>"
+      from: process.env.SMTP_FROM || "자동유량관측 이상알림 <psn5578@naver.com>"
     };
-
-    this.recipients = (process.env.ALERT_RECIPIENTS || "psn5578@kihs.re.kr, psn5578@naver.com, kihs_infra@kihs.re.kr").split(",").map(e => e.trim());
+    this.recipients = (process.env.ALERT_RECIPIENTS || "psn5578@naver.com, psn5578@kihs.re.kr").split(",").map(e => e.trim());
     this.enabled = process.env.ENABLE_EMAIL_ALERTS === "true" || true;
     this.transporter = null;
+
+    // Load persisted configuration from storage
+    this.loadPersistedConfig();
     this.initTransporter();
+  }
+
+  loadPersistedConfig() {
+    try {
+      if (fs.existsSync(this.configFilePath)) {
+        const raw = fs.readFileSync(this.configFilePath, "utf-8");
+        const saved = JSON.parse(raw);
+        if (saved.thresholdCount) this.thresholdCount = saved.thresholdCount;
+        if (saved.host) this.smtpConfig.host = saved.host;
+        if (saved.port) this.smtpConfig.port = saved.port;
+        if (saved.user) this.smtpConfig.auth.user = saved.user;
+        if (saved.pass) this.smtpConfig.auth.pass = saved.pass;
+        if (saved.from) this.smtpConfig.from = saved.from;
+        if (saved.recipients && Array.isArray(saved.recipients)) this.recipients = saved.recipients;
+        if (saved.enabled !== undefined) this.enabled = saved.enabled;
+        console.log(`📁 [SmartNotifier] Loaded persisted config from disk (threshold: ${this.thresholdCount}회, user: ${this.smtpConfig.auth.user || "none"})`);
+      }
+    } catch (e) {
+      console.warn("⚠️ Failed to load persisted notification config:", e.message);
+    }
+  }
+
+  persistConfig() {
+    try {
+      const dataDir = path.dirname(this.configFilePath);
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      const dataToSave = {
+        thresholdCount: this.thresholdCount,
+        host: this.smtpConfig.host,
+        port: this.smtpConfig.port,
+        user: this.smtpConfig.auth.user,
+        pass: this.smtpConfig.auth.pass,
+        from: this.smtpConfig.from,
+        recipients: this.recipients,
+        enabled: this.enabled,
+        savedAt: new Date().toISOString()
+      };
+      fs.writeFileSync(this.configFilePath, JSON.stringify(dataToSave, null, 2), "utf-8");
+      console.log("💾 [SmartNotifier] Notification settings saved permanently to disk.");
+    } catch (e) {
+      console.warn("⚠️ Failed to persist notification config:", e.message);
+    }
   }
 
   initTransporter() {
@@ -40,7 +88,7 @@ class SmartNotifierService {
             pass: this.smtpConfig.auth.pass
           }
         });
-        console.log("📧 SmartNotifier SMTP Transporter configured.");
+        console.log(`📧 SmartNotifier SMTP Transporter configured (${this.smtpConfig.host}:${this.smtpConfig.port}).`);
       } catch (e) {
         console.warn("⚠️ SMTP Transporter init failed:", e.message);
       }
@@ -58,6 +106,8 @@ class SmartNotifierService {
     if (config.from) this.smtpConfig.from = config.from;
     if (config.recipients) this.recipients = config.recipients.split(",").map(e => e.trim()).filter(Boolean);
     if (config.enabled !== undefined) this.enabled = !!config.enabled;
+
+    this.persistConfig();
     this.initTransporter();
   }
 
@@ -78,9 +128,15 @@ class SmartNotifierService {
     return this.notificationLogs;
   }
 
+  getFromAddress() {
+    if (this.smtpConfig.auth && this.smtpConfig.auth.user) {
+      return `자동유량관측 이상알림 <${this.smtpConfig.auth.user}>`;
+    }
+    return this.smtpConfig.from || "자동유량관측 이상알림 <psn5578@naver.com>";
+  }
+
   /**
    * Main Check & Notify Loop - Runs automatically in background every 5 minutes
-   * Even when no user is browsing the webpage!
    */
   async checkAndNotify(currentIssues, targetTime) {
     if (!this.enabled) return;
@@ -208,13 +264,6 @@ class SmartNotifierService {
     `;
 
     return this.deliverEmail(subject, html, issue.stationName, "RESOLVED", 0);
-  }
-
-  getFromAddress() {
-    if (this.smtpConfig.auth && this.smtpConfig.auth.user) {
-      return `자동유량관측 이상알림 <${this.smtpConfig.auth.user}>`;
-    }
-    return this.smtpConfig.from || "자동유량관측 이상알림 <noreply@kihs.re.kr>";
   }
 
   async deliverEmail(subject, html, stationName, level, count) {

@@ -810,6 +810,11 @@
                   </div>
                 </div>
 
+                <!-- Non-Admin Readonly Banner -->
+                <div id="smtp-member-readonly-notice" style="display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:0.6rem 0.8rem; margin-bottom:1rem; font-size:0.8rem; color:#991b1b;">
+                  <span>🔒 <b>조회 전용 모드</b>: 이메일 알림 서비스 설정은 <b>최고 관리자(admin)</b> 계정으로만 변경할 수 있습니다.</span>
+                </div>
+
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; border-top:1px solid var(--border-color); padding-top:1rem;">
                   <div style="display:flex; gap:0.5rem;">
                     <button class="btn btn-outline btn-sm" onclick="window.app.sendTestEmail()">
@@ -819,7 +824,7 @@
                       <span>📜</span> <span>발송 이력 로그 보기</span>
                     </button>
                   </div>
-                  <button class="btn btn-primary btn-sm" onclick="window.app.saveSmtpConfig()">
+                  <button class="btn btn-primary btn-sm" id="smtp-btn-save" onclick="window.app.saveSmtpConfig()">
                     <span>💾</span> <span>알림 설정 저장</span>
                   </button>
                 </div>
