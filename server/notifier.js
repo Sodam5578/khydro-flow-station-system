@@ -114,9 +114,10 @@ class SmartNotifierService {
   getConfig() {
     return {
       thresholdCount: this.thresholdCount,
-      host: this.smtpConfig.host,
-      port: this.smtpConfig.port,
-      user: this.smtpConfig.auth.user ? `${this.smtpConfig.auth.user.slice(0, 3)}***` : "",
+      host: this.smtpConfig.host || "smtp.naver.com",
+      port: this.smtpConfig.port || 465,
+      user: this.smtpConfig.auth.user || "",
+      pass: this.smtpConfig.auth.pass || "",
       from: this.smtpConfig.from,
       recipients: this.recipients.join(", "),
       enabled: this.enabled,

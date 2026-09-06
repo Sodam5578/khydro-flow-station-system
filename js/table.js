@@ -13,6 +13,7 @@ class TableManager {
       region: "all",
       gaugeType: "all",
       operating: "all",
+      shelterType: "all",
       installYear: "all",
       floodAlert: "all",
       droughtAlert: "all",
@@ -25,6 +26,30 @@ class TableManager {
   init() {
     this.bindEvents();
     this.render();
+  }
+
+  populateShelterFilter() {
+    const shelterSelect = document.getElementById("table-filter-shelter");
+    if (!shelterSelect) return;
+
+    const allStations = window.dataManager.getAll();
+    const shelterSet = new Set();
+    allStations.forEach(st => {
+      if (st.shelterType && st.shelterType !== "-") {
+        shelterSet.add(st.shelterType.trim());
+      }
+    });
+
+    const sortedShelters = Array.from(shelterSet).sort((a, b) => a.localeCompare(b, "ko"));
+    const currentVal = this.filters.shelterType;
+
+    let optionsHtml = '<option value="all">전체 국사형태</option>';
+    sortedShelters.forEach(s => {
+      optionsHtml += `<option value="${s}" ${currentVal === s ? "selected" : ""}>${s}</option>`;
+    });
+    optionsHtml += `<option value="none" ${currentVal === "none" ? "selected" : ""}>미지정 (-)</option>`;
+
+    shelterSelect.innerHTML = optionsHtml;
   }
 
   populateYearFilter() {
@@ -87,6 +112,15 @@ class TableManager {
       });
     }
 
+    const shelterSelect = document.getElementById("table-filter-shelter");
+    if (shelterSelect) {
+      shelterSelect.addEventListener("change", (e) => {
+        this.filters.shelterType = e.target.value;
+        this.currentPage = 1;
+        this.render();
+      });
+    }
+
     const yearSelect = document.getElementById("table-filter-year");
     if (yearSelect) {
       yearSelect.addEventListener("change", (e) => {
@@ -118,6 +152,8 @@ class TableManager {
                       (st.region && st.region.toLowerCase().includes(kw)) ||
                       (st.address && st.address.toLowerCase().includes(kw)) ||
                       (st.code && String(st.code).includes(kw)) ||
+                      (st.mountType && st.mountType.toLowerCase().includes(kw)) ||
+                      (st.shelterType && st.shelterType.toLowerCase().includes(kw)) ||
                       (st.installYear && String(st.installYear).includes(kw)) ||
                       (st.memo && st.memo.toLowerCase().includes(kw));
         if (!match) return false;
@@ -138,6 +174,15 @@ class TableManager {
       // Operating
       if (this.filters.operating === "operating" && !st.isOperating2026) return false;
       if (this.filters.operating === "non-operating" && st.isOperating2026) return false;
+
+      // Shelter Type Filter
+      if (this.filters.shelterType !== "all") {
+        if (this.filters.shelterType === "none") {
+          if (st.shelterType && st.shelterType !== "-") return false;
+        } else {
+          if (st.shelterType !== this.filters.shelterType) return false;
+        }
+      }
 
       // Install Year Filter
       if (this.filters.installYear !== "all") {
@@ -188,6 +233,7 @@ class TableManager {
   }
 
   render() {
+    this.populateShelterFilter();
     this.populateYearFilter();
     this.applyFilters();
 
@@ -202,7 +248,7 @@ class TableManager {
     if (!tbody) return;
 
     if (pageItems.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; padding: 2.5rem; color: #94a3b8;">조건에 해당하는 관측시설이 없습니다.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; padding: 2.5rem; color: #94a3b8;">조건에 해당하는 관측시설이 없습니다.</td></tr>`;
     } else {
       tbody.innerHTML = pageItems.map((st, idx) => {
         const rowNum = startIdx + idx + 1;
@@ -225,7 +271,6 @@ class TableManager {
         }
 
         const floodBadge = st.floodAlert ? `<span class="badge badge-red">홍수특보</span>` : `-`;
-        const droughtBadge = st.droughtAlert ? `<span class="badge badge-amber">갈수예보</span>` : `-`;
         const calibBadge = st.calib2026 ? `<span class="badge badge-cyan">검정(${st.calibCount2026||1}대)</span>` : `-`;
         const yearText = st.installYear ? `<b>${st.installYear}년</b>` : `<span style="color:#94a3b8;">-</span>`;
 
@@ -241,12 +286,13 @@ class TableManager {
               </div>
             </td>
             <td><code style="font-size:0.75rem; background:#f1f5f9; padding:2px 4px; border-radius:4px;">${st.code || "-"}</code></td>
-            <td style="max-width: 170px; overflow: hidden; text-overflow: ellipsis;" title="${st.address || ""}">${st.address || "-"}</td>
+            <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis;" title="${st.address || ""}">${st.address || "-"}</td>
             <td>${yearText}</td>
             <td>${gaugeBadge}</td>
+            <td><span class="badge badge-gray" style="font-size:0.75rem; font-weight:600;">${st.mountType || "-"}</span></td>
+            <td><span class="badge badge-gray" style="font-size:0.75rem; font-weight:600;">${st.shelterType || "-"}</span></td>
             <td>${operatingBadge}</td>
             <td>${floodBadge}</td>
-            <td>${droughtBadge}</td>
             <td>${calibBadge}</td>
             <td>
               <div style="display:flex; gap:0.25rem;" onclick="event.stopPropagation();">

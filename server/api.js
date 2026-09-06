@@ -106,6 +106,8 @@ router.get("/stations", verifyToken, async (req, res) => {
         pollutionTotal: r.pollution_total === 1,
         waterLevelType: r.water_level_type,
         refWaterLevel: r.ref_water_level,
+        mountType: r.mount_type || maint.mountType || "-",
+        shelterType: r.shelter_type || maint.shelterType || "-",
         memo: r.memo,
         coords: {
           lat: r.lat,
@@ -129,6 +131,10 @@ router.put("/stations/:id", verifyToken, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const st = req.body;
+
+    let maint = typeof st.maintenance === "object" && st.maintenance !== null ? { ...st.maintenance } : {};
+    maint.mountType = st.mountType || "-";
+    maint.shelterType = st.shelterType || "-";
 
     const updateFields = {
       seq: st.seq,
@@ -154,12 +160,14 @@ router.put("/stations/:id", verifyToken, async (req, res) => {
       pollution_total: st.pollutionTotal ? 1 : 0,
       water_level_type: st.waterLevelType,
       ref_water_level: st.refWaterLevel,
+      mount_type: st.mountType || "-",
+      shelter_type: st.shelterType || "-",
       memo: st.memo,
       lat: st.coords?.lat || null,
       lon: st.coords?.lon || null,
       lat_dms: st.coords?.latDMS || "",
       lon_dms: st.coords?.lonDMS || "",
-      maintenance_json: JSON.stringify(st.maintenance || {})
+      maintenance_json: JSON.stringify(maint)
     };
 
     await dbService.updateStation(id, updateFields);

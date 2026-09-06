@@ -78,6 +78,8 @@ async function initDb() {
         pollution_total INTEGER DEFAULT 0,
         water_level_type TEXT,
         ref_water_level TEXT,
+        mount_type TEXT DEFAULT "-",
+        shelter_type TEXT DEFAULT "-",
         memo TEXT,
         lat REAL,
         lon REAL,
@@ -87,6 +89,10 @@ async function initDb() {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Ensure columns exist in SQLite if migrated
+    sqliteDb.run(`ALTER TABLE stations ADD COLUMN mount_type TEXT DEFAULT "-"`, () => {});
+    sqliteDb.run(`ALTER TABLE stations ADD COLUMN shelter_type TEXT DEFAULT "-"`, () => {});
 
     sqliteDb.run(`
       CREATE TABLE IF NOT EXISTS activity_logs (
@@ -179,6 +185,8 @@ async function initDb() {
             pollution_total: st.pollutionTotal ? 1 : 0,
             water_level_type: st.waterLevelType || "",
             ref_water_level: st.refWaterLevel || "",
+            mount_type: st.mountType || "-",
+            shelter_type: st.shelterType || "-",
             memo: st.memo || "",
             lat: st.coords?.lat || null,
             lon: st.coords?.lon || null,
@@ -246,10 +254,13 @@ const dbService = {
 
   async updateStation(id, updateFields) {
     if (supabase) {
-      const { data, error } = await supabase.from("stations").update(updateFields).eq("id", id).select();
-      if (!error) return data;
+      const supabaseFields = { ...updateFields };
+      delete supabaseFields.mount_type;
+      delete supabaseFields.shelter_type;
+      const { data, error } = await supabase.from("stations").update(supabaseFields).eq("id", id).select();
+      if (error) console.warn("Supabase update warning:", error.message);
     }
-    // Fallback SQLite update
+    // Also always update local SQLite
     const keys = Object.keys(updateFields);
     const values = Object.values(updateFields);
     const setClause = keys.map(k => `${k} = ?`).join(", ");

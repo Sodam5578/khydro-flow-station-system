@@ -344,6 +344,10 @@
                 <option value="non-operating">미운영/대기</option>
               </select>
 
+              <select id="table-filter-shelter" class="filter-select">
+                <option value="all">전체 국사형태</option>
+              </select>
+
               <select id="table-filter-year" class="filter-select">
                 <option value="all">전체 설치년도</option>
               </select>
@@ -369,7 +373,7 @@
               <table class="custom-table">
                 <thead>
                   <tr>
-                    <th style="width: 55px;">순번</th>
+                    <th style="width: 50px;">순번</th>
                     <th onclick="window.tableManager.setSort('region')" style="cursor:pointer;">권역 ↕</th>
                     <th onclick="window.tableManager.setSort('river')" style="cursor:pointer;">하천명 ↕</th>
                     <th onclick="window.tableManager.setSort('name')" style="cursor:pointer;">관측소명(지점명) ↕</th>
@@ -377,9 +381,10 @@
                     <th>위치 (주소)</th>
                     <th onclick="window.tableManager.setSort('installYear')" style="cursor:pointer;">설치년도 ↕</th>
                     <th>유속계 형식</th>
+                    <th onclick="window.tableManager.setSort('mountType')" style="cursor:pointer;">설치방식 ↕</th>
+                    <th onclick="window.tableManager.setSort('shelterType')" style="cursor:pointer;">국사형태 ↕</th>
                     <th>26년 운영</th>
                     <th>홍수특보</th>
-                    <th>갈수예보</th>
                     <th>검정대상</th>
                     <th>관리</th>
                   </tr>
@@ -794,19 +799,19 @@
                 <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1rem; background:#f8fafc; padding:1rem; border-radius:8px; border:1px solid #e2e8f0;">
                   <div class="form-group">
                     <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 호스트</label>
-                    <input type="text" id="smtp-host" class="form-input" placeholder="smtp.naver.com 또는 smtp.gmail.com" value="smtp.gmail.com">
+                    <input type="text" id="smtp-host" name="system_smtp_host_cfg" class="form-input" placeholder="smtp.naver.com" value="smtp.naver.com" autocomplete="off" data-lpignore="true">
                   </div>
                   <div class="form-group">
                     <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 포트</label>
-                    <input type="number" id="smtp-port" class="form-input" placeholder="587 또는 465" value="587">
+                    <input type="number" id="smtp-port" name="system_smtp_port_cfg" class="form-input" placeholder="465" value="465" autocomplete="off" data-lpignore="true">
                   </div>
                   <div class="form-group">
                     <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 계정 (이메일)</label>
-                    <input type="text" id="smtp-user" class="form-input" placeholder="발신 계정 이메일">
+                    <input type="text" id="smtp-user" name="system_smtp_user_email_cfg" class="form-input" placeholder="예: psn5578@naver.com" autocomplete="new-password" data-lpignore="true">
                   </div>
                   <div class="form-group">
                     <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 비밀번호 (앱 비밀번호)</label>
-                    <input type="password" id="smtp-pass" class="form-input" placeholder="앱 전용 비밀번호">
+                    <input type="text" id="smtp-pass" name="system_smtp_app_password_cfg" class="form-input" placeholder="네이버 애플리케이션 비밀번호 12자리" autocomplete="new-password" data-lpignore="true" style="-webkit-text-security: disc;">
                   </div>
                 </div>
 
@@ -1216,6 +1221,34 @@
                 <option value="하류">하류</option>
                 <option value="-">-</option>
               </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">설치 방식</label>
+              <input type="text" id="form-mount-type" class="form-input" list="mount-type-list" placeholder="예: 교량 부착, 구조물, -">
+              <datalist id="mount-type-list">
+                <option value="교량 부착">
+                <option value="구조물">
+                <option value="수로내 부착">
+                <option value="제방 부착">
+                <option value="호안 부착">
+                <option value="우물통 부착">
+                <option value="-">
+              </datalist>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">국사 형태</label>
+              <input type="text" id="form-shelter-type" class="form-input" list="shelter-type-list" placeholder="예: 단독외함, 수위관측소 통합, -">
+              <datalist id="shelter-type-list">
+                <option value="단독외함">
+                <option value="수위관측소 통합">
+                <option value="유량관측소">
+                <option value="쉘터">
+                <option value="수위관측소 외함">
+                <option value="통합">
+                <option value="-">
+              </datalist>
             </div>
 
             <div class="form-group">

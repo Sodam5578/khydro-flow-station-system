@@ -259,6 +259,12 @@ class ModalManager {
           <td><b>${st.gaugeType || "-"}</b> (EWSV:${st.ewsvCount||"-"}, ADVM:${st.advmCount||"-"})</td>
         </tr>
         <tr>
+          <th>설치방식</th>
+          <td><b>${st.mountType || "-"}</b></td>
+          <th>국사형태</th>
+          <td><b>${st.shelterType || "-"}</b></td>
+        </tr>
+        <tr>
           <th>RV박스 (리모트뷰)</th>
           <td>
             ${rvHtml}
@@ -312,6 +318,8 @@ class ModalManager {
     document.getElementById("form-lon-dms").value = st.coords?.lonDMS || "";
     document.getElementById("form-gauge-type").value = st.gaugeType || "EWSV";
     document.getElementById("form-install-direction").value = st.installDirection || "상류";
+    if (document.getElementById("form-mount-type")) document.getElementById("form-mount-type").value = st.mountType || "-";
+    if (document.getElementById("form-shelter-type")) document.getElementById("form-shelter-type").value = st.shelterType || "-";
     document.getElementById("form-install-year").value = st.installYear || "";
     document.getElementById("form-obs-year").value = st.obsStartYear || "";
     document.getElementById("form-advm-count").value = st.advmCount || "";
@@ -405,6 +413,8 @@ class ModalManager {
       gaugeCategory: isDualGauge ? "DUAL" : (gaugeType.includes("EWSV") ? "EWSV" : "ADVM"),
       isDualGauge: isDualGauge,
       installDirection: document.getElementById("form-install-direction").value,
+      mountType: document.getElementById("form-mount-type") ? document.getElementById("form-mount-type").value.trim() || "-" : "-",
+      shelterType: document.getElementById("form-shelter-type") ? document.getElementById("form-shelter-type").value.trim() || "-" : "-",
       advmCount: advmCount,
       ewsvCount: ewsvCount,
       waterLevelType: document.getElementById("form-waterlevel-type").value.trim(),

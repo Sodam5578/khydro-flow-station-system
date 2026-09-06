@@ -13,6 +13,9 @@ class StatsManager {
   ensurePlugin() {
     if (!this.datalabelsRegistered && window.ChartDataLabels) {
       Chart.register(ChartDataLabels);
+      if (Chart.defaults?.plugins?.datalabels) {
+        Chart.defaults.plugins.datalabels.display = false;
+      }
       this.datalabelsRegistered = true;
     }
   }

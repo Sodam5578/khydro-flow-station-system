@@ -392,7 +392,8 @@ class App {
         if (threshEl && c.thresholdCount) threshEl.value = String(c.thresholdCount);
         if (hostEl) hostEl.value = c.host || "smtp.naver.com";
         if (portEl) portEl.value = c.port || 465;
-        if (userEl && !userEl.value) userEl.placeholder = c.user ? `현재 설정됨 (${c.user})` : "발신 계정 이메일";
+        if (userEl) userEl.value = c.user || "";
+        if (passEl) passEl.value = c.pass || "";
         if (recipEl) recipEl.value = c.recipients || "psn5578@naver.com, psn5578@kihs.re.kr";
         
         if (badgeEl) {
@@ -414,16 +415,14 @@ class App {
     if (!window.apiClient) return;
     const threshEl = document.getElementById("smtp-threshold");
     const thresholdCount = threshEl ? parseInt(threshEl.value, 10) : 3;
-    const host = document.getElementById("smtp-host").value.trim();
-    const port = document.getElementById("smtp-port").value.trim();
+    const host = document.getElementById("smtp-host").value.trim() || "smtp.naver.com";
+    const port = document.getElementById("smtp-port").value.trim() || 465;
     const user = document.getElementById("smtp-user").value.trim();
     const pass = document.getElementById("smtp-pass").value.trim();
     const recipients = document.getElementById("smtp-recipients").value.trim();
 
     try {
-      const payload = { thresholdCount, host, port, recipients, enabled: true };
-      if (user) payload.user = user;
-      if (pass) payload.pass = pass;
+      const payload = { thresholdCount, host, port, user, pass, recipients, enabled: true };
 
       const res = await window.apiClient.updateNotificationConfig(payload);
       if (res.success) {

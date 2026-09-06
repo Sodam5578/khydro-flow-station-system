@@ -44,7 +44,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 2,
@@ -91,7 +93,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 3,
@@ -162,7 +166,9 @@
     "rvBoxAgents": [
       "1001529_남평대교_L",
       "1001529_남평대교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 4,
@@ -209,7 +215,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 5,
@@ -280,7 +288,9 @@
     "rvBoxAgents": [
       "1001545_와평교_L",
       "1001545_와평교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 6,
@@ -351,7 +361,9 @@
     "rvBoxAgents": [
       "1001555_정선제1교_L",
       "1001555_정선제1교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 7,
@@ -422,7 +434,9 @@
     "rvBoxAgents": [
       "1001590_영월대교_L",
       "1001590_영월대교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "쉘터"
   },
   {
     "id": 8,
@@ -493,7 +507,9 @@
     "rvBoxAgents": [
       "1002535_사초교_L",
       "1002535_사초교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 9,
@@ -564,7 +580,9 @@
     "rvBoxAgents": [
       "1002550_평창교_L",
       "1002550_평창교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 10,
@@ -635,7 +653,9 @@
     "rvBoxAgents": [
       "1002585_주천교_L",
       "1002585_주천교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 11,
@@ -706,7 +726,9 @@
     "rvBoxAgents": [
       "1002598_팔괴교_L",
       "1002598_팔괴교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 12,
@@ -753,7 +775,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 13,
@@ -821,7 +845,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 14,
@@ -892,7 +918,9 @@
     "rvBoxAgents": [
       "1003545_단양1교_L",
       "1003545_단양1교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 15,
@@ -963,7 +991,9 @@
     "rvBoxAgents": [
       "1003558_부수동교_L",
       "1003558_부수동교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 16,
@@ -1010,7 +1040,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 17,
@@ -1081,7 +1113,9 @@
     "rvBoxAgents": [
       "1004593_목도교_L",
       "1004593_목도교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 18,
@@ -1152,7 +1186,9 @@
     "rvBoxAgents": [
       "1004595_국원대교_L",
       "1004595_국원대교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 19,
@@ -1223,7 +1259,9 @@
     "rvBoxAgents": [
       "1005597_남한강대교_L",
       "1005597_남한강대교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 20,
@@ -1294,7 +1332,9 @@
     "rvBoxAgents": [
       "1006565_원주교_L",
       "1006565_원주교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 21,
@@ -1365,7 +1405,9 @@
     "rvBoxAgents": [
       "1006580_지정대교_L",
       "1006580_지정대교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 22,
@@ -1436,7 +1478,9 @@
     "rvBoxAgents": [
       "1006590_문막교_L",
       "1006590_문막교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 23,
@@ -1506,7 +1550,9 @@
     "rvBoxStatus": "설치완료",
     "rvBoxAgents": [
       "1007501_대신양수장"
-    ]
+    ],
+    "mountType": "수로내 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 24,
@@ -1576,7 +1622,9 @@
     "rvBoxStatus": "설치완료",
     "rvBoxAgents": [
       "1007502_능서1양수장"
-    ]
+    ],
+    "mountType": "수로내 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 25,
@@ -1647,7 +1695,9 @@
     "rvBoxAgents": [
       "1007510_총천교_L",
       "1007510_총천교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 26,
@@ -1718,7 +1768,9 @@
     "rvBoxAgents": [
       "1007515_원부교_L",
       "1007515_원부교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "쉘터"
   },
   {
     "id": 27,
@@ -1789,7 +1841,9 @@
     "rvBoxAgents": [
       "1007525_남한강교_L",
       "1007525_남한강교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 28,
@@ -1860,7 +1914,9 @@
     "rvBoxAgents": [
       "1007535_여주대교_L",
       "1007535_여주대교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 29,
@@ -1931,7 +1987,9 @@
     "rvBoxAgents": [
       "1007540_율극교_L",
       "1007540_율극교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 30,
@@ -2002,7 +2060,9 @@
     "rvBoxAgents": [
       "1007541_여주보(하류)_L",
       "1007541_여주보(하류)_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 31,
@@ -2073,7 +2133,9 @@
     "rvBoxAgents": [
       "1007562_이포보(상류)_L",
       "1007562_이포보(상류)_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 32,
@@ -2144,7 +2206,9 @@
     "rvBoxAgents": [
       "1007585_양평교_L",
       "1007585_양평교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "단독외함"
   },
   {
     "id": 33,
@@ -2215,7 +2279,9 @@
     "rvBoxAgents": [
       "1012530_왕성동교_L",
       "1012530_왕성동교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "쉘터"
   },
   {
     "id": 34,
@@ -2286,7 +2352,9 @@
     "rvBoxAgents": [
       "1012540_현리교_L",
       "1012540_현리교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 35,
@@ -2357,7 +2425,9 @@
     "rvBoxAgents": [
       "1013555_가평교_L",
       "1013555_가평교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 36,
@@ -2428,7 +2498,9 @@
     "rvBoxAgents": [
       "1014550_홍천교_L",
       "1014550_홍천교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 37,
@@ -2499,7 +2571,9 @@
     "rvBoxAgents": [
       "1015520_대보교_L",
       "1015520_대보교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 38,
@@ -2546,7 +2620,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 39,
@@ -2593,7 +2669,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 40,
@@ -2664,7 +2742,9 @@
     "rvBoxAgents": [
       "1018540_광진교_L",
       "1018540_광진교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 41,
@@ -2735,7 +2815,9 @@
     "rvBoxAgents": [
       "1018555_대곡교_L",
       "1018555_대곡교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "쉘터"
   },
   {
     "id": 42,
@@ -2782,7 +2864,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 43,
@@ -2853,7 +2937,9 @@
     "rvBoxAgents": [
       "1018575_중랑교_L",
       "1018575_중랑교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 44,
@@ -2924,7 +3010,9 @@
     "rvBoxAgents": [
       "1018583_한강대교_L",
       "1018583_한강대교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 45,
@@ -2995,7 +3083,9 @@
     "rvBoxAgents": [
       "1018595_너부대교_L",
       "1018595_너부대교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 46,
@@ -3066,7 +3156,9 @@
     "rvBoxAgents": [
       "1018597_오금교_L",
       "1018597_오금교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 47,
@@ -3137,7 +3229,9 @@
     "rvBoxAgents": [
       "1018598_신대방1교_L",
       "1018598_신대방1교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 48,
@@ -3208,7 +3302,9 @@
     "rvBoxAgents": [
       "1019567_원당교_L",
       "1019567_원당교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 49,
@@ -3279,7 +3375,9 @@
     "rvBoxAgents": [
       "1021550_필승교_L",
       "1021550_필승교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 50,
@@ -3350,7 +3448,9 @@
     "rvBoxAgents": [
       "1021580_임진교_L",
       "1021580_임진교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 51,
@@ -3397,7 +3497,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 52,
@@ -3468,7 +3570,9 @@
     "rvBoxAgents": [
       "1022547_포천대교_L",
       "1022547_포천대교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 53,
@@ -3515,7 +3619,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 54,
@@ -3586,7 +3692,9 @@
     "rvBoxAgents": [
       "1022562_차탄교_L",
       "1022562_차탄교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 55,
@@ -3633,7 +3741,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 56,
@@ -3704,7 +3814,9 @@
     "rvBoxAgents": [
       "1022570_신천교_L",
       "1022570_신천교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 57,
@@ -3775,7 +3887,9 @@
     "rvBoxAgents": [
       "1022580_사랑교_L",
       "1022580_사랑교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 58,
@@ -3846,7 +3960,9 @@
     "rvBoxAgents": [
       "1023560_비룡대교_L",
       "1023560_비룡대교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 59,
@@ -3917,7 +4033,9 @@
     "rvBoxAgents": [
       "1023570_통일대교_L",
       "1023570_통일대교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 60,
@@ -3988,7 +4106,9 @@
     "rvBoxAgents": [
       "1101535_군문교_L",
       "1101535_군문교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 61,
@@ -4059,7 +4179,9 @@
     "rvBoxAgents": [
       "1101545_탑동대교_L",
       "1101545_탑동대교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 62,
@@ -4130,7 +4252,9 @@
     "rvBoxAgents": [
       "1101570_동연교_L",
       "1101570_동연교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 63,
@@ -4201,7 +4325,9 @@
     "rvBoxAgents": [
       "1101580_팽성대교_L",
       "1101580_팽성대교_S"
-    ]
+    ],
+    "mountType": "교량부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 64,
@@ -4272,7 +4398,9 @@
     "rvBoxAgents": [
       "1302548_회산교_L",
       "1302548_회산교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 65,
@@ -4319,7 +4447,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 66,
@@ -4390,7 +4520,9 @@
     "rvBoxAgents": [
       "2001510_문화교_L",
       "2001510_문화교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "쉘터"
   },
   {
     "id": 67,
@@ -4461,7 +4593,9 @@
     "rvBoxAgents": [
       "2003570_구담교_L",
       "2003570_구담교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 68,
@@ -4508,7 +4642,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 69,
@@ -4555,7 +4691,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 70,
@@ -4626,7 +4764,9 @@
     "rvBoxAgents": [
       "2004568_신예천교_L",
       "2004568_신예천교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 71,
@@ -4697,7 +4837,9 @@
     "rvBoxAgents": [
       "2004580_회룡교_L",
       "2004580_회룡교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 72,
@@ -4768,7 +4910,9 @@
     "rvBoxAgents": [
       "2004595_산양교_L",
       "2004595_산양교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 73,
@@ -4839,7 +4983,9 @@
     "rvBoxAgents": [
       "2005560_김용리_L",
       "2005560_김용리_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 74,
@@ -4886,7 +5032,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 75,
@@ -4957,7 +5105,9 @@
     "rvBoxAgents": [
       "2006565_후천교_L",
       "2006565_후천교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 76,
@@ -5004,7 +5154,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 77,
@@ -5075,7 +5227,9 @@
     "rvBoxAgents": [
       "2007560_상풍교_L",
       "2007560_상풍교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 78,
@@ -5146,7 +5300,9 @@
     "rvBoxAgents": [
       "2007586_강창교_L",
       "2007586_강창교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 79,
@@ -5193,7 +5349,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 80,
@@ -5264,7 +5422,9 @@
     "rvBoxAgents": [
       "2008533_장송교_L",
       "2008533_장송교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 81,
@@ -5335,7 +5495,9 @@
     "rvBoxAgents": [
       "2008550_무성리_L",
       "2008550_무성리_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 82,
@@ -5406,7 +5568,9 @@
     "rvBoxAgents": [
       "2009520_낙단교_L",
       "2009520_낙단교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 83,
@@ -5477,7 +5641,9 @@
     "rvBoxAgents": [
       "2009570_일선교_L",
       "2009570_일선교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 84,
@@ -5548,7 +5714,9 @@
     "rvBoxAgents": [
       "2010550_김천교_L",
       "2010550_김천교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 85,
@@ -5619,7 +5787,9 @@
     "rvBoxAgents": [
       "2011525_양포교_L",
       "2011525_양포교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 86,
@@ -5690,7 +5860,9 @@
     "rvBoxAgents": [
       "2011540_구미대교_L",
       "2011540_구미대교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 87,
@@ -5761,7 +5933,9 @@
     "rvBoxAgents": [
       "2011550_호국의다리_L",
       "2011550_호국의다리_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 88,
@@ -5832,7 +6006,9 @@
     "rvBoxAgents": [
       "2011560_성주대교_L",
       "2011560_성주대교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "쉘터"
   },
   {
     "id": 89,
@@ -5879,7 +6055,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 90,
@@ -5950,7 +6128,9 @@
     "rvBoxAgents": [
       "2012528_영동교_L",
       "2012528_영동교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 91,
@@ -6021,7 +6201,9 @@
     "rvBoxAgents": [
       "2012540_금창교_L",
       "2012540_금창교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 92,
@@ -6068,7 +6250,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 93,
@@ -6139,7 +6323,9 @@
     "rvBoxAgents": [
       "2012560_신암동_L",
       "2012560_신암동_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 94,
@@ -6186,7 +6372,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 95,
@@ -6257,7 +6445,9 @@
     "rvBoxAgents": [
       "2012595_강창교_L",
       "2012595_강창교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 96,
@@ -6328,7 +6518,9 @@
     "rvBoxAgents": [
       "2013540_귀원교_L",
       "2013540_귀원교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 97,
@@ -6399,7 +6591,9 @@
     "rvBoxAgents": [
       "2013550_회천교_L",
       "2013550_회천교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 98,
@@ -6470,7 +6664,9 @@
     "rvBoxAgents": [
       "2013590_도진교_L",
       "2013590_도진교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "쉘터"
   },
   {
     "id": 99,
@@ -6541,7 +6737,9 @@
     "rvBoxAgents": [
       "2014540_고령교_L",
       "2014540_고령교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "통합"
   },
   {
     "id": 100,
@@ -6612,7 +6810,9 @@
     "rvBoxAgents": [
       "2014560_성하리_L",
       "2014560_성하리_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "쉘터"
   },
   {
     "id": 101,
@@ -6683,7 +6883,9 @@
     "rvBoxAgents": [
       "2014590_율지교_L",
       "2014590_율지교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 102,
@@ -6730,7 +6932,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 103,
@@ -6801,7 +7005,9 @@
     "rvBoxAgents": [
       "2016580_황강교_L",
       "2016580_황강교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 104,
@@ -6872,7 +7078,9 @@
     "rvBoxAgents": [
       "2017520_적포교_L",
       "2017520_적포교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 105,
@@ -6943,7 +7151,9 @@
     "rvBoxAgents": [
       "2018509_안의교_L",
       "2018509_안의교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 106,
@@ -7014,7 +7224,9 @@
     "rvBoxAgents": [
       "2018574_묵곡교_L",
       "2018574_묵곡교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 107,
@@ -7085,7 +7297,9 @@
     "rvBoxAgents": [
       "2019520_송도교_L",
       "2019520_송도교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 108,
@@ -7132,7 +7346,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 109,
@@ -7179,7 +7395,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 110,
@@ -7250,7 +7468,9 @@
     "rvBoxAgents": [
       "2019555_정암교_L",
       "2019555_정암교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 111,
@@ -7321,7 +7541,9 @@
     "rvBoxAgents": [
       "2019580_서촌리_L",
       "2019580_서촌리_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 112,
@@ -7392,7 +7614,9 @@
     "rvBoxAgents": [
       "2020515_계내리_L",
       "2020515_계내리_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 113,
@@ -7463,7 +7687,9 @@
     "rvBoxAgents": [
       "2020550_청암리_L",
       "2020550_청암리_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 114,
@@ -7534,7 +7760,9 @@
     "rvBoxAgents": [
       "2021540_원리_L",
       "2021540_원리_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 115,
@@ -7605,7 +7833,9 @@
     "rvBoxAgents": [
       "2021575_용평동_L",
       "2021575_용평동_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "쉘터"
   },
   {
     "id": 116,
@@ -7652,7 +7882,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 117,
@@ -7723,7 +7955,9 @@
     "rvBoxAgents": [
       "2022510_삼랑진교_L",
       "2022510_삼랑진교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 118,
@@ -7770,7 +8004,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 119,
@@ -7841,7 +8077,9 @@
     "rvBoxAgents": [
       "2022578_대동낙동강교_L",
       "2022578_대동낙동강교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 120,
@@ -7912,7 +8150,9 @@
     "rvBoxAgents": [
       "2022580_구포대교_L",
       "2022580_구포대교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 121,
@@ -7983,7 +8223,9 @@
     "rvBoxAgents": [
       "2022585_정천교_L",
       "2022585_정천교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 122,
@@ -8054,7 +8296,9 @@
     "rvBoxAgents": [
       "2101575_강동대교_L",
       "2101575_강동대교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 123,
@@ -8125,7 +8369,9 @@
     "rvBoxAgents": [
       "2101590_형산교_L",
       "2101590_형산교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 124,
@@ -8196,7 +8442,9 @@
     "rvBoxAgents": [
       "2201530_사연교_L",
       "2201530_사연교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 125,
@@ -8267,7 +8515,9 @@
     "rvBoxAgents": [
       "2201570_태화교_L",
       "2201570_태화교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "단독외함"
   },
   {
     "id": 126,
@@ -8338,7 +8588,9 @@
     "rvBoxAgents": [
       "2201590_병영교_L",
       "2201590_병영교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 127,
@@ -8409,7 +8661,9 @@
     "rvBoxAgents": [
       "2301570_덕신교_L",
       "2301570_덕신교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "쉘터"
   },
   {
     "id": 128,
@@ -8480,7 +8734,9 @@
     "rvBoxAgents": [
       "2302550_원동교_L",
       "2302550_원동교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 129,
@@ -8551,7 +8807,9 @@
     "rvBoxAgents": [
       "2401516_월변교_L",
       "2401516_월변교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 130,
@@ -8622,7 +8880,9 @@
     "rvBoxAgents": [
       "2402530_영덕대교_L",
       "2402530_영덕대교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 131,
@@ -8693,7 +8953,9 @@
     "rvBoxAgents": [
       "2403520_문덕3교_L",
       "2403520_문덕3교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 132,
@@ -8764,7 +9026,9 @@
     "rvBoxAgents": [
       "3001505_운곡교_L",
       "3001505_운곡교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "쉘터"
   },
   {
     "id": 133,
@@ -8835,7 +9099,9 @@
     "rvBoxAgents": [
       "3003580_취수장_L",
       "3003580_취수장_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 134,
@@ -8906,7 +9172,9 @@
     "rvBoxAgents": [
       "3004540_제원대교_L",
       "3004540_제원대교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 135,
@@ -8977,7 +9245,9 @@
     "rvBoxAgents": [
       "3004585_초강교_L",
       "3004585_초강교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 136,
@@ -9048,7 +9318,9 @@
     "rvBoxAgents": [
       "3004590_양강교_L",
       "3004590_양강교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 137,
@@ -9119,7 +9391,9 @@
     "rvBoxAgents": [
       "3006590_구금강2교_L",
       "3006590_구금강2교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 138,
@@ -9166,7 +9440,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 139,
@@ -9237,7 +9513,9 @@
     "rvBoxAgents": [
       "3008530_옥각교_L",
       "3008530_옥각교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 140,
@@ -9308,7 +9586,9 @@
     "rvBoxAgents": [
       "3008570_제원교_L",
       "3008570_제원교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "쉘터"
   },
   {
     "id": 141,
@@ -9355,7 +9635,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 142,
@@ -9426,7 +9708,9 @@
     "rvBoxAgents": [
       "3009530_복수교_L",
       "3009530_복수교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 143,
@@ -9473,7 +9757,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 144,
@@ -9544,7 +9830,9 @@
     "rvBoxAgents": [
       "3009580_원촌교_L",
       "3009580_원촌교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 145,
@@ -9615,7 +9903,9 @@
     "rvBoxAgents": [
       "3009593_신구교_L",
       "3009593_신구교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 146,
@@ -9686,7 +9976,9 @@
     "rvBoxAgents": [
       "3010560_명학리_L",
       "3010560_명학리_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 147,
@@ -9733,7 +10025,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 148,
@@ -9780,7 +10074,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 149,
@@ -9851,7 +10147,9 @@
     "rvBoxAgents": [
       "3011545_흥덕교_L",
       "3011545_흥덕교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 150,
@@ -9898,7 +10196,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 151,
@@ -9969,7 +10269,9 @@
     "rvBoxAgents": [
       "3011565_청주시(미호강교)_L",
       "3011565_청주시(미호강교)_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 152,
@@ -10040,7 +10342,9 @@
     "rvBoxAgents": [
       "3011595_월산교_L",
       "3011595_월산교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "통합"
   },
   {
     "id": 153,
@@ -10111,7 +10415,9 @@
     "rvBoxAgents": [
       "3012502_햇무리교_L",
       "3012502_햇무리교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 154,
@@ -10182,7 +10488,9 @@
     "rvBoxAgents": [
       "3012507_도암교_L",
       "3012507_도암교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "쉘터"
   },
   {
     "id": 155,
@@ -10253,7 +10561,9 @@
     "rvBoxAgents": [
       "3012520_금강교_L",
       "3012520_금강교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 156,
@@ -10324,7 +10634,9 @@
     "rvBoxAgents": [
       "3012525_오인교_L",
       "3012525_오인교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 157,
@@ -10371,7 +10683,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 158,
@@ -10442,7 +10756,9 @@
     "rvBoxAgents": [
       "3012550_신흥리_L",
       "3012550_신흥리_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 159,
@@ -10513,7 +10829,9 @@
     "rvBoxAgents": [
       "3012562_백제보 상_L",
       "3012562_백제보 상_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 160,
@@ -10560,7 +10878,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 161,
@@ -10631,7 +10951,9 @@
     "rvBoxAgents": [
       "3012575_백제교_L",
       "3012575_백제교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 162,
@@ -10702,7 +11024,9 @@
     "rvBoxAgents": [
       "3012580_석동교_L",
       "3012580_석동교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 163,
@@ -10773,7 +11097,9 @@
     "rvBoxAgents": [
       "3012590_동성교_L",
       "3012590_동성교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 164,
@@ -10820,7 +11146,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 165,
@@ -10891,7 +11219,9 @@
     "rvBoxAgents": [
       "3013565_풋개다리_L",
       "3013565_풋개다리_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 166,
@@ -10962,7 +11292,9 @@
     "rvBoxAgents": [
       "3013570_논산대교_L",
       "3013570_논산대교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 167,
@@ -11033,7 +11365,9 @@
     "rvBoxAgents": [
       "3014510_황산대교_L",
       "3014510_황산대교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "통합"
   },
   {
     "id": 168,
@@ -11080,7 +11414,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 169,
@@ -11151,7 +11487,9 @@
     "rvBoxAgents": [
       "3101545_구만교_L",
       "3101545_구만교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 170,
@@ -11222,7 +11560,9 @@
     "rvBoxAgents": [
       "3101550_구양교_L",
       "3101550_구양교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "쉘터"
   },
   {
     "id": 171,
@@ -11293,7 +11633,9 @@
     "rvBoxAgents": [
       "3101585_충무교_L",
       "3101585_충무교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "쉘터"
   },
   {
     "id": 172,
@@ -11364,7 +11706,9 @@
     "rvBoxAgents": [
       "3201590_채운교_L",
       "3201590_채운교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 173,
@@ -11411,7 +11755,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 174,
@@ -11482,7 +11828,9 @@
     "rvBoxAgents": [
       "3301527_어우교_L",
       "3301527_어우교_S"
-    ]
+    ],
+    "mountType": "수로내 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 175,
@@ -11553,7 +11901,9 @@
     "rvBoxAgents": [
       "3301530_용봉교_L",
       "3301530_용봉교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 176,
@@ -11624,7 +11974,9 @@
     "rvBoxAgents": [
       "3301540_제2소양교_L",
       "3301540_제2소양교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 177,
@@ -11695,7 +12047,9 @@
     "rvBoxAgents": [
       "3301554_세내교_L",
       "3301554_세내교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 178,
@@ -11766,7 +12120,9 @@
     "rvBoxAgents": [
       "3301557_서천교_L",
       "3301557_서천교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 179,
@@ -11837,7 +12193,9 @@
     "rvBoxAgents": [
       "3301565_미산교_L",
       "3301565_미산교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 외함"
   },
   {
     "id": 180,
@@ -11908,7 +12266,9 @@
     "rvBoxAgents": [
       "3301570_삼례교_L",
       "3301570_삼례교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 181,
@@ -11979,7 +12339,9 @@
     "rvBoxAgents": [
       "3302520_거산교_L",
       "3302520_거산교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 182,
@@ -12050,7 +12412,9 @@
     "rvBoxAgents": [
       "3302530_정우교_L",
       "3302530_정우교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 183,
@@ -12121,7 +12485,9 @@
     "rvBoxAgents": [
       "3302545_죽림교_L",
       "3302545_죽림교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 184,
@@ -12168,7 +12534,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 185,
@@ -12215,7 +12583,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 186,
@@ -12286,7 +12656,9 @@
     "rvBoxAgents": [
       "4002540_일중리_L",
       "4002540_일중리_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 187,
@@ -12357,7 +12729,9 @@
     "rvBoxAgents": [
       "4003550_신기교_L",
       "4003550_신기교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 188,
@@ -12404,7 +12778,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 189,
@@ -12451,7 +12827,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 190,
@@ -12498,7 +12876,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 191,
@@ -12569,7 +12949,9 @@
     "rvBoxAgents": [
       "4004590_금곡교_L",
       "4004590_금곡교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 192,
@@ -12640,7 +13022,9 @@
     "rvBoxAgents": [
       "4005545_월석교_L",
       "4005545_월석교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "쉘터"
   },
   {
     "id": 193,
@@ -12711,7 +13095,9 @@
     "rvBoxAgents": [
       "4005570_동림교_L",
       "4005570_동림교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 194,
@@ -12782,7 +13168,9 @@
     "rvBoxAgents": [
       "4006580_예성교_L",
       "4006580_예성교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 195,
@@ -12853,7 +13241,9 @@
     "rvBoxAgents": [
       "4008570_태안교_L",
       "4008570_태안교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "쉘터"
   },
   {
     "id": 196,
@@ -12924,7 +13314,9 @@
     "rvBoxAgents": [
       "4009510_구례교_L",
       "4009510_구례교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 197,
@@ -12995,7 +13387,9 @@
     "rvBoxAgents": [
       "4009530_송정리_L",
       "4009530_송정리_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 198,
@@ -13042,7 +13436,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 199,
@@ -13113,7 +13509,9 @@
     "rvBoxAgents": [
       "4009550_고사리_L",
       "4009550_고사리_S"
-    ]
+    ],
+    "mountType": "호안 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 200,
@@ -13184,7 +13582,9 @@
     "rvBoxAgents": [
       "4009565_읍내리_L",
       "4009565_읍내리_S"
-    ]
+    ],
+    "mountType": "제방 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 201,
@@ -13255,7 +13655,9 @@
     "rvBoxAgents": [
       "4009570_대석교_L",
       "4009570_대석교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 202,
@@ -13326,7 +13728,9 @@
     "rvBoxAgents": [
       "4105530_서산교_L",
       "4105530_서산교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 203,
@@ -13373,7 +13777,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 204,
@@ -13420,7 +13826,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 205,
@@ -13467,7 +13875,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 206,
@@ -13538,7 +13948,9 @@
     "rvBoxAgents": [
       "5001550_유촌교_L",
       "5001550_유촌교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 207,
@@ -13609,7 +14021,9 @@
     "rvBoxAgents": [
       "5001555_풍영정천2교_L",
       "5001555_풍영정천2교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 208,
@@ -13680,7 +14094,9 @@
     "rvBoxAgents": [
       "5001580_극락교_L",
       "5001580_극락교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 209,
@@ -13751,7 +14167,9 @@
     "rvBoxAgents": [
       "5002550_제2황룡교_L",
       "5002550_제2황룡교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 210,
@@ -13798,7 +14216,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 211,
@@ -13869,7 +14289,9 @@
     "rvBoxAgents": [
       "5002577_평림교_L",
       "5002577_평림교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 212,
@@ -13940,7 +14362,9 @@
     "rvBoxAgents": [
       "5002590_장록교_L",
       "5002590_장록교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 213,
@@ -13987,7 +14411,9 @@
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
-    "rvBoxAgents": []
+    "rvBoxAgents": [],
+    "mountType": "-",
+    "shelterType": "-"
   },
   {
     "id": 214,
@@ -14058,7 +14484,9 @@
     "rvBoxAgents": [
       "5003580_남평교_L",
       "5003580_남평교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "유량관측소"
   },
   {
     "id": 215,
@@ -14129,7 +14557,9 @@
     "rvBoxAgents": [
       "5004520_승용교_L",
       "5004520_승용교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 216,
@@ -14200,7 +14630,9 @@
     "rvBoxAgents": [
       "5004550_나주대교_L",
       "5004550_나주대교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 217,
@@ -14271,7 +14703,9 @@
     "rvBoxAgents": [
       "5004555_동곡리_L",
       "5004555_동곡리_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 218,
@@ -14342,7 +14776,9 @@
     "rvBoxAgents": [
       "5004590_회진리_L",
       "5004590_회진리_S"
-    ]
+    ],
+    "mountType": "우물통 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 219,
@@ -14413,7 +14849,9 @@
     "rvBoxAgents": [
       "5005580_원고막교_L",
       "5005580_원고막교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "수위관측소 통합"
   },
   {
     "id": 220,
@@ -14484,7 +14922,9 @@
     "rvBoxAgents": [
       "5006510_동강교_L",
       "5006510_동강교_S"
-    ]
+    ],
+    "mountType": "구조물",
+    "shelterType": "쉘터"
   },
   {
     "id": 221,
@@ -14555,7 +14995,9 @@
     "rvBoxAgents": [
       "5006530_학야교_L",
       "5006530_학야교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   },
   {
     "id": 222,
@@ -14626,7 +15068,9 @@
     "rvBoxAgents": [
       "5008510_동암교_L",
       "5008510_동암교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "단독외함"
   },
   {
     "id": 223,
@@ -14697,6 +15141,8 @@
     "rvBoxAgents": [
       "5101550_별천교_L",
       "5101550_별천교_S"
-    ]
+    ],
+    "mountType": "교량 부착",
+    "shelterType": "유량관측소"
   }
 ]

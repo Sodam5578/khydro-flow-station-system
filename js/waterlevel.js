@@ -130,8 +130,11 @@ class WaterLevelCompareManager {
             borderColor: "#2563eb",
             backgroundColor: "rgba(37, 99, 235, 0.08)",
             borderWidth: 2.2,
-            pointRadius: period === "7d" ? 1.5 : 2,
-            pointHoverRadius: 5,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: "#2563eb",
+            pointHoverBorderColor: "#ffffff",
+            pointHoverBorderWidth: 2,
             fill: false,
             tension: 0.25,
             yAxisID: "y"
@@ -144,7 +147,10 @@ class WaterLevelCompareManager {
             borderWidth: 2,
             borderDash: [5, 4],
             pointRadius: 0,
-            pointHoverRadius: 4,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: "#16a34a",
+            pointHoverBorderColor: "#ffffff",
+            pointHoverBorderWidth: 2,
             fill: false,
             tension: 0.25,
             yAxisID: "y"
@@ -153,8 +159,9 @@ class WaterLevelCompareManager {
             type: "bar",
             label: "수위차 (|오차|, cm)",
             data: diffData,
-            backgroundColor: diffData.map(v => v > 10 ? "rgba(220, 38, 38, 0.6)" : (v > 5 ? "rgba(217, 119, 6, 0.5)" : "rgba(100, 116, 139, 0.25)")),
+            backgroundColor: diffData.map(v => v > 10 ? "rgba(220, 38, 38, 0.65)" : (v > 5 ? "rgba(217, 119, 6, 0.6)" : "rgba(100, 116, 139, 0.3)")),
             borderColor: diffData.map(v => v > 10 ? "#dc2626" : (v > 5 ? "#d97706" : "#94a3b8")),
+            hoverBackgroundColor: diffData.map(v => v > 10 ? "#dc2626" : (v > 5 ? "#d97706" : "#64748b")),
             borderWidth: 1,
             borderRadius: 3,
             yAxisID: "yDiff",
@@ -169,7 +176,14 @@ class WaterLevelCompareManager {
           mode: "index",
           intersect: false
         },
+        hover: {
+          mode: "index",
+          intersect: false
+        },
         plugins: {
+          datalabels: {
+            display: false
+          },
           legend: {
             position: "top",
             labels: {
@@ -178,12 +192,29 @@ class WaterLevelCompareManager {
             }
           },
           tooltip: {
+            enabled: true,
+            backgroundColor: "rgba(15, 23, 42, 0.92)",
+            titleColor: "#f8fafc",
+            bodyColor: "#f1f5f9",
+            titleFont: { family: "Pretendard", size: 13, weight: "bold" },
+            bodyFont: { family: "Pretendard", size: 12 },
+            padding: 12,
+            cornerRadius: 8,
+            boxPadding: 6,
+            usePointStyle: true,
             callbacks: {
+              title: function(context) {
+                return `📅 관측시각: ${context[0].label}`;
+              },
               label: function(context) {
                 if (context.datasetIndex === 2) {
-                  return `수위차: ${context.parsed.y.toFixed(1)} cm`;
+                  const val = context.parsed.y;
+                  let status = "✓ 정상 (≤5cm)";
+                  if (val > 10) status = "🚨 경보 (>10cm)";
+                  else if (val > 5) status = "⚠️ 주의 (>5cm)";
+                  return ` 편차(수위차): ${val.toFixed(1)} cm [${status}]`;
                 }
-                return `${context.dataset.label}: ${context.parsed.y.toFixed(3)} m`;
+                return ` ${context.dataset.label}: ${context.parsed.y.toFixed(3)} m`;
               }
             }
           }

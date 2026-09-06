@@ -1,0 +1,14 @@
+{
+  "thresholdCount": 3,
+  "host": "smtp.naver.com",
+  "port": 465,
+  "user": "psn5578@naver.com",
+  "pass": "",
+  "from": "자동유량관측 이상알림 <psn5578@naver.com>",
+  "recipients": [
+    "psn5578@naver.com",
+    "psn5578@kihs.re.kr"
+  ],
+  "enabled": true,
+  "savedAt": "2026-09-06T13:00:00.000Z"
+}
