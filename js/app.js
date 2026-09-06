@@ -376,10 +376,12 @@ class App {
       const badgeEl = document.getElementById("smtp-status-badge");
       const noticeEl = document.getElementById("smtp-member-readonly-notice");
       const saveBtn = document.getElementById("smtp-btn-save");
+      const testBtn = document.getElementById("smtp-btn-test");
 
       // UI Admin Enforcement
       if (noticeEl) noticeEl.style.display = isAdmin ? "none" : "block";
       if (saveBtn) saveBtn.style.display = isAdmin ? "inline-flex" : "none";
+      if (testBtn) testBtn.style.display = isAdmin ? "inline-flex" : "none";
 
       [threshEl, hostEl, portEl, userEl, passEl, recipEl].forEach(el => {
         if (el) el.disabled = !isAdmin;
@@ -437,6 +439,10 @@ class App {
 
   async sendTestEmail() {
     if (!window.apiClient) return;
+    if (window.apiClient.user?.role !== "admin") {
+      alert("⚠️ 테스트 메일 발송은 최고 관리자(admin) 계정으로만 실행할 수 있습니다.");
+      return;
+    }
     const targetEmail = prompt("테스트 메일을 발송할 수신 이메일 주소를 입력하세요:", "sechan@kihs.re.kr");
     if (!targetEmail) return;
 
