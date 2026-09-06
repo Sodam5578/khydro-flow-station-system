@@ -211,6 +211,8 @@ class App {
       if (window.statsManager) {
         window.statsManager.update();
       }
+    } else if (tabName === "settings") {
+      this.loadSmtpConfig();
     }
   }
 
@@ -355,6 +357,127 @@ class App {
     if (window.calibrationManager) {
       window.calibrationManager.renderKPIs();
       window.calibrationManager.renderTable();
+    }
+  }
+
+  // Smart Email Notifier Management
+  async loadSmtpConfig() {
+    if (!window.apiClient) return;
+    try {
+      const res = await window.apiClient.getNotificationConfig();
+      if (res.success && res.config) {
+        const c = res.config;
+        const threshEl = document.getElementById("smtp-threshold");
+        const hostEl = document.getElementById("smtp-host");
+        const portEl = document.getElementById("smtp-port");
+        const userEl = document.getElementById("smtp-user");
+        const recipEl = document.getElementById("smtp-recipients");
+        const badgeEl = document.getElementById("smtp-status-badge");
+
+        if (threshEl && c.thresholdCount) threshEl.value = String(c.thresholdCount);
+        if (hostEl) hostEl.value = c.host || "smtp.gmail.com";
+        if (portEl) portEl.value = c.port || 587;
+        if (userEl && !userEl.value) userEl.placeholder = c.user ? `현재 설정됨 (${c.user})` : "발신 계정 이메일";
+        if (recipEl) recipEl.value = c.recipients || "kihs_infra@kihs.re.kr, sechan@kihs.re.kr";
+        
+        if (badgeEl) {
+          if (c.isConfigured) {
+            badgeEl.className = "badge badge-green";
+            badgeEl.textContent = "✅ 실제 SMTP 발송 모드";
+          } else {
+            badgeEl.className = "badge badge-blue";
+            badgeEl.textContent = "시뮬레이션 모드 (가상 발송)";
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to load SMTP config:", e);
+    }
+  }
+
+  async saveSmtpConfig() {
+    if (!window.apiClient) return;
+    const threshEl = document.getElementById("smtp-threshold");
+    const thresholdCount = threshEl ? parseInt(threshEl.value, 10) : 3;
+    const host = document.getElementById("smtp-host").value.trim();
+    const port = document.getElementById("smtp-port").value.trim();
+    const user = document.getElementById("smtp-user").value.trim();
+    const pass = document.getElementById("smtp-pass").value.trim();
+    const recipients = document.getElementById("smtp-recipients").value.trim();
+
+    try {
+      const payload = { thresholdCount, host, port, recipients, enabled: true };
+      if (user) payload.user = user;
+      if (pass) payload.pass = pass;
+
+      const res = await window.apiClient.updateNotificationConfig(payload);
+      if (res.success) {
+        this.showToast(`알림 설정(기준: 연속 ${thresholdCount}회)이 저장되었습니다.`, "success");
+        this.loadSmtpConfig();
+      } else {
+        alert(res.message || "설정 저장 실패");
+      }
+    } catch (e) {
+      alert("설정 저장 중 오류가 발생했습니다.");
+    }
+  }
+
+  async sendTestEmail() {
+    if (!window.apiClient) return;
+    const targetEmail = prompt("테스트 메일을 발송할 수신 이메일 주소를 입력하세요:", "sechan@kihs.re.kr");
+    if (!targetEmail) return;
+
+    try {
+      this.showToast("테스트 메일을 전송 중입니다...", "info");
+      const res = await window.apiClient.sendTestNotification(targetEmail);
+      if (res.success) {
+        alert(`✓ ${res.message}`);
+        this.showToast("테스트 메일 전송 완료", "success");
+      } else {
+        alert(`⚠️ ${res.message}`);
+      }
+    } catch (e) {
+      alert("테스트 메일 전송 실패: 서버 오류");
+    }
+  }
+
+  async showNotificationLogsModal() {
+    if (!window.apiClient) return;
+    try {
+      const res = await window.apiClient.getNotificationLogs();
+      const logs = res.logs || [];
+      
+      let html = `<div style="max-height:400px; overflow-y:auto;"><table class="custom-table" style="font-size:0.8rem;">
+        <thead><tr><th>발송시각</th><th>구분</th><th>관측소</th><th>연속결측</th><th>수신처</th><th>상태</th></tr></thead><tbody>`;
+      
+      if (logs.length === 0) {
+        html += `<tr><td colspan="6" style="text-align:center; padding:2rem; color:#94a3b8;">아직 발송된 알림 이력이 없습니다.</td></tr>`;
+      } else {
+        logs.forEach(l => {
+          const badge = l.level === "CRITICAL" ? `<span class="badge badge-red">경보</span>` : (l.level === "WARNING" ? `<span class="badge badge-amber">주의</span>` : `<span class="badge badge-green">복구</span>`);
+          html += `<tr>
+            <td>${l.timestamp.slice(0, 19).replace("T", " ")}</td>
+            <td>${badge}</td>
+            <td><b>${l.stationName}</b></td>
+            <td>${l.count}회</td>
+            <td>${l.recipients}</td>
+            <td><span class="badge badge-blue">${l.mode}</span></td>
+          </tr>`;
+        });
+      }
+      html += `</tbody></table></div>`;
+
+      // Display in a simple alert or reuse detail modal
+      const modal = document.getElementById("detail-modal");
+      const title = document.getElementById("detail-modal-title");
+      const body = document.getElementById("detail-modal-body");
+      if (modal && title && body) {
+        title.innerHTML = `<span>📜 스마트 결측 알림 발송 이력 (최근 ${logs.length}건)</span>`;
+        body.innerHTML = html;
+        modal.classList.add("active");
+      }
+    } catch (e) {
+      alert("발송 로그 조회 실패");
     }
   }
 

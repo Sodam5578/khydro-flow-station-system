@@ -96,10 +96,15 @@ class ModalManager {
 
     if (modalTitle) {
       modalTitle.innerHTML = `
-        <div style="display:flex; align-items:center; gap:0.5rem;">
-          <span>🌊 ${st.name || "-"}</span> 
-          <span class="badge badge-blue">${st.region || "-"}권역</span>
-          ${isDual ? `<span class="badge badge-purple" style="font-weight:700;">⚡ EWSV+ADVM 이중화</span>` : ""}
+        <div style="display:flex; align-items:center; justify-content:space-between; width:100%; gap:0.5rem; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <span>🌊 ${st.name || "-"}</span> 
+            <span class="badge badge-blue">${st.region || "-"}권역</span>
+            ${isDual ? `<span class="badge badge-purple" style="font-weight:700;">⚡ EWSV+ADVM 이중화</span>` : ""}
+          </div>
+          <button class="btn btn-primary btn-sm" style="font-size:0.75rem; padding:3px 10px; background:#2563eb; border-color:#2563eb;" onclick="window.waterLevelManager.openModal('${st.code || st.id}')">
+            📊 실시간 수위비교 차트
+          </button>
         </div>
       `;
     }

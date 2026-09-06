@@ -1311,33 +1311,39 @@ body {
   flex-direction: column;
   gap: 2px;
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  max-height: 80px;
+  min-height: 75px;
+  overflow: visible;
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
 }
 
-/* Schedule Event Chips */
+/* Schedule Event Spacer for Vertical Slot Alignment */
+.schedule-chip-spacer {
+  height: 20px;
+  margin: 1px 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Schedule Event Chips (Apple Calendar Multi-day Continuous Bar Style) */
 .schedule-chip {
+  height: 20px;
   font-size: 0.72rem;
   font-weight: 600;
-  padding: 2px 5px;
-  border-radius: 4px;
+  padding: 0 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: pointer;
-  transition: transform 0.1s ease, filter 0.1s ease;
+  transition: filter 0.15s ease, opacity 0.15s ease;
   display: flex;
   align-items: center;
   gap: 3px;
-  line-height: 1.3;
+  line-height: 1;
   min-width: 0;
-  max-width: 100%;
-  width: 100%;
   box-sizing: border-box;
+  position: relative;
 }
 
 .schedule-chip .chip-title {
@@ -1349,8 +1355,50 @@ body {
 }
 
 .schedule-chip:hover {
-  transform: translateY(-1px);
-  filter: brightness(0.92);
+  filter: brightness(0.88);
+  z-index: 10 !important;
+}
+
+/* Continuous Banner Spanning Modifiers */
+.schedule-chip.chip-span-single {
+  border-radius: 4px;
+  margin: 1px 2px;
+}
+
+.schedule-chip.chip-span-start {
+  border-radius: 4px 0 0 4px;
+  margin: 1px -0.25rem 1px 2px;
+  border-right: none !important;
+  z-index: 2;
+}
+
+.schedule-chip.chip-span-middle {
+  border-radius: 0;
+  margin: 1px -0.25rem;
+  border-left: none !important;
+  border-right: none !important;
+  z-index: 2;
+}
+
+.schedule-chip.chip-span-end {
+  border-radius: 0 4px 4px 0;
+  margin: 1px 2px 1px -0.25rem;
+  border-left: none !important;
+  z-index: 2;
+}
+
+.schedule-chip.chip-span-end-of-week {
+  border-radius: 0;
+  margin: 1px 0 1px -0.25rem;
+  border-left: none !important;
+  z-index: 2;
+}
+
+.schedule-chip.chip-span-start-of-week {
+  border-radius: 0;
+  margin: 1px -0.25rem 1px 0;
+  border-right: none !important;
+  z-index: 2;
 }
 
 .chip-type-check { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
@@ -1359,6 +1407,26 @@ body {
 .chip-type-meeting { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
 .chip-type-vacation { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
 .chip-type-emergency { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+/* Calendar Drag & Drop Interactions */
+.calendar-day-cell.drag-target-hover {
+  background-color: #dbeafe !important;
+  outline: 2px dashed #2563eb !important;
+  outline-offset: -2px;
+}
+
+.schedule-chip[draggable="true"] {
+  cursor: grab !important;
+}
+
+.schedule-chip[draggable="true"]:active {
+  cursor: grabbing !important;
+}
+
+.schedule-chip.is-dragging {
+  opacity: 0.4 !important;
+  transform: scale(0.96);
+}
 
 .calendar-day-cell.holiday .day-number {
   color: #ef4444 !important;

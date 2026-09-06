@@ -1,4 +1,5 @@
 const http = require("http");
+const notifier = require("./notifier");
 
 class LiveMonitorService {
   constructor() {
@@ -51,6 +52,12 @@ class LiveMonitorService {
       const html = await this.fetchHtml();
       this.parseAndCache(html);
       this.cache.lastSyncTime = new Date().toISOString();
+
+      // Trigger Smart Email Notifier (3-count warning / 6-count critical / resolved)
+      notifier.checkAndNotify(this.cache.issues, this.cache.targetTime).catch(err => {
+        console.warn("⚠️ [LiveMonitor] Notifier error:", err.message);
+      });
+
       console.log(`✓ [LiveMonitor] Synced successfully at ${this.cache.lastSyncTime} (${this.cache.issues.length} issues, ${this.cache.summary.actionRequiredStations} unique stations)`);
       return { success: true, count: this.cache.issues.length };
     } catch (e) {

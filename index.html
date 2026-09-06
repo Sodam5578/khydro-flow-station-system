@@ -761,16 +761,68 @@
               </div>
             </div>
 
-            <!-- Non-Admin Notice Card -->
-            <div class="card" id="setting-member-notice" style="display:none; background:#f8fafc; border:1px dashed #cbd5e1;">
-              <div class="card-header">
-                <div class="card-title" style="color:#64748b;"><span>🔒</span> 관리자 권한 안내</div>
+            <!-- Smart Email Notification Setting Card -->
+            <div class="card" style="grid-column: 1 / -1;">
+              <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <div class="card-title"><span>📧</span> 스마트 실시간 결측 이메일 알림 서비스 설정</div>
+                <span id="smtp-status-badge" class="badge badge-blue">시뮬레이션 모드 (가상 발송)</span>
               </div>
               <div class="card-body">
-                <p style="font-size:0.85rem; color:#64748b; line-height:1.6;">
-                  현재 <b>일반 팀원 계정</b>으로 접속 중입니다.<br>
-                  데이터의 무결성과 안전한 보존을 위해 <b>[엑셀 업로드 갱신]</b>, <b>[JSON 데이터 복원]</b>, <b>[원본 데이터 초기화]</b> 기능은 <b>최고 관리자(admin)</b> 계정으로 로그인한 경우에만 실행할 수 있습니다.
+                <p style="font-size:0.85rem; color:#64748b; margin-bottom:1.25rem;">
+                  웹 시스템에 접속하지 않아도 <b>24시간 백그라운드 품질감시 엔진</b>이 원본 관측자료를 실시간 감시하여, 사용자가 설정한 횟수 이상 연속 결측 시 자동으로 담당자 이메일 알림을 발송합니다.
                 </p>
+
+                <!-- Threshold & Recipients Row -->
+                <div class="form-grid" style="grid-template-columns: 240px 1fr; gap:1rem; margin-bottom:1rem;">
+                  <div class="form-group">
+                    <label class="form-label" style="font-weight:700; color:#ea580c;">⚠️ 주의알림 기준 (연속 결측 횟수) *</label>
+                    <select id="smtp-threshold" class="form-select" style="font-weight:700; border-color:#fed7aa;">
+                      <option value="2">연속 2회 결측 (20분 이상)</option>
+                      <option value="3" selected>연속 3회 결측 (30분 이상, 권장)</option>
+                      <option value="4">연속 4회 결측 (40분 이상)</option>
+                      <option value="5">연속 5회 결측 (50분 이상)</option>
+                      <option value="6">연속 6회 결측 (1시간 이상)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-weight:700;">알림 수신 대상자 (이메일 쉼표 구분) *</label>
+                    <input type="text" id="smtp-recipients" class="form-input" placeholder="psn5578@kihs.re.kr, psn5578@naver.com" value="psn5578@kihs.re.kr, psn5578@naver.com">
+                  </div>
+                </div>
+
+                <!-- SMTP Server Credentials Row -->
+                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1rem; background:#f8fafc; padding:1rem; border-radius:8px; border:1px solid #e2e8f0;">
+                  <div class="form-group">
+                    <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 호스트</label>
+                    <input type="text" id="smtp-host" class="form-input" placeholder="smtp.naver.com 또는 smtp.gmail.com" value="smtp.gmail.com">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 포트</label>
+                    <input type="number" id="smtp-port" class="form-input" placeholder="587 또는 465" value="587">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 계정 (이메일)</label>
+                    <input type="text" id="smtp-user" class="form-input" placeholder="발신 계정 이메일">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 비밀번호 (앱 비밀번호)</label>
+                    <input type="password" id="smtp-pass" class="form-input" placeholder="앱 전용 비밀번호">
+                  </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; border-top:1px solid var(--border-color); padding-top:1rem;">
+                  <div style="display:flex; gap:0.5rem;">
+                    <button class="btn btn-outline btn-sm" onclick="window.app.sendTestEmail()">
+                      <span>🧪</span> <span>테스트 메일 즉시 발송</span>
+                    </button>
+                    <button class="btn btn-outline btn-sm" onclick="window.app.showNotificationLogsModal()">
+                      <span>📜</span> <span>발송 이력 로그 보기</span>
+                    </button>
+                  </div>
+                  <button class="btn btn-primary btn-sm" onclick="window.app.saveSmtpConfig()">
+                    <span>💾</span> <span>알림 설정 저장</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1407,6 +1459,106 @@
     </div>
   </div>
 
+  <!-- 4. Water Level Comparison Modal -->
+  <div class="modal-backdrop" id="waterlevel-modal">
+    <div class="modal-dialog modal-lg" style="max-width: 900px;">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="wl-modal-title">📊 실시간 수위 비교 분석</div>
+          <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;" id="wl-modal-sub">관측소 정보 로딩중...</div>
+        </div>
+        <button class="modal-close-btn" onclick="window.waterLevelManager.closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.25rem;">
+        <div id="wl-loading" style="text-align: center; padding: 3rem; color: #64748b;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">⏳</div>
+          <div>실시간 수위 비교 데이터를 불러오는 중입니다...</div>
+        </div>
+
+        <div id="wl-content" style="display: none;">
+          <!-- Period Selector & Status Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; gap: 0.4rem;">
+              <button class="btn btn-primary btn-sm wl-period-btn" data-period="24h" onclick="window.waterLevelManager.setPeriod('24h')">⏱️ 최근 24시간 (10분 주기)</button>
+              <button class="btn btn-outline btn-sm wl-period-btn" data-period="7d" onclick="window.waterLevelManager.setPeriod('7d')">📅 최근 7일 (1시간 주기)</button>
+            </div>
+            <div id="wl-kpi-status-badge" class="badge badge-green">정상</div>
+          </div>
+
+          <!-- KPI Cards Grid -->
+          <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+            <div class="kpi-card" style="padding: 0.8rem;">
+              <div class="kpi-icon blue" style="width:36px; height:36px; font-size:1rem;">🌊</div>
+              <div class="kpi-content">
+                <div class="kpi-label" style="font-size:0.75rem;">현재 유속계 수위</div>
+                <div class="kpi-value" id="wl-kpi-gauge" style="font-size:1.1rem; color:#2563eb;">-</div>
+              </div>
+            </div>
+            <div class="kpi-card" style="padding: 0.8rem;">
+              <div class="kpi-icon green" style="width:36px; height:36px; font-size:1rem;">📏</div>
+              <div class="kpi-content">
+                <div class="kpi-label" style="font-size:0.75rem;">현재 기준 수위계</div>
+                <div class="kpi-value" id="wl-kpi-ref" style="font-size:1.1rem; color:#16a34a;">-</div>
+              </div>
+            </div>
+            <div class="kpi-card" style="padding: 0.8rem;">
+              <div class="kpi-icon amber" style="width:36px; height:36px; font-size:1rem;">⚖️</div>
+              <div class="kpi-content">
+                <div class="kpi-label" style="font-size:0.75rem;">현재 수위차 (|오차|)</div>
+                <div class="kpi-value" id="wl-kpi-diff" style="font-size:1.1rem; color:#d97706;">-</div>
+              </div>
+            </div>
+            <div class="kpi-card" style="padding: 0.8rem;">
+              <div class="kpi-icon purple" style="width:36px; height:36px; font-size:1rem;">📈</div>
+              <div class="kpi-content">
+                <div class="kpi-label" style="font-size:0.75rem;">최대 / 평균 오차</div>
+                <div class="kpi-value" style="font-size:0.95rem; line-height:1.2;">
+                  <span id="wl-kpi-max-diff">-</span> / <span id="wl-kpi-avg-diff">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comparison Chart -->
+          <div class="card" style="margin-bottom: 1.25rem; border: 1px solid var(--border-color);">
+            <div class="card-header" style="padding: 0.6rem 1rem;">
+              <div class="card-title" style="font-size: 0.9rem;"><span>📈</span> 수위 시계열 비교 & 수위차 편차 그래프</div>
+            </div>
+            <div class="card-body" style="height: 280px; position: relative; padding: 0.75rem;">
+              <canvas id="wl-chart-canvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Recent TimeSeries Table -->
+          <div class="card" style="border: 1px solid var(--border-color);">
+            <div class="card-header" style="padding: 0.6rem 1rem;">
+              <div class="card-title" style="font-size: 0.9rem;"><span>📋</span> 최근 관측 수위 상세 이력 (최근 30개)</div>
+            </div>
+            <div class="table-container" style="max-height: 200px; overflow-y: auto;">
+              <table class="data-table" style="font-size: 0.8rem;">
+                <thead>
+                  <tr>
+                    <th>관측시각</th>
+                    <th>유속계 수위 (m)</th>
+                    <th>기준수위계 (m)</th>
+                    <th>수위차 (cm)</th>
+                    <th>상태</th>
+                  </tr>
+                </thead>
+                <tbody id="wl-table-tbody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline btn-sm" onclick="window.waterLevelManager.closeModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container"></div>
 
@@ -1424,6 +1576,7 @@
   <script src="js/calibration.js?v=2.2"></script>
   <script src="js/schedule.js?v=2.2"></script>
   <script src="js/monitor.js?v=2.2"></script>
+  <script src="js/waterlevel.js?v=2.2"></script>
   <script src="js/logs.js?v=2.2"></script>
   <script src="js/modal.js?v=2.2"></script>
   <script src="js/excel.js?v=2.2"></script>

@@ -274,17 +274,21 @@ class ScheduleManager {
 
   /* Permission Check: Can current user edit or delete this schedule? */
   canEditSchedule(s) {
-    if (!s) return true;
+    if (!s) return false;
     const currentUser = window.apiClient?.user;
     if (!currentUser) return false;
-    if (currentUser.role === "admin") return true;
+    // 최고 관리자(admin)는 모든 일정 수정 및 드래그 이동 가능
+    if (currentUser.role === "admin" || currentUser.username === "admin") return true;
 
     const currentName = currentUser.name;
-    const isCreator = s.createdBy === currentName;
-    const isAssignee = s.assignee === currentName || s.assignee === "전체";
-    const isAttendee = (s.attendees || "").includes(currentName);
+    const currentUsername = currentUser.username;
 
-    return isCreator || isAssignee || isAttendee;
+    // 본인 등록 일정, 본인 담당 일정, 본인 동행 일정만 수정 가능
+    const isCreator = s.createdBy && (s.createdBy.includes(currentUsername) || s.createdBy.includes(currentName));
+    const isAssignee = s.assignee === currentName || s.assignee === "전체";
+    const isAttendee = (s.attendees || "").split(",").map(a => a.trim()).includes(currentName);
+
+    return !!(isCreator || isAssignee || isAttendee);
   }
 
   onFilterChange() {
@@ -415,150 +419,353 @@ class ScheduleManager {
     const todayStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, "0")}-${String(todayDate.getDate()).padStart(2, "0")}`;
 
     const filteredSchedules = this.getFilteredSchedules();
-    let gridHtml = "";
 
-    // Calculate grid start date (first day of previous month trailing if any, else firstDay)
-    let gridFirstDateStr = "";
-    if (startingDay > 0) {
-      const prevMonthIdx = month === 0 ? 12 : month;
-      const prevYear = month === 0 ? year - 1 : year;
-      const firstTrailingDay = prevLastDate - (startingDay - 1);
-      gridFirstDateStr = `${prevYear}-${String(prevMonthIdx).padStart(2, "0")}-${String(firstTrailingDay).padStart(2, "0")}`;
-    } else {
-      gridFirstDateStr = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-    }
+    // 1. Build flat array of all calendar grid days (35 or 42 days)
+    const calendarDays = [];
 
-    const renderCellEvents = (dateStr) => {
-      // Find events that start on this date, OR started before gridFirstDateStr and span into this grid
-      const dayEvents = filteredSchedules.filter(s => {
-        const start = s.startDate;
-        const end = s.endDate || s.startDate;
-        if (dateStr === start) return true;
-        if (dateStr === gridFirstDateStr && start < gridFirstDateStr && end >= gridFirstDateStr) return true;
-        return false;
-      });
-
-      return dayEvents.map(s => {
-        let chipClass = "chip-type-check";
-        let icon = "🚗";
-        if (s.scheduleType === "maint") { chipClass = "chip-type-maint"; icon = "🛠️"; }
-        else if (s.scheduleType === "calib") { chipClass = "chip-type-calib"; icon = "🎯"; }
-        else if (s.scheduleType === "meeting") { chipClass = "chip-type-meeting"; icon = "💻"; }
-        else if (s.scheduleType === "vacation") { chipClass = "chip-type-vacation"; icon = "🌴"; }
-        else if (s.scheduleType === "emergency") { chipClass = "chip-type-emergency"; icon = "🚨"; }
-
-        const statusDone = s.status === "completed" ? "✓" : "";
-        let peopleLabel = `[${s.assignee}]`;
-        if (s.attendees) {
-          const count = s.attendees.split(",").filter(Boolean).length;
-          peopleLabel = `[${s.assignee}+${count}]`;
-        }
-
-        const stCount = (s.stationIds && s.stationIds.length > 1) ? ` (+${s.stationIds.length})` : "";
-        
-        // Multi-day duration label
-        let rangeLabel = "";
-        const end = s.endDate || s.startDate;
-        if (s.startDate !== end) {
-          const sM = parseInt(s.startDate.split("-")[1], 10);
-          const sD = parseInt(s.startDate.split("-")[2], 10);
-          const eM = parseInt(end.split("-")[1], 10);
-          const eD = parseInt(end.split("-")[2], 10);
-          const d1 = new Date(s.startDate);
-          const d2 = new Date(end);
-          const diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
-          rangeLabel = ` (${sM}/${sD}~${eM}/${eD}, ${diffDays}일간)`;
-        }
-
-        const fullTitle = `${s.title}${stCount}${rangeLabel}`;
-
-        return `
-          <div class="schedule-chip ${chipClass}" 
-               title="${s.title}${rangeLabel} (${s.assignee}${s.attendees ? `, 동행:${s.attendees}` : ""}) - ${s.stationName ? `관측소: ${s.stationName}` : "내부일정"}"
-               onclick="event.stopPropagation(); window.scheduleManager.openEditModal(${s.id})">
-            <span style="flex-shrink:0;">${icon}</span>
-            <span style="font-weight:700; flex-shrink:0;">${peopleLabel}</span>
-            <span class="chip-title">${fullTitle}</span>
-            ${statusDone ? `<span style="flex-shrink:0; font-weight:700;">${statusDone}</span>` : ""}
-          </div>
-        `;
-      }).join("");
-    };
-
-    // 1. Previous month trailing days (With Events Rendered!)
+    // Trailing previous month days
     for (let i = startingDay - 1; i >= 0; i--) {
       const d = prevLastDate - i;
       const prevMonthIdx = month === 0 ? 12 : month;
       const prevYear = month === 0 ? year - 1 : year;
       const dateStr = `${prevYear}-${String(prevMonthIdx).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      const holidayName = KOREAN_HOLIDAYS[dateStr] || "";
-      const eventsHtml = renderCellEvents(dateStr);
-      
-      gridHtml += `
-        <div class="calendar-day-cell other-month ${holidayName ? "holiday" : ""}" onclick="window.scheduleManager.openAddModal('${dateStr}')">
-          <div class="day-header">
-            <span class="day-number">${d}</span>
-            ${holidayName ? `<span class="holiday-label" title="${holidayName}">${holidayName}</span>` : ""}
-          </div>
-          <div class="day-events">
-            ${eventsHtml}
-          </div>
-        </div>
-      `;
+      calendarDays.push({
+        dateStr,
+        dayNum: d,
+        isOtherMonth: true,
+        isToday: dateStr === todayStr,
+        holidayName: KOREAN_HOLIDAYS[dateStr] || "",
+        dayOfWeek: calendarDays.length % 7
+      });
     }
 
-    // 2. Current month days
-    for (let day = 1; day <= lastDate; day++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      const dayOfWeek = new Date(year, month, day).getDay();
-      const isToday = dateStr === todayStr;
-      const holidayName = KOREAN_HOLIDAYS[dateStr] || "";
-
-      let cellClasses = "calendar-day-cell";
-      if (isToday) cellClasses += " today";
-      if (dayOfWeek === 0) cellClasses += " sun";
-      if (dayOfWeek === 6) cellClasses += " sat";
-      if (holidayName) cellClasses += " holiday";
-
-      const eventsHtml = renderCellEvents(dateStr);
-
-      gridHtml += `
-        <div class="${cellClasses}" onclick="window.scheduleManager.openAddModal('${dateStr}')">
-          <div class="day-header">
-            <span class="day-number">${day}</span>
-            ${holidayName ? `<span class="holiday-label" title="${holidayName}">${holidayName}</span>` : ""}
-          </div>
-          <div class="day-events">
-            ${eventsHtml}
-          </div>
-        </div>
-      `;
+    // Current month days
+    for (let d = 1; d <= lastDate; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      calendarDays.push({
+        dateStr,
+        dayNum: d,
+        isOtherMonth: false,
+        isToday: dateStr === todayStr,
+        holidayName: KOREAN_HOLIDAYS[dateStr] || "",
+        dayOfWeek: calendarDays.length % 7
+      });
     }
 
-    // 3. Next month leading days (With Events Rendered!)
-    const totalRendered = startingDay + lastDate;
+    // Leading next month days
+    const totalRendered = calendarDays.length;
     const remaining = (7 - (totalRendered % 7)) % 7;
-    for (let nextDay = 1; nextDay <= remaining; nextDay++) {
+    for (let d = 1; d <= remaining; d++) {
       const nextMonthIdx = month + 2 > 12 ? 1 : month + 2;
       const nextYear = month + 2 > 12 ? year + 1 : year;
-      const dateStr = `${nextYear}-${String(nextMonthIdx).padStart(2, "0")}-${String(nextDay).padStart(2, "0")}`;
-      const holidayName = KOREAN_HOLIDAYS[dateStr] || "";
-      const eventsHtml = renderCellEvents(dateStr);
+      const dateStr = `${nextYear}-${String(nextMonthIdx).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      calendarDays.push({
+        dateStr,
+        dayNum: d,
+        isOtherMonth: true,
+        isToday: dateStr === todayStr,
+        holidayName: KOREAN_HOLIDAYS[dateStr] || "",
+        dayOfWeek: calendarDays.length % 7
+      });
+    }
 
-      gridHtml += `
-        <div class="calendar-day-cell other-month ${holidayName ? "holiday" : ""}" onclick="window.scheduleManager.openAddModal('${dateStr}')">
-          <div class="day-header">
-            <span class="day-number">${nextDay}</span>
-            ${holidayName ? `<span class="holiday-label" title="${holidayName}">${holidayName}</span>` : ""}
+    // 2. Process in chunks of 7 days (Week by Week) with Apple Calendar Slot Packing
+    let gridHtml = "";
+    const weeksCount = calendarDays.length / 7;
+
+    for (let w = 0; w < weeksCount; w++) {
+      const weekDays = calendarDays.slice(w * 7, (w + 1) * 7);
+      const weekStartStr = weekDays[0].dateStr;
+      const weekEndStr = weekDays[6].dateStr;
+
+      // Find all schedules overlapping this week
+      const weekSchedules = filteredSchedules.filter(s => {
+        const start = s.startDate;
+        const end = s.endDate || s.startDate;
+        return start <= weekEndStr && end >= weekStartStr;
+      });
+
+      // Sort: Multi-day spans first (longer duration first), then single days, then by id
+      weekSchedules.sort((a, b) => {
+        const aStart = a.startDate;
+        const aEnd = a.endDate || a.startDate;
+        const bStart = b.startDate;
+        const bEnd = b.endDate || b.startDate;
+        const aDuration = (new Date(aEnd) - new Date(aStart));
+        const bDuration = (new Date(bEnd) - new Date(bStart));
+        if (bDuration !== aDuration) return bDuration - aDuration;
+        return a.id - b.id;
+      });
+
+      // Slot allocation array: slots[slotIndex][dayIndex (0..6)] = item | null
+      const slots = [];
+
+      weekSchedules.forEach(s => {
+        const start = s.startDate;
+        const end = s.endDate || s.startDate;
+
+        // Calculate startDayIdx and endDayIdx within this week (0..6)
+        let startIdx = 0;
+        let endIdx = 6;
+
+        for (let i = 0; i < 7; i++) {
+          if (weekDays[i].dateStr === start) startIdx = i;
+          if (weekDays[i].dateStr < start) startIdx = i + 1;
+          if (weekDays[i].dateStr === end) endIdx = i;
+          if (weekDays[i].dateStr > end && endIdx === 6) endIdx = Math.max(0, i - 1);
+        }
+
+        startIdx = Math.max(0, Math.min(6, startIdx));
+        endIdx = Math.max(startIdx, Math.min(6, endIdx));
+
+        // Find lowest available slot
+        let targetSlot = -1;
+        for (let sIdx = 0; sIdx < slots.length; sIdx++) {
+          let canFit = true;
+          for (let dIdx = startIdx; dIdx <= endIdx; dIdx++) {
+            if (slots[sIdx][dIdx] !== null) {
+              canFit = false;
+              break;
+            }
+          }
+          if (canFit) {
+            targetSlot = sIdx;
+            break;
+          }
+        }
+
+        if (targetSlot === -1) {
+          targetSlot = slots.length;
+          slots.push([null, null, null, null, null, null, null]);
+        }
+
+        for (let dIdx = startIdx; dIdx <= endIdx; dIdx++) {
+          slots[targetSlot][dIdx] = {
+            schedule: s,
+            isMultiDay: start !== end,
+            isStart: weekDays[dIdx].dateStr === start || dIdx === 0,
+            isEnd: weekDays[dIdx].dateStr === end || dIdx === 6,
+            isMiddle: weekDays[dIdx].dateStr > start && weekDays[dIdx].dateStr < end && dIdx !== 0 && dIdx !== 6,
+            isEndOfWeek: dIdx === 6 && weekDays[dIdx].dateStr < end,
+            isStartOfWeek: dIdx === 0 && weekDays[dIdx].dateStr > start
+          };
+        }
+      });
+
+      // Render the 7 day cells for this week
+      for (let dIdx = 0; dIdx < 7; dIdx++) {
+        const day = weekDays[dIdx];
+        let cellClasses = "calendar-day-cell";
+        if (day.isOtherMonth) cellClasses += " other-month";
+        if (day.isToday) cellClasses += " today";
+        if (dIdx === 0) cellClasses += " sun";
+        if (dIdx === 6) cellClasses += " sat";
+        if (day.holidayName) cellClasses += " holiday";
+
+        // Render slots for this specific day
+        let eventsHtml = "";
+        for (let sIdx = 0; sIdx < slots.length; sIdx++) {
+          const item = slots[sIdx][dIdx];
+          if (!item) {
+            eventsHtml += `<div class="schedule-chip-spacer"></div>`;
+          } else {
+            const s = item.schedule;
+            let chipClass = "chip-type-check";
+            let icon = "🚗";
+            if (s.scheduleType === "maint") { chipClass = "chip-type-maint"; icon = "🛠️"; }
+            else if (s.scheduleType === "calib") { chipClass = "chip-type-calib"; icon = "🎯"; }
+            else if (s.scheduleType === "meeting") { chipClass = "chip-type-meeting"; icon = "💻"; }
+            else if (s.scheduleType === "vacation") { chipClass = "chip-type-vacation"; icon = "🌴"; }
+            else if (s.scheduleType === "emergency") { chipClass = "chip-type-emergency"; icon = "🚨"; }
+
+            const statusDone = s.status === "completed" ? "✓" : "";
+            let peopleLabel = `[${s.assignee}]`;
+            if (s.attendees) {
+              const count = s.attendees.split(",").filter(Boolean).length;
+              peopleLabel = `[${s.assignee}+${count}]`;
+            }
+            const stCount = (s.stationIds && s.stationIds.length > 1) ? ` (+${s.stationIds.length})` : "";
+
+            let spanClass = "chip-span-single";
+            let contentHtml = "";
+
+            if (!item.isMultiDay) {
+              // Single day event
+              spanClass = "chip-span-single";
+              contentHtml = `
+                <span style="flex-shrink:0;">${icon}</span>
+                <span style="font-weight:700; flex-shrink:0;">${peopleLabel}</span>
+                <span class="chip-title">${s.title}${stCount}</span>
+                ${statusDone ? `<span style="flex-shrink:0; font-weight:700;">${statusDone}</span>` : ""}
+              `;
+            } else {
+              // Multi-day continuous event
+              if (item.isStart) {
+                spanClass = item.isEndOfWeek ? "chip-span-start" : (item.isEnd ? "chip-span-single" : "chip-span-start");
+                contentHtml = `
+                  <span style="flex-shrink:0;">${icon}</span>
+                  <span style="font-weight:700; flex-shrink:0;">${peopleLabel}</span>
+                  <span class="chip-title">${s.title}${stCount}</span>
+                `;
+              } else if (item.isEnd) {
+                spanClass = "chip-span-end";
+                contentHtml = `<span class="chip-title" style="visibility:hidden;">&nbsp;</span>`;
+              } else {
+                spanClass = item.isEndOfWeek ? "chip-span-end-of-week" : "chip-span-middle";
+                contentHtml = `<span class="chip-title" style="visibility:hidden;">&nbsp;</span>`;
+              }
+            }
+
+            const end = s.endDate || s.startDate;
+            const canEdit = this.canEditSchedule(s);
+            eventsHtml += `
+              <div class="schedule-chip ${spanClass} ${chipClass}" 
+                   ${canEdit ? `draggable="true" ondragstart="window.scheduleManager.onDragStart(event, ${s.id})" ondragend="window.scheduleManager.onDragEnd(event)"` : ""}
+                   title="${s.title} (${s.startDate}~${end}) [${s.assignee}${s.attendees ? `, ${s.attendees}` : ""}]${canEdit ? " (마우스로 끌어서 날짜 이동 가능)" : ""}"
+                   onclick="event.stopPropagation(); window.scheduleManager.openEditModal(${s.id})">
+                ${contentHtml}
+              </div>
+            `;
+          }
+        }
+
+        gridHtml += `
+          <div class="${cellClasses}" 
+               ondragover="window.scheduleManager.onDragOver(event)"
+               ondragenter="window.scheduleManager.onDragEnter(event)"
+               ondragleave="window.scheduleManager.onDragLeave(event)"
+               ondrop="window.scheduleManager.onDrop(event, '${day.dateStr}')"
+               onclick="window.scheduleManager.openAddModal('${day.dateStr}')">
+            <div class="day-header">
+              <span class="day-number">${day.dayNum}</span>
+              ${day.holidayName ? `<span class="holiday-label" title="${day.holidayName}">${day.holidayName}</span>` : ""}
+            </div>
+            <div class="day-events">
+              ${eventsHtml}
+            </div>
           </div>
-          <div class="day-events">
-            ${eventsHtml}
-          </div>
-        </div>
-      `;
+        `;
+      }
     }
 
     grid.innerHTML = gridHtml;
+  }
+
+  /* Drag and Drop Date Rescheduling */
+  onDragStart(e, scheduleId) {
+    this.draggedScheduleId = scheduleId;
+    if (e.dataTransfer) {
+      e.dataTransfer.setData("text/plain", String(scheduleId));
+      e.dataTransfer.effectAllowed = "move";
+    }
+    const chip = e.currentTarget;
+    if (chip) chip.classList.add("is-dragging");
+  }
+
+  onDragEnd(e) {
+    this.draggedScheduleId = null;
+    const chip = e.currentTarget;
+    if (chip) chip.classList.remove("is-dragging");
+    document.querySelectorAll(".calendar-day-cell.drag-target-hover").forEach(el => {
+      el.classList.remove("drag-target-hover");
+    });
+  }
+
+  onDragOver(e) {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+  }
+
+  onDragEnter(e) {
+    e.preventDefault();
+    const cell = e.currentTarget;
+    if (cell && cell.classList.contains("calendar-day-cell")) {
+      cell.classList.add("drag-target-hover");
+    }
+  }
+
+  onDragLeave(e) {
+    const cell = e.currentTarget;
+    if (cell && cell.classList.contains("calendar-day-cell")) {
+      // Only remove if leaving the cell itself
+      if (!cell.contains(e.relatedTarget)) {
+        cell.classList.remove("drag-target-hover");
+      }
+    }
+  }
+
+  async onDrop(e, targetDateStr) {
+    e.preventDefault();
+    const cell = e.currentTarget;
+    if (cell) cell.classList.remove("drag-target-hover");
+
+    const scheduleId = parseInt(e.dataTransfer?.getData("text/plain") || this.draggedScheduleId, 10);
+    if (!scheduleId) return;
+
+    const schedule = this.schedules.find(s => s.id === scheduleId);
+    if (!schedule) return;
+
+    // Permission check
+    if (!this.canEditSchedule(schedule)) {
+      alert("본인이 등록한 일정만 날짜를 변경할 수 있습니다.");
+      return;
+    }
+
+    // Calculate new start & end dates preserving duration
+    const oldStart = new Date(schedule.startDate);
+    const oldEnd = new Date(schedule.endDate || schedule.startDate);
+    const targetStart = new Date(targetDateStr);
+
+    const diffTime = targetStart.getTime() - oldStart.getTime();
+    if (diffTime === 0) return; // Same date dropped
+
+    const newEnd = new Date(oldEnd.getTime() + diffTime);
+    const newStartDate = targetDateStr;
+    const newEndDate = `${newEnd.getFullYear()}-${String(newEnd.getMonth() + 1).padStart(2, "0")}-${String(newEnd.getDate()).padStart(2, "0")}`;
+
+    const oldStartStr = schedule.startDate;
+    const oldEndStr = schedule.endDate || schedule.startDate;
+
+    // Optimistic UI update
+    schedule.startDate = newStartDate;
+    schedule.endDate = newEndDate;
+    this.renderCurrentView();
+    this.renderKPIs();
+
+    // Persist to server
+    try {
+      if (window.apiClient) {
+        const res = await window.apiClient.updateSchedule(schedule.id, {
+          title: schedule.title,
+          scheduleType: schedule.scheduleType,
+          startDate: newStartDate,
+          endDate: newEndDate,
+          assignee: schedule.assignee,
+          attendees: schedule.attendees,
+          stationIds: schedule.stationIds,
+          status: schedule.status,
+          description: schedule.description
+        });
+
+        if (res.success) {
+          if (window.app) {
+            window.app.showToast(`📅 '${schedule.title}' 일정이 [${newStartDate}${newStartDate !== newEndDate ? ` ~ ${newEndDate}` : ""}]로 변경되었습니다.`, "success");
+          }
+        } else {
+          // Rollback on failure
+          schedule.startDate = oldStartStr;
+          schedule.endDate = oldEndStr;
+          this.renderCurrentView();
+          alert(res.error || "일정 날짜 변경에 실패했습니다.");
+        }
+      }
+    } catch (err) {
+      console.error("Failed to update schedule date via drag & drop:", err);
+      schedule.startDate = oldStartStr;
+      schedule.endDate = oldEndStr;
+      this.renderCurrentView();
+      alert("일정 날짜 변경 중 서버 오류가 발생했습니다.");
+    }
   }
 
 

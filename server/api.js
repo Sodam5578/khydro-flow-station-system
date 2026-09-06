@@ -4,6 +4,8 @@ const bcrypt = require("bcryptjs");
 const { db, dbService, logActivity } = require("./db");
 const { generateToken, verifyToken } = require("./auth");
 const liveMonitor = require("./monitor");
+const notifier = require("./notifier");
+const waterLevelService = require("./waterlevel");
 
 // 1. Auth: Login
 router.post("/auth/login", async (req, res) => {
@@ -383,11 +385,59 @@ router.get("/monitor/station/:code", (req, res) => {
   }
 });
 
-// 14. Live Monitor: Force Manual Sync Trigger
-router.post("/monitor/sync", async (req, res) => {
+// 15. Notifications: Get Config & Status
+router.get("/notifications/config", verifyToken, (req, res) => {
   try {
-    const result = await liveMonitor.sync();
+    const config = notifier.getConfig();
+    res.json({ success: true, config });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 16. Notifications: Update Config (Admin Only)
+router.put("/notifications/config", verifyToken, (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "관리자만 알림 설정을 변경할 수 있습니다." });
+    }
+    notifier.updateConfig(req.body);
+    logActivity(req.user, "설정변경", "이메일알림설정", "SMTP 및 알림 수신처 설정 갱신", req.ip);
+    res.json({ success: true, message: "알림 설정이 저장되었습니다.", config: notifier.getConfig() });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 17. Notifications: Get Notification Logs
+router.get("/notifications/logs", verifyToken, (req, res) => {
+  try {
+    const logs = notifier.getLogs();
+    res.json({ success: true, count: logs.length, logs });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 18. Notifications: Send Test Email
+router.post("/notifications/test", verifyToken, async (req, res) => {
+  try {
+    const { targetEmail } = req.body;
+    const result = await notifier.sendTestEmail(targetEmail);
+    logActivity(req.user, "알림테스트", "SMTP테스트", `테스트 메일 발송 (${targetEmail || "기본수신자"})`, req.ip);
     res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 19. Water Level: Real-time Comparison Dataset
+router.get("/waterlevel/compare/:code", verifyToken, async (req, res) => {
+  try {
+    const codeOrId = req.params.code;
+    const period = req.query.period || "24h"; // "24h" | "7d"
+    const data = await waterLevelService.getComparisonData(codeOrId, period);
+    res.json({ success: true, ...data });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }

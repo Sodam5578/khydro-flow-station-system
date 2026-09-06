@@ -240,6 +240,41 @@ class ApiClient {
     const res = await fetch(`${this.baseUrl}/monitor/station/${stCode}`, { headers: this.getHeaders() });
     return await res.json();
   }
+
+  // REST API: Smart Email Notifications
+  async getNotificationConfig() {
+    const res = await fetch(`${this.baseUrl}/notifications/config`, { headers: this.getHeaders() });
+    return await res.json();
+  }
+
+  async updateNotificationConfig(config) {
+    const res = await fetch(`${this.baseUrl}/notifications/config`, {
+      method: "PUT",
+      headers: this.getHeaders(),
+      body: JSON.stringify(config)
+    });
+    return await res.json();
+  }
+
+  async getNotificationLogs() {
+    const res = await fetch(`${this.baseUrl}/notifications/logs`, { headers: this.getHeaders() });
+    return await res.json();
+  }
+
+  async sendTestNotification(targetEmail) {
+    const res = await fetch(`${this.baseUrl}/notifications/test`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify({ targetEmail })
+    });
+    return await res.json();
+  }
+
+  // REST API: Real-time Water Level Comparison
+  async getWaterLevelComparison(stCodeOrId, period = "24h") {
+    const res = await fetch(`${this.baseUrl}/waterlevel/compare/${encodeURIComponent(stCodeOrId)}?period=${period}`, { headers: this.getHeaders() });
+    return await res.json();
+  }
 }
 
 window.apiClient = new ApiClient();

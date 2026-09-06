@@ -225,7 +225,12 @@ class MonitorManager {
             <b style="color:#b91c1c;">${item.continuousCount}회</b>
           </td>
           <td style="text-align:center;">
-            <div style="display:flex; gap:4px; justify-content:center;">
+            <div style="display:flex; gap:4px; justify-content:center; flex-wrap:wrap;">
+              <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:#2563eb; border-color:#bfdbfe;" 
+                      onclick="window.waterLevelManager.openModal('${item.stCode || item.stationName}')" 
+                      title="실시간 수위 비교 및 편차 차트 분석">
+                📊 수위비교
+              </button>
               ${stId ? `
                 <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem;" onclick="window.modalManager.openDetail(${stId})" title="제원 및 이력 조회">
                   🔍 제원
