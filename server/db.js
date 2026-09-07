@@ -257,6 +257,8 @@ const dbService = {
       const supabaseFields = { ...updateFields };
       delete supabaseFields.mount_type;
       delete supabaseFields.shelter_type;
+      delete supabaseFields.rv_box_installed;
+      delete supabaseFields.rv_box_agents;
       const { data, error } = await supabase.from("stations").update(supabaseFields).eq("id", id).select();
       if (error) console.warn("Supabase update warning:", error.message);
     }

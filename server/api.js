@@ -108,6 +108,17 @@ router.get("/stations", verifyToken, async (req, res) => {
         refWaterLevel: r.ref_water_level,
         mountType: r.mount_type || maint.mountType || "-",
         shelterType: r.shelter_type || maint.shelterType || "-",
+        rvBoxInstalled: r.rv_box_installed === 1 ? true : (r.rv_box_installed === 0 ? false : (maint.rvBoxInstalled !== undefined ? maint.rvBoxInstalled : null)),
+        rvBoxStatus: maint.rvBox?.status || (r.rv_box_installed === 1 ? "설치완료" : (r.rv_box_installed === 0 ? "미설치" : "미운영/대상외")),
+        rvBoxAgents: maint.rvBoxAgents || (r.rv_box_agents ? JSON.parse(r.rv_box_agents || "[]") : []),
+        rvBox: maint.rvBox || {
+          isTarget: r.rv_box_installed !== null && r.rv_box_installed !== undefined,
+          installed: r.rv_box_installed === 1 ? true : (r.rv_box_installed === 0 ? false : null),
+          status: r.rv_box_installed === 1 ? "설치완료" : (r.rv_box_installed === 0 ? "미설치" : "미운영/대상외"),
+          logger: (maint.rvBoxAgents || (r.rv_box_agents ? JSON.parse(r.rv_box_agents || "[]") : [])).find(a => a.endsWith('_L') || a.includes('양수장')) ? { agentName: (maint.rvBoxAgents || (r.rv_box_agents ? JSON.parse(r.rv_box_agents || "[]") : [])).find(a => a.endsWith('_L') || a.includes('양수장')), installed: r.rv_box_installed === 1 } : null,
+          sender: (maint.rvBoxAgents || (r.rv_box_agents ? JSON.parse(r.rv_box_agents || "[]") : [])).find(a => a.endsWith('_S')) ? { agentName: (maint.rvBoxAgents || (r.rv_box_agents ? JSON.parse(r.rv_box_agents || "[]") : [])).find(a => a.endsWith('_S')), installed: r.rv_box_installed === 1 } : null,
+          agents: maint.rvBoxAgents || (r.rv_box_agents ? JSON.parse(r.rv_box_agents || "[]") : [])
+        },
         memo: r.memo,
         coords: {
           lat: r.lat,
@@ -131,10 +142,24 @@ router.put("/stations/:id", verifyToken, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
     const st = req.body;
-
     let maint = typeof st.maintenance === "object" && st.maintenance !== null ? { ...st.maintenance } : {};
     maint.mountType = st.mountType || "-";
     maint.shelterType = st.shelterType || "-";
+
+    if (st.rvBox) {
+      maint.rvBox = st.rvBox;
+    } else if (st.rvBoxStatus || st.rvBoxInstalled !== undefined) {
+      maint.rvBox = {
+        isTarget: st.rvBoxStatus !== "미운영/대상외",
+        installed: st.rvBoxInstalled === true ? true : (st.rvBoxInstalled === false ? false : null),
+        status: st.rvBoxStatus || (st.rvBoxInstalled === true ? "설치완료" : (st.rvBoxInstalled === false ? "미설치" : "미운영/대상외")),
+        logger: (st.rvBoxAgents || []).find(a => a.endsWith('_L') || a.includes('양수장')) ? { agentName: (st.rvBoxAgents || []).find(a => a.endsWith('_L') || a.includes('양수장')), installed: st.rvBoxInstalled === true } : null,
+        sender: (st.rvBoxAgents || []).find(a => a.endsWith('_S')) ? { agentName: (st.rvBoxAgents || []).find(a => a.endsWith('_S')), installed: st.rvBoxInstalled === true } : null,
+        agents: st.rvBoxAgents || []
+      };
+    }
+    if (st.rvBoxInstalled !== undefined) maint.rvBoxInstalled = st.rvBoxInstalled;
+    if (st.rvBoxAgents) maint.rvBoxAgents = st.rvBoxAgents;
 
     const updateFields = {
       seq: st.seq,
@@ -162,6 +187,8 @@ router.put("/stations/:id", verifyToken, async (req, res) => {
       ref_water_level: st.refWaterLevel,
       mount_type: st.mountType || "-",
       shelter_type: st.shelterType || "-",
+      rv_box_installed: st.rvBoxInstalled === true ? 1 : (st.rvBoxInstalled === false ? 0 : null),
+      rv_box_agents: JSON.stringify(st.rvBoxAgents || []),
       memo: st.memo,
       lat: st.coords?.lat || null,
       lon: st.coords?.lon || null,

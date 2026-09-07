@@ -1310,6 +1310,40 @@
               <input type="text" id="form-calib-count" class="form-input" placeholder="예: 1, 2">
             </div>
 
+            <!-- RV Box Management in Edit Modal -->
+            <div class="form-group full-width" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.85rem; margin-top:0.25rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; flex-wrap:wrap; gap:0.5rem;">
+                <label class="form-label" style="font-weight:700; color:#1e293b; margin-bottom:0; display:flex; align-items:center; gap:6px;">
+                  <span>🎛️ 리모트뷰(RemoteView) 박스 설치 관리</span>
+                </label>
+                <label class="checkbox-label" style="font-size:0.85rem; font-weight:700; color:#1e40af; cursor:pointer;">
+                  <input type="checkbox" id="form-rv-is-target" onchange="window.modalManager.toggleRvTarget(this.checked)"> 과업 관리 대상 관측소
+                </label>
+              </div>
+
+              <div id="form-rv-sub-options" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:0.75rem; background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:0.75rem; transition: opacity 0.2s;">
+                <!-- Logger PC Checkbox & Auto Agent Display -->
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                  <label class="checkbox-label" style="font-size:0.85rem; font-weight:700; color:#0f172a; cursor:pointer;">
+                    <input type="checkbox" id="form-rv-logger-installed" onchange="window.modalManager.updateRvPreview()"> 📟 로거(Logger) PC 설치됨
+                  </label>
+                  <div style="font-size:0.75rem; color:#64748b; margin-left:22px;">
+                    에이전트명: <code id="form-rv-logger-preview" style="color:#1e40af; font-weight:700; font-size:0.75rem;">-</code>
+                  </div>
+                </div>
+
+                <!-- Sender PC Checkbox & Auto Agent Display -->
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                  <label class="checkbox-label" style="font-size:0.85rem; font-weight:700; color:#0f172a; cursor:pointer;">
+                    <input type="checkbox" id="form-rv-sender-installed" onchange="window.modalManager.updateRvPreview()"> 📡 샌더(Sender) PC 설치됨
+                  </label>
+                  <div style="font-size:0.75rem; color:#64748b; margin-left:22px;">
+                    에이전트명: <code id="form-rv-sender-preview" style="color:#1e40af; font-weight:700; font-size:0.75rem;">-</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="form-group full-width">
               <label class="form-label">비고 및 특이사항</label>
               <textarea id="form-memo" class="form-textarea" rows="2" placeholder="유지관리 특이사항, 센서 점검 메모 등"></textarea>
@@ -1499,11 +1533,11 @@
 
   <!-- 4. Water Level Comparison Modal -->
   <div class="modal-backdrop" id="waterlevel-modal">
-    <div class="modal-dialog modal-lg" style="max-width: 900px;">
+    <div class="modal-dialog modal-lg" style="max-width: 1200px; width: 95vw; max-height: 94vh; overflow-y: auto;">
       <div class="modal-header">
         <div>
-          <div class="modal-title" id="wl-modal-title">📊 실시간 수위 비교 분석</div>
-          <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;" id="wl-modal-sub">관측소 정보 로딩중...</div>
+          <div class="modal-title" id="wl-modal-title" style="font-size: 1.15rem;">📊 실시간 수위 비교 분석</div>
+          <div style="font-size: 0.82rem; color: #64748b; margin-top: 2px;" id="wl-modal-sub">관측소 정보 로딩중...</div>
         </div>
         <button class="modal-close-btn" onclick="window.waterLevelManager.closeModal()">&times;</button>
       </div>
@@ -1520,59 +1554,88 @@
               <button class="btn btn-primary btn-sm wl-period-btn" data-period="24h" onclick="window.waterLevelManager.setPeriod('24h')">⏱️ 최근 24시간 (10분 주기)</button>
               <button class="btn btn-outline btn-sm wl-period-btn" data-period="7d" onclick="window.waterLevelManager.setPeriod('7d')">📅 최근 7일 (1시간 주기)</button>
             </div>
-            <div id="wl-kpi-status-badge" class="badge badge-green">정상</div>
+            <div id="wl-kpi-status-badge" class="badge badge-green" style="font-size: 0.85rem; padding: 4px 12px;">정상</div>
           </div>
 
           <!-- KPI Cards Grid -->
-          <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
-            <div class="kpi-card" style="padding: 0.8rem;">
-              <div class="kpi-icon blue" style="width:36px; height:36px; font-size:1rem;">🌊</div>
+          <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; margin-bottom: 1.25rem;">
+            <div class="kpi-card" style="padding: 0.9rem 1rem;">
+              <div class="kpi-icon blue" style="width:40px; height:40px; font-size:1.15rem;">🌊</div>
               <div class="kpi-content">
-                <div class="kpi-label" style="font-size:0.75rem;">현재 유속계 수위</div>
-                <div class="kpi-value" id="wl-kpi-gauge" style="font-size:1.1rem; color:#2563eb;">-</div>
+                <div class="kpi-label" style="font-size:0.78rem;">현재 유속계 수위</div>
+                <div class="kpi-value" id="wl-kpi-gauge" style="font-size:1.25rem; color:#2563eb; font-weight:800;">-</div>
               </div>
             </div>
-            <div class="kpi-card" style="padding: 0.8rem;">
-              <div class="kpi-icon green" style="width:36px; height:36px; font-size:1rem;">📏</div>
+            <div class="kpi-card" style="padding: 0.9rem 1rem;">
+              <div class="kpi-icon green" style="width:40px; height:40px; font-size:1.15rem;">📏</div>
               <div class="kpi-content">
-                <div class="kpi-label" style="font-size:0.75rem;">현재 기준 수위계</div>
-                <div class="kpi-value" id="wl-kpi-ref" style="font-size:1.1rem; color:#16a34a;">-</div>
+                <div class="kpi-label" style="font-size:0.78rem;">현재 기준 수위계</div>
+                <div class="kpi-value" id="wl-kpi-ref" style="font-size:1.25rem; color:#16a34a; font-weight:800;">-</div>
               </div>
             </div>
-            <div class="kpi-card" style="padding: 0.8rem;">
-              <div class="kpi-icon amber" style="width:36px; height:36px; font-size:1rem;">⚖️</div>
+            <div class="kpi-card" style="padding: 0.9rem 1rem;">
+              <div class="kpi-icon amber" style="width:40px; height:40px; font-size:1.15rem;">⚖️</div>
               <div class="kpi-content">
-                <div class="kpi-label" style="font-size:0.75rem;">현재 수위차 (|오차|)</div>
-                <div class="kpi-value" id="wl-kpi-diff" style="font-size:1.1rem; color:#d97706;">-</div>
+                <div class="kpi-label" style="font-size:0.78rem;">현재 수위차 (|오차|)</div>
+                <div class="kpi-value" id="wl-kpi-diff" style="font-size:1.25rem; color:#d97706; font-weight:800;">-</div>
               </div>
             </div>
-            <div class="kpi-card" style="padding: 0.8rem;">
-              <div class="kpi-icon purple" style="width:36px; height:36px; font-size:1rem;">📈</div>
+            <div class="kpi-card" style="padding: 0.9rem 1rem;">
+              <div class="kpi-icon purple" style="width:40px; height:40px; font-size:1.15rem;">📈</div>
               <div class="kpi-content">
-                <div class="kpi-label" style="font-size:0.75rem;">최대 / 평균 오차</div>
-                <div class="kpi-value" style="font-size:0.95rem; line-height:1.2;">
+                <div class="kpi-label" style="font-size:0.78rem;">최대 / 평균 오차</div>
+                <div class="kpi-value" style="font-size:1.05rem; line-height:1.2; font-weight:700;">
                   <span id="wl-kpi-max-diff">-</span> / <span id="wl-kpi-avg-diff">-</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Comparison Chart -->
+          <!-- Comparison Chart Card -->
           <div class="card" style="margin-bottom: 1.25rem; border: 1px solid var(--border-color);">
-            <div class="card-header" style="padding: 0.6rem 1rem;">
-              <div class="card-title" style="font-size: 0.9rem;"><span>📈</span> 수위 시계열 비교 & 수위차 편차 그래프</div>
+            <div class="card-header" style="padding: 0.65rem 1.15rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <div class="card-title" style="font-size: 0.95rem; font-weight:700;"><span>📈</span> 수위 시계열 비교 및 수위차(오차) 정밀 분석</div>
+              <div style="display: flex; gap: 0.75rem; align-items: center; font-size: 0.8rem;">
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; color: #166534; font-weight: 600;">
+                  <input type="checkbox" id="wl-toggle-tolerance-band" checked onchange="window.waterLevelManager.toggleToleranceBand(this.checked)"> 🛡️ ±10cm 관심기준 밴드 표시
+                </label>
+              </div>
             </div>
-            <div class="card-body" style="height: 280px; position: relative; padding: 0.75rem;">
-              <canvas id="wl-chart-canvas"></canvas>
+            <div class="card-body" style="padding: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+              <!-- 1. Main Water Level Comparison Chart (m) -->
+              <div>
+                <div style="font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                  <span>🌊 수위 비교 곡선 (단위: m)</span>
+                  <span style="font-size: 0.75rem; color: #64748b; font-weight: 500;">🔵 유속계 측정 수위 &nbsp;|&nbsp; 🟢 기준 수위계 (연녹색 음영: ±10cm 관심기준 영역)</span>
+                </div>
+                <div style="height: 260px; position: relative;">
+                  <canvas id="wl-chart-canvas"></canvas>
+                </div>
+              </div>
+
+              <!-- 2. Sub Deviation Error Trend Chart (cm) -->
+              <div style="border-top: 1px dashed #e2e8f0; padding-top: 0.75rem;">
+                <div style="font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                  <span>⚖️ 수위차 편차 추이 (|유속계 - 기준수위|, 단위: cm)</span>
+                  <div style="display: flex; gap: 10px; font-size: 0.75rem; font-weight: 600;">
+                    <span style="color: #16a34a;">● 정상(&lt;10cm)</span>
+                    <span style="color: #d97706;">● 관심(≥10cm)</span>
+                    <span style="color: #dc2626;">● 경계(≥20cm)</span>
+                  </div>
+                </div>
+                <div style="height: 140px; position: relative;">
+                  <canvas id="wl-diff-canvas"></canvas>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- Recent TimeSeries Table -->
           <div class="card" style="border: 1px solid var(--border-color);">
-            <div class="card-header" style="padding: 0.6rem 1rem;">
-              <div class="card-title" style="font-size: 0.9rem;"><span>📋</span> 최근 관측 수위 상세 이력 (최근 30개)</div>
+            <div class="card-header" style="padding: 0.65rem 1.15rem;">
+              <div class="card-title" style="font-size: 0.95rem; font-weight:700;"><span>📋</span> 최근 관측 수위 상세 이력 (최근 30개)</div>
             </div>
-            <div class="table-container" style="max-height: 200px; overflow-y: auto;">
+            <div class="table-container" style="max-height: 240px; overflow-y: auto;">
               <table class="data-table" style="font-size: 0.8rem;">
                 <thead>
                   <tr>

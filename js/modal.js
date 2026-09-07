@@ -82,6 +82,48 @@ class ModalManager {
         this.isSyncingCoords = false;
       });
     }
+
+    // 3. Auto Update RemoteView Agent Name Preview on Code/Name Input
+    const codeInput = document.getElementById("form-code");
+    const nameInput = document.getElementById("form-name");
+    if (codeInput) codeInput.addEventListener("input", () => this.updateRvPreview());
+    if (nameInput) nameInput.addEventListener("input", () => this.updateRvPreview());
+  }
+
+  getCleanStationName(name) {
+    if (!name) return "";
+    const match = String(name).match(/\(([^)]+)\)/);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+    return String(name).trim();
+  }
+
+  toggleRvTarget(isTarget) {
+    const subOpts = document.getElementById("form-rv-sub-options");
+    const loggerChk = document.getElementById("form-rv-logger-installed");
+    const senderChk = document.getElementById("form-rv-sender-installed");
+    if (subOpts) {
+      subOpts.style.opacity = isTarget ? "1" : "0.45";
+      subOpts.style.pointerEvents = isTarget ? "auto" : "none";
+    }
+    if (!isTarget) {
+      if (loggerChk) loggerChk.checked = false;
+      if (senderChk) senderChk.checked = false;
+    }
+    this.updateRvPreview();
+  }
+
+  updateRvPreview() {
+    const code = document.getElementById("form-code")?.value.trim() || "지점코드";
+    const name = document.getElementById("form-name")?.value.trim() || "지점명";
+    const cleanName = this.getCleanStationName(name);
+
+    const loggerPreview = document.getElementById("form-rv-logger-preview");
+    const senderPreview = document.getElementById("form-rv-sender-preview");
+
+    if (loggerPreview) loggerPreview.textContent = `${code}_${cleanName}_L`;
+    if (senderPreview) senderPreview.textContent = `${code}_${cleanName}_S`;
   }
 
   openDetail(id) {
@@ -223,8 +265,46 @@ class ModalManager {
       `;
     }
 
-    const rvHtml = st.rvBoxInstalled === true ? `<span class="badge badge-green">✅ 설치완료</span>` : (st.rvBoxInstalled === false ? `<span class="badge badge-amber">⏳ 미설치 (과업대상)</span>` : `<span class="badge badge-gray">미운영/대상외</span>`);
-    const agentsHtml = (st.rvBoxAgents && st.rvBoxAgents.length > 0) ? `<div style="font-size:0.72rem; color:#64748b; margin-top:2px;">${st.rvBoxAgents.join(", ")}</div>` : "";
+    const rv = st.rvBox || {};
+    let rvStatusBadge = "";
+    if (st.rvBoxInstalled === true) {
+      rvStatusBadge = `<span class="badge badge-green" style="font-weight:700;">✅ 설치완료</span>`;
+    } else if (st.rvBoxInstalled === false) {
+      rvStatusBadge = `<span class="badge badge-amber" style="font-weight:700;">⏳ 미설치 (과업대상)</span>`;
+    } else {
+      rvStatusBadge = `<span class="badge badge-gray">➖ 대상외 / 미운영</span>`;
+    }
+
+    let rvDetailsHtml = "";
+    if (rv.isTarget || st.rvBoxInstalled !== null || (st.rvBoxAgents && st.rvBoxAgents.length > 0)) {
+      const loggerInfo = rv.logger || (st.rvBoxAgents && st.rvBoxAgents.find(a => a.endsWith("_L") || a.includes("양수장")) ? { agentName: st.rvBoxAgents.find(a => a.endsWith("_L") || a.includes("양수장")), installed: st.rvBoxInstalled } : null);
+      const senderInfo = rv.sender || (st.rvBoxAgents && st.rvBoxAgents.find(a => a.endsWith("_S")) ? { agentName: st.rvBoxAgents.find(a => a.endsWith("_S")), installed: st.rvBoxInstalled } : null);
+
+      const loggerBadge = loggerInfo 
+        ? (loggerInfo.installed ? `<span class="badge badge-green" style="font-size:0.7rem; font-weight:700;">✅ 설치완료</span>` : `<span class="badge badge-amber" style="font-size:0.7rem;">⏳ 미설치</span>`)
+        : `<span class="badge badge-gray" style="font-size:0.7rem;">-</span>`;
+        
+      const senderBadge = senderInfo 
+        ? (senderInfo.installed ? `<span class="badge badge-green" style="font-size:0.7rem; font-weight:700;">✅ 설치완료</span>` : `<span class="badge badge-amber" style="font-size:0.7rem;">⏳ 미설치</span>`)
+        : `<span class="badge badge-gray" style="font-size:0.7rem;">-</span>`;
+
+      rvDetailsHtml = `
+        <div style="margin-top:6px; display:flex; flex-direction:column; gap:4px;">
+          ${loggerInfo ? `
+            <div style="display:flex; align-items:center; justify-content:space-between; background:#ffffff; padding:4px 8px; border-radius:4px; border:1px solid #e2e8f0; font-size:0.8rem;">
+              <span>📟 <b>로거(Logger) PC</b>: <code style="font-size:0.75rem; color:#1e40af; font-weight:700;">${loggerInfo.agentName || "-"}</code></span>
+              ${loggerBadge}
+            </div>
+          ` : ""}
+          ${senderInfo ? `
+            <div style="display:flex; align-items:center; justify-content:space-between; background:#ffffff; padding:4px 8px; border-radius:4px; border:1px solid #e2e8f0; font-size:0.8rem;">
+              <span>📡 <b>샌더(Sender) PC</b>: <code style="font-size:0.75rem; color:#1e40af; font-weight:700;">${senderInfo.agentName || "-"}</code></span>
+              ${senderBadge}
+            </div>
+          ` : ""}
+        </div>
+      `;
+    }
 
     modalBody.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding:0.75rem 1rem; background:${isDual ? "#fdf4ff; border:1px solid #f0abfc;" : "#eff6ff; border:1px solid #bfdbfe;"} border-radius:8px;">
@@ -266,12 +346,21 @@ class ModalManager {
         </tr>
         <tr>
           <th>RV박스 (리모트뷰)</th>
-          <td>
-            ${rvHtml}
-            ${agentsHtml}
+          <td colspan="3">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <b>전체 현황:</b> ${rvStatusBadge}
+              </div>
+              <a href="https://www.rview.com/ko/" target="_blank" class="btn btn-outline btn-sm" style="font-size:0.72rem; padding:2px 8px; text-decoration:none; background:#f8fafc;">
+                🌐 RemoteView 원격접속 바로가기
+              </a>
+            </div>
+            ${rvDetailsHtml}
           </td>
+        </tr>
+        <tr>
           <th>수위계 설치 여부</th>
-          <td>${m.waterLevelInstalled ? "설치됨 (" + (m.waterLevelPos||"") + ")" : "미설치"}</td>
+          <td colspan="3">${m.waterLevelInstalled ? "설치됨 (" + (m.waterLevelPos||"") + ")" : "미설치"}</td>
         </tr>
         <tr>
           <th>특이사항 및 비고</th>
@@ -284,6 +373,17 @@ class ModalManager {
   toggleTask(stationId, taskKey, isChecked) {
     const updated = window.dataManager.toggleTaskCompletion(stationId, taskKey, isChecked);
     if (updated) {
+      if (taskKey === "rvBox") {
+        updated.rvBoxInstalled = isChecked ? true : false;
+        updated.rvBoxStatus = isChecked ? "설치완료" : "미설치";
+        if (updated.rvBox) {
+          updated.rvBox.installed = isChecked ? true : false;
+          updated.rvBox.status = isChecked ? "설치완료" : "미설치";
+          if (updated.rvBox.logger) updated.rvBox.logger.installed = isChecked;
+          if (updated.rvBox.sender) updated.rvBox.sender.installed = isChecked;
+        }
+        window.dataManager.update(stationId, updated);
+      }
       this.renderDetailBody(updated);
       window.app.refreshAll();
       window.app.showToast(isChecked ? "유지관리 과업이 [조치완료]로 기록되었습니다." : "과업 상태가 [조치대기]로 변경되었습니다.", isChecked ? "success" : "info");
@@ -328,6 +428,22 @@ class ModalManager {
     document.getElementById("form-ref-waterlevel").value = st.refWaterLevel || "";
     document.getElementById("form-memo").value = st.memo || "";
 
+    // RemoteView Box Fields
+    const rv = st.rvBox || {};
+    const isTarget = st.rvBoxInstalled !== null || (rv.isTarget !== undefined ? rv.isTarget : (st.rvBoxStatus !== "미운영/대상외"));
+    const isLoggerInstalled = !!(rv.logger?.installed || (st.rvBoxInstalled === true));
+    const isSenderInstalled = !!(rv.sender?.installed || (st.rvBoxInstalled === true));
+
+    const targetChk = document.getElementById("form-rv-is-target");
+    const loggerChk = document.getElementById("form-rv-logger-installed");
+    const senderChk = document.getElementById("form-rv-sender-installed");
+
+    if (targetChk) targetChk.checked = isTarget;
+    if (loggerChk) loggerChk.checked = isLoggerInstalled;
+    if (senderChk) senderChk.checked = isSenderInstalled;
+
+    this.toggleRvTarget(isTarget);
+
     // Checkboxes
     document.getElementById("form-is-operating").checked = !!st.isOperating2026;
     document.getElementById("form-flood-alert").checked = !!st.floodAlert;
@@ -356,6 +472,10 @@ class ModalManager {
 
     document.getElementById("station-form").reset();
     document.getElementById("form-id").value = "";
+    if (document.getElementById("form-rv-is-target")) document.getElementById("form-rv-is-target").checked = false;
+    if (document.getElementById("form-rv-logger-installed")) document.getElementById("form-rv-logger-installed").checked = false;
+    if (document.getElementById("form-rv-sender-installed")) document.getElementById("form-rv-sender-installed").checked = false;
+    this.toggleRvTarget(false);
 
     const modal = document.getElementById("edit-modal");
     if (modal) modal.classList.add("active");
@@ -400,6 +520,68 @@ class ModalManager {
     // Preserve existing metadata
     const existingSt = id ? window.dataManager.getById(id) : null;
 
+    // RemoteView Box State Automatic Calculation
+    const isTarget = !!document.getElementById("form-rv-is-target")?.checked;
+    const isLoggerInstalled = isTarget && !!document.getElementById("form-rv-logger-installed")?.checked;
+    const isSenderInstalled = isTarget && !!document.getElementById("form-rv-sender-installed")?.checked;
+
+    const code = document.getElementById("form-code").value.trim();
+    const cleanName = this.getCleanStationName(name);
+    const loggerAgentCode = `${code || "CODE"}_${cleanName}_L`;
+    const senderAgentCode = `${code || "CODE"}_${cleanName}_S`;
+
+    let rvStatus = "미운영/대상외";
+    let rvInstalled = null;
+    let rvAgents = [];
+    let rvBoxObj = null;
+
+    if (isTarget) {
+      const allInstalled = isLoggerInstalled && isSenderInstalled;
+      rvInstalled = allInstalled;
+      rvStatus = allInstalled ? "설치완료" : "미설치";
+      rvAgents = [loggerAgentCode, senderAgentCode];
+      rvBoxObj = {
+        isTarget: true,
+        installed: allInstalled,
+        status: rvStatus,
+        logger: {
+          agentName: loggerAgentCode,
+          installed: isLoggerInstalled
+        },
+        sender: {
+          agentName: senderAgentCode,
+          installed: isSenderInstalled
+        },
+        agents: rvAgents
+      };
+    } else {
+      rvBoxObj = {
+        isTarget: false,
+        installed: null,
+        status: "미운영/대상외",
+        logger: null,
+        sender: null,
+        agents: []
+      };
+    }
+
+    // Maintenance tasks sync
+    const maint = existingSt ? JSON.parse(JSON.stringify(existingSt.maintenance || {})) : {};
+    if (!maint.completedTasks) maint.completedTasks = {};
+    if (rvInstalled === true) {
+      maint.completedTasks["rvBox"] = {
+        completed: true,
+        completedDate: new Date().toISOString().slice(0, 10),
+        user: (window.apiClient?.user?.name || "관리자"),
+        note: "로거 및 샌더 RV 박스 설치완료"
+      };
+    } else if (rvInstalled === false && maint.completedTasks["rvBox"]) {
+      delete maint.completedTasks["rvBox"];
+    }
+    maint.rvBox = rvBoxObj;
+    maint.rvBoxInstalled = rvInstalled;
+    maint.rvBoxAgents = rvAgents;
+
     const stationData = {
       seq: existingSt ? (existingSt.seq || 1) : (parseInt(document.getElementById("form-seq")?.value, 10) || 999),
       region: document.getElementById("form-region").value,
@@ -427,10 +609,11 @@ class ModalManager {
       calibCount2026: document.getElementById("form-calib-count").value.trim(),
       solarInstall: document.getElementById("form-solar-install").checked,
       pollutionTotal: document.getElementById("form-pollution-total").checked,
-      rvBoxInstalled: existingSt ? existingSt.rvBoxInstalled : null,
-      rvBoxStatus: existingSt ? existingSt.rvBoxStatus : "미운영/대상외",
-      rvBoxAgents: existingSt ? existingSt.rvBoxAgents : [],
-      maintenance: existingSt ? existingSt.maintenance : {},
+      rvBoxInstalled: rvInstalled,
+      rvBoxStatus: rvStatus,
+      rvBoxAgents: rvAgents,
+      rvBox: rvBoxObj,
+      maintenance: maint,
       coords: {
         lat: isNaN(lat) ? null : lat,
         lon: isNaN(lon) ? null : lon,

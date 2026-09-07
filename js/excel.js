@@ -41,6 +41,9 @@ class ExcelManager {
       "태양광 설치 지점": st.solarInstall ? "○" : "",
       "기준수위": st.refWaterLevel || "",
       "수위계 방식": st.waterLevelType || "",
+      "RV박스 상태": st.rvBox?.status || (st.rvBoxInstalled === true ? "설치완료" : (st.rvBoxInstalled === false ? "미설치" : "-")),
+      "로거PC 에이전트": st.rvBox?.logger?.code || (st.rvBoxAgents && st.rvBoxAgents.find(a => a.endsWith('_L'))) || "-",
+      "샌더PC 에이전트": st.rvBox?.sender?.code || (st.rvBoxAgents && st.rvBoxAgents.find(a => a.endsWith('_S'))) || "-",
       "비고": st.memo || ""
     }));
 
@@ -137,6 +140,8 @@ class ExcelManager {
             solarInstall: ["○", "O", "o", "1", "Y", "y"].includes(String(r["태양광 설치 지점"] || "").trim()),
             refWaterLevel: String(r["기준수위"] || "").trim(),
             waterLevelType: String(r["수위계 방식"] || "").trim(),
+            rvBoxInstalled: r["RV박스 상태"] ? (String(r["RV박스 상태"]).includes("설치완료") || String(r["RV박스 상태"]).includes("○") || String(r["RV박스 상태"]) === "O" ? true : (String(r["RV박스 상태"]).includes("미설치") ? false : null)) : undefined,
+            rvBoxStatus: String(r["RV박스 상태"] || "").trim() || undefined,
             memo: String(r["비고"] || "").trim(),
             coords: {
               lonDMS: lonDMS,

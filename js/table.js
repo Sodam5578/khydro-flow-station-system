@@ -155,6 +155,8 @@ class TableManager {
                       (st.mountType && st.mountType.toLowerCase().includes(kw)) ||
                       (st.shelterType && st.shelterType.toLowerCase().includes(kw)) ||
                       (st.installYear && String(st.installYear).includes(kw)) ||
+                      (st.rvBoxStatus && st.rvBoxStatus.toLowerCase().includes(kw)) ||
+                      (st.rvBoxAgents && st.rvBoxAgents.some(a => a.toLowerCase().includes(kw))) ||
                       (st.memo && st.memo.toLowerCase().includes(kw));
         if (!match) return false;
       }
