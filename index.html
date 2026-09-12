@@ -812,23 +812,29 @@
 
                 <!-- 1. HTTP REST API Config Box -->
                 <div id="box-email-http" style="margin-bottom:1rem; background:#f8fafc; padding:1.15rem; border-radius:8px; border:1px solid #e2e8f0;">
-                  <div class="form-grid" style="grid-template-columns: 220px 1fr; gap:1rem; margin-bottom:0.75rem;">
+                  <div class="form-grid" style="grid-template-columns: 200px 1fr 220px; gap:1rem; margin-bottom:0.75rem;">
                     <div class="form-group">
-                      <label class="form-label" style="font-weight:600; font-size:0.8rem;">무료 API 서비스 선택</label>
+                      <label class="form-label" style="font-weight:600; font-size:0.8rem;">API 서비스 선택</label>
                       <select id="email-api-provider" class="form-select" style="font-weight:600;">
-                        <option value="RESEND">Resend (무료 월 3,000건, 추천)</option>
-                        <option value="BREVO">Brevo (무료 일 300건 / 월 9,000건)</option>
+                        <option value="BREVO" selected>Brevo (추천: 팀원 전체 수신 가능, 일 300건 무료)</option>
+                        <option value="RESEND">Resend (도메인 등록 전엔 가입자 본인만 수신 가능)</option>
                       </select>
                     </div>
                     <div class="form-group">
                       <label class="form-label" style="font-weight:600; font-size:0.8rem;">발급받은 API Key *</label>
-                      <input type="password" id="email-api-key" name="system_email_api_key_cfg" class="form-input" placeholder="re_... 또는 xkeysib-..." autocomplete="new-password" data-lpignore="true">
+                      <input type="password" id="email-api-key" name="system_email_api_key_cfg" class="form-input" placeholder="Brevo: xkeysib-... / Resend: re_..." autocomplete="new-password" data-lpignore="true">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-weight:600; font-size:0.8rem;">API 가입 이메일 (발신처) *</label>
+                      <input type="email" id="email-api-sender" name="system_email_api_sender_cfg" class="form-input" placeholder="예: seyoo123456789@gmail.com" value="seyoo123456789@gmail.com" autocomplete="new-password" data-lpignore="true">
                     </div>
                   </div>
-                  <div style="font-size:0.8rem; color:#475569; background:#ffffff; border:1px dashed #cbd5e1; padding:0.75rem 1rem; border-radius:6px; line-height:1.5;">
-                    💡 <b>무료 API Key 발급 방법 (30초 소요):</b><br>
-                    • <b>Resend</b>: <a href="https://resend.com" target="_blank" style="color:#2563eb; font-weight:700; text-decoration:underline;">resend.com</a> 접속 ➡️ GitHub/구글로 무료 가입 ➡️ <b>[API Keys]</b> 메뉴에서 <b>[Create API Key]</b> 생성 후 복사하여 위 입력창에 붙여넣기<br>
-                    • <b>Brevo</b>: <a href="https://brevo.com" target="_blank" style="color:#2563eb; font-weight:700; text-decoration:underline;">brevo.com</a> 접속 ➡️ 가입 후 우측 상단 계정 ➡️ <b>[SMTP & API]</b> ➡️ <b>[Generate a new API key]</b> 복사
+                  <div style="font-size:0.8rem; color:#475569; background:#ffffff; border:1px dashed #cbd5e1; padding:0.75rem 1rem; border-radius:6px; line-height:1.6;">
+                    💡 <b>팀원 전체 수신을 위한 Brevo 무료 API Key 발급 방법 (1분 소요):</b><br>
+                    1. <a href="https://brevo.com" target="_blank" style="color:#2563eb; font-weight:700; text-decoration:underline;">brevo.com</a> 접속 후 무료 가입 (구글 또는 이메일)<br>
+                    2. 로그인 후 우측 상단 <b>[내 계정명]</b> ➡️ <b>[SMTP & API]</b> ➡️ <b>[API Keys]</b> 탭 클릭<br>
+                    3. <b>[Generate a new API key]</b> 클릭 후 발급된 키(<code>xkeysib-...</code>)를 복사하여 위 입력창에 붙여넣기<br>
+                    4. <b>발신처 이메일</b>에 Brevo 가입 시 사용한 이메일(예: <code>seyoo123456789@gmail.com</code>)을 입력하면 <b>어느 팀원 이메일(네이버/기술원 등)로도 즉시 발송</b>됩니다!
                   </div>
                 </div>
 

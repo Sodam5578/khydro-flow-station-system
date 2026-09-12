@@ -382,6 +382,7 @@ class App {
       const passEl = document.getElementById("smtp-pass");
       const recipEl = document.getElementById("smtp-recipients");
       const apiKeyEl = document.getElementById("email-api-key");
+      const apiSenderEl = document.getElementById("email-api-sender");
       const providerEl = document.getElementById("email-api-provider");
       const badgeEl = document.getElementById("smtp-status-badge");
       const noticeEl = document.getElementById("smtp-member-readonly-notice");
@@ -395,7 +396,7 @@ class App {
       if (saveBtn) saveBtn.style.display = isAdmin ? "inline-flex" : "none";
       if (testBtn) testBtn.style.display = isAdmin ? "inline-flex" : "none";
 
-      [threshEl, hostEl, portEl, userEl, passEl, recipEl, apiKeyEl, providerEl, engineHttpRadio, engineSmtpRadio].forEach(el => {
+      [threshEl, hostEl, portEl, userEl, passEl, recipEl, apiKeyEl, apiSenderEl, providerEl, engineHttpRadio, engineSmtpRadio].forEach(el => {
         if (el) el.disabled = !isAdmin;
       });
 
@@ -408,6 +409,7 @@ class App {
         if (passEl) passEl.value = c.pass || "";
         if (recipEl) recipEl.value = c.recipients || "psn5578@naver.com, psn5578@kihs.re.kr";
         if (apiKeyEl) apiKeyEl.value = c.rawApiKey || "";
+        if (apiSenderEl) apiSenderEl.value = c.apiSender || "seyoo123456789@gmail.com";
         if (providerEl && c.provider && c.provider !== "AUTO") providerEl.value = c.provider;
 
         // Toggle UI mode based on provider
@@ -444,8 +446,9 @@ class App {
     const threshEl = document.getElementById("smtp-threshold");
     const thresholdCount = threshEl ? parseInt(threshEl.value, 10) : 3;
     const isHttp = document.getElementById("engine-type-http")?.checked;
-    const provider = isHttp ? (document.getElementById("email-api-provider")?.value || "RESEND") : "SMTP";
+    const provider = isHttp ? (document.getElementById("email-api-provider")?.value || "BREVO") : "SMTP";
     const apiKey = document.getElementById("email-api-key")?.value.trim() || "";
+    const apiSender = document.getElementById("email-api-sender")?.value.trim() || "seyoo123456789@gmail.com";
     const host = document.getElementById("smtp-host")?.value.trim() || "smtp.naver.com";
     const port = document.getElementById("smtp-port")?.value.trim() || 465;
     const user = document.getElementById("smtp-user")?.value.trim() || "";
@@ -453,7 +456,7 @@ class App {
     const recipients = document.getElementById("smtp-recipients")?.value.trim() || "";
 
     try {
-      const payload = { thresholdCount, provider, apiKey, host, port, user, pass, recipients, enabled: true };
+      const payload = { thresholdCount, provider, apiKey, apiSender, host, port, user, pass, recipients, enabled: true };
 
       const res = await window.apiClient.updateNotificationConfig(payload);
       if (res.success) {

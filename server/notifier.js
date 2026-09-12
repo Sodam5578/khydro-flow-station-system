@@ -15,6 +15,7 @@ class SmartNotifierService {
     this.thresholdCount = parseInt(process.env.ALERT_THRESHOLD_COUNT, 10) || 3;
     this.provider = process.env.EMAIL_PROVIDER || "AUTO"; // "RESEND" | "BREVO" | "SMTP" | "AUTO"
     this.apiKey = process.env.EMAIL_API_KEY || process.env.RESEND_API_KEY || process.env.BREVO_API_KEY || "";
+    this.apiSender = process.env.EMAIL_API_SENDER || "seyoo123456789@gmail.com";
     this.smtpConfig = {
       host: process.env.SMTP_HOST || "smtp.naver.com",
       port: parseInt(process.env.SMTP_PORT, 10) || 465,
@@ -42,6 +43,7 @@ class SmartNotifierService {
         if (saved.thresholdCount) this.thresholdCount = saved.thresholdCount;
         if (saved.provider) this.provider = saved.provider;
         if (saved.apiKey) this.apiKey = saved.apiKey;
+        if (saved.apiSender) this.apiSender = saved.apiSender;
         if (saved.host) this.smtpConfig.host = saved.host;
         if (saved.port) this.smtpConfig.port = saved.port;
         if (saved.user) this.smtpConfig.auth.user = saved.user;
@@ -66,6 +68,7 @@ class SmartNotifierService {
         thresholdCount: this.thresholdCount,
         provider: this.provider,
         apiKey: this.apiKey,
+        apiSender: this.apiSender,
         host: this.smtpConfig.host,
         port: this.smtpConfig.port,
         user: this.smtpConfig.auth.user,
@@ -84,9 +87,9 @@ class SmartNotifierService {
 
   getEffectiveProvider() {
     if (this.apiKey) {
-      if (this.apiKey.startsWith("re_") || this.provider === "RESEND") return "RESEND";
       if (this.apiKey.startsWith("xkeysib-") || this.provider === "BREVO") return "BREVO";
-      return this.provider || "RESEND";
+      if (this.apiKey.startsWith("re_") || this.provider === "RESEND") return "RESEND";
+      return this.provider || "BREVO";
     }
     if (this.smtpConfig.auth.user && this.smtpConfig.auth.pass) {
       return "SMTP";
@@ -128,6 +131,7 @@ class SmartNotifierService {
     if (config.thresholdCount) this.thresholdCount = Math.max(1, parseInt(config.thresholdCount, 10) || 3);
     if (config.provider !== undefined) this.provider = config.provider;
     if (config.apiKey !== undefined) this.apiKey = config.apiKey.trim();
+    if (config.apiSender !== undefined) this.apiSender = config.apiSender.trim();
     if (config.host) this.smtpConfig.host = config.host;
     if (config.port) this.smtpConfig.port = parseInt(config.port, 10);
     if (config.user !== undefined) this.smtpConfig.auth.user = config.user.trim();
@@ -154,6 +158,7 @@ class SmartNotifierService {
       effectiveProvider: eff,
       apiKey: this.apiKey ? (this.apiKey.slice(0, 5) + "••••••••" + this.apiKey.slice(-4)) : "",
       rawApiKey: this.apiKey || "",
+      apiSender: this.apiSender || "seyoo123456789@gmail.com",
       host: this.smtpConfig.host || "smtp.naver.com",
       port: this.smtpConfig.port || 465,
       user: this.smtpConfig.auth.user || "",
@@ -436,7 +441,7 @@ class SmartNotifierService {
     if (!this.apiKey) return { success: false, error: "Brevo API Key가 설정되지 않았습니다." };
 
     try {
-      const senderEmail = (this.smtpConfig.auth && this.smtpConfig.auth.user) ? this.smtpConfig.auth.user : "psn5578@naver.com";
+      const senderEmail = this.apiSender || (this.smtpConfig.auth && this.smtpConfig.auth.user) || "seyoo123456789@gmail.com";
       const response = await fetch("https://api.brevo.com/v3/smtp/email", {
         method: "POST",
         headers: {
@@ -445,7 +450,7 @@ class SmartNotifierService {
           "accept": "application/json"
         },
         body: JSON.stringify({
-          sender: { name: "자동유량관측 이상알림", email: senderEmail },
+          sender: { name: "한국수자원조사기술원 이상알림", email: senderEmail },
           to: recipients.map(email => ({ email })),
           subject,
           htmlContent: html
