@@ -329,13 +329,13 @@ class ExcelManager {
     const sheet1StatusCols = [12, 16, 17, 18, 19, 20, 22, 25, 27, 30];
 
     const ws1 = this.buildStyledSheet(
-      "🌊 한국수자원조사기술원 전국 자동유량관측시설 종합 제원 대장",
-      `총 ${stations.length}개소 관측시설 마스터 데이터 | 기준일: ${today}`,
+      "🌊 한국수자원조사기술원 전국 자동유량관측시설 기본정보 대장",
+      `총 ${stations.length}개소 관측시설 기본정보 데이터 | 기준일: ${today}`,
       sheet1Headers,
       sheet1Rows,
       { headerBg: "1E3A8A", aligns: sheet1Aligns, statusCols: sheet1StatusCols }
     );
-    XLSX.utils.book_append_sheet(wb, ws1, "1.시설마스터_총괄제원");
+    XLSX.utils.book_append_sheet(wb, ws1, "1.관측시설_기본정보");
 
     // -------------------------------------------------------------
     // SHEET 2: 2026년 유지관리 18종 과업 총괄 현황표
@@ -645,7 +645,7 @@ class ExcelManager {
   // 3. DEDICATED MODULAR EXCEL EXPORTS (Per Tab)
   // =========================================================================
 
-  // A. 관측시설 마스터 엑셀 (.xlsx)
+  // A. 관측시설 기본정보 엑셀 (.xlsx)
   exportStationsMaster(onlyFiltered = false) {
     const dataList = onlyFiltered && window.tableManager?.filteredData 
       ? window.tableManager.filteredData 
@@ -728,15 +728,15 @@ class ExcelManager {
 
     const wb = XLSX.utils.book_new();
     const ws = this.buildStyledSheet(
-      "🌊 한국수자원조사기술원 전국 자동유량관측시설 제원 현황",
+      "🌊 한국수자원조사기술원 전국 자동유량관측시설 기본정보 현황",
       `${onlyFiltered ? `[필터 적용 조회결과: ${dataList.length}개소]` : `[전국 223개소 전체]`} | 기준일: ${today}`,
       headers,
       rows,
       { headerBg: "1E3A8A", aligns, statusCols }
     );
 
-    XLSX.utils.book_append_sheet(wb, ws, "관측시설_제원현황");
-    const fileName = `관측시설_상세제원_${onlyFiltered ? "필터추출_" : "전체_"}${todayFormatted}.xlsx`;
+    XLSX.utils.book_append_sheet(wb, ws, "관측시설_기본정보");
+    const fileName = `관측시설_기본정보_${onlyFiltered ? "필터추출_" : "전체_"}${todayFormatted}.xlsx`;
     XLSX.writeFile(wb, fileName);
     window.app.showToast(`[${fileName}] 엑셀 파일이 다운로드되었습니다.`, "success");
   }
