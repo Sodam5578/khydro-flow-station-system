@@ -795,23 +795,62 @@
                   </div>
                 </div>
 
-                <!-- SMTP Server Credentials Row -->
-                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1rem; background:#f8fafc; padding:1rem; border-radius:8px; border:1px solid #e2e8f0;">
-                  <div class="form-group">
-                    <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 호스트</label>
-                    <input type="text" id="smtp-host" name="system_smtp_host_cfg" class="form-input" placeholder="smtp.naver.com" value="smtp.naver.com" autocomplete="off" data-lpignore="true">
+                <!-- Provider Selection Type -->
+                <div style="margin-bottom:1rem; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:0.85rem 1rem;">
+                  <label class="form-label" style="font-weight:700; color:#1e40af; margin-bottom:6px; display:block;">🚀 이메일 발송 방식 선택</label>
+                  <div style="display:flex; gap:1.5rem; flex-wrap:wrap; font-size:0.85rem;">
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600; color:#1e3a8a;">
+                      <input type="radio" name="email_engine_type" value="HTTP_API" id="engine-type-http" checked onchange="window.app.toggleEmailEngineUI()">
+                      🌐 <b>[추천] 클라우드 HTTP REST API (Resend / Brevo)</b> <span style="font-size:0.75rem; color:#059669; font-weight:700; background:#d1fae5; padding:2px 6px; border-radius:4px;">방화벽 차단 없음 · 즉시 발송</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-weight:600; color:#475569;">
+                      <input type="radio" name="email_engine_type" value="SMTP" id="engine-type-smtp" onchange="window.app.toggleEmailEngineUI()">
+                      📧 <b>일반 SMTP (네이버 / 다음 / 지메일 / 사내메일)</b> <span style="font-size:0.75rem; color:#64748b;">(로컬 PC / 사내망 전용)</span>
+                    </label>
                   </div>
-                  <div class="form-group">
-                    <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 포트</label>
-                    <input type="number" id="smtp-port" name="system_smtp_port_cfg" class="form-input" placeholder="465" value="465" autocomplete="off" data-lpignore="true">
+                </div>
+
+                <!-- 1. HTTP REST API Config Box -->
+                <div id="box-email-http" style="margin-bottom:1rem; background:#f8fafc; padding:1.15rem; border-radius:8px; border:1px solid #e2e8f0;">
+                  <div class="form-grid" style="grid-template-columns: 220px 1fr; gap:1rem; margin-bottom:0.75rem;">
+                    <div class="form-group">
+                      <label class="form-label" style="font-weight:600; font-size:0.8rem;">무료 API 서비스 선택</label>
+                      <select id="email-api-provider" class="form-select" style="font-weight:600;">
+                        <option value="RESEND">Resend (무료 월 3,000건, 추천)</option>
+                        <option value="BREVO">Brevo (무료 일 300건 / 월 9,000건)</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-weight:600; font-size:0.8rem;">발급받은 API Key *</label>
+                      <input type="password" id="email-api-key" name="system_email_api_key_cfg" class="form-input" placeholder="re_... 또는 xkeysib-..." autocomplete="new-password" data-lpignore="true">
+                    </div>
                   </div>
-                  <div class="form-group">
-                    <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 계정 (이메일)</label>
-                    <input type="text" id="smtp-user" name="system_smtp_user_email_cfg" class="form-input" placeholder="예: psn5578@naver.com" autocomplete="new-password" data-lpignore="true">
+                  <div style="font-size:0.8rem; color:#475569; background:#ffffff; border:1px dashed #cbd5e1; padding:0.75rem 1rem; border-radius:6px; line-height:1.5;">
+                    💡 <b>무료 API Key 발급 방법 (30초 소요):</b><br>
+                    • <b>Resend</b>: <a href="https://resend.com" target="_blank" style="color:#2563eb; font-weight:700; text-decoration:underline;">resend.com</a> 접속 ➡️ GitHub/구글로 무료 가입 ➡️ <b>[API Keys]</b> 메뉴에서 <b>[Create API Key]</b> 생성 후 복사하여 위 입력창에 붙여넣기<br>
+                    • <b>Brevo</b>: <a href="https://brevo.com" target="_blank" style="color:#2563eb; font-weight:700; text-decoration:underline;">brevo.com</a> 접속 ➡️ 가입 후 우측 상단 계정 ➡️ <b>[SMTP & API]</b> ➡️ <b>[Generate a new API key]</b> 복사
                   </div>
-                  <div class="form-group">
-                    <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 비밀번호 (앱 비밀번호)</label>
-                    <input type="text" id="smtp-pass" name="system_smtp_app_password_cfg" class="form-input" placeholder="네이버 애플리케이션 비밀번호 12자리" autocomplete="new-password" data-lpignore="true" style="-webkit-text-security: disc;">
+                </div>
+
+                <!-- 2. SMTP Server Credentials Box -->
+                <div id="box-email-smtp" style="display:none; margin-bottom:1rem; background:#f8fafc; padding:1rem; border-radius:8px; border:1px solid #e2e8f0;">
+                  <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem;">
+                    <div class="form-group">
+                      <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 호스트</label>
+                      <input type="text" id="smtp-host" name="system_smtp_host_cfg" class="form-input" placeholder="smtp.naver.com" value="smtp.naver.com" autocomplete="off" data-lpignore="true">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 포트</label>
+                      <input type="number" id="smtp-port" name="system_smtp_port_cfg" class="form-input" placeholder="465" value="465" autocomplete="off" data-lpignore="true">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 계정 (이메일)</label>
+                      <input type="text" id="smtp-user" name="system_smtp_user_email_cfg" class="form-input" placeholder="예: psn5578@naver.com" autocomplete="new-password" data-lpignore="true">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 비밀번호 (앱 비밀번호)</label>
+                      <input type="text" id="smtp-pass" name="system_smtp_app_password_cfg" class="form-input" placeholder="네이버 애플리케이션 비밀번호 12자리" autocomplete="new-password" data-lpignore="true" style="-webkit-text-security: disc;">
+                    </div>
                   </div>
                 </div>
 

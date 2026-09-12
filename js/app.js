@@ -361,11 +361,19 @@ class App {
   }
 
   // Smart Email Notifier Management
+  toggleEmailEngineUI() {
+    const isHttp = document.getElementById("engine-type-http")?.checked;
+    const httpBox = document.getElementById("box-email-http");
+    const smtpBox = document.getElementById("box-email-smtp");
+    if (httpBox) httpBox.style.display = isHttp ? "block" : "none";
+    if (smtpBox) smtpBox.style.display = isHttp ? "none" : "block";
+  }
+
   async loadSmtpConfig() {
     if (!window.apiClient) return;
     try {
       const res = await window.apiClient.getNotificationConfig();
-      const isAdmin = window.apiClient?.user?.role === "admin";
+      const isAdmin = window.apiClient.user?.role === "admin";
 
       const threshEl = document.getElementById("smtp-threshold");
       const hostEl = document.getElementById("smtp-host");
@@ -373,17 +381,21 @@ class App {
       const userEl = document.getElementById("smtp-user");
       const passEl = document.getElementById("smtp-pass");
       const recipEl = document.getElementById("smtp-recipients");
+      const apiKeyEl = document.getElementById("email-api-key");
+      const providerEl = document.getElementById("email-api-provider");
       const badgeEl = document.getElementById("smtp-status-badge");
       const noticeEl = document.getElementById("smtp-member-readonly-notice");
       const saveBtn = document.getElementById("smtp-btn-save");
       const testBtn = document.getElementById("smtp-btn-test");
+      const engineHttpRadio = document.getElementById("engine-type-http");
+      const engineSmtpRadio = document.getElementById("engine-type-smtp");
 
       // UI Admin Enforcement
       if (noticeEl) noticeEl.style.display = isAdmin ? "none" : "block";
       if (saveBtn) saveBtn.style.display = isAdmin ? "inline-flex" : "none";
       if (testBtn) testBtn.style.display = isAdmin ? "inline-flex" : "none";
 
-      [threshEl, hostEl, portEl, userEl, passEl, recipEl].forEach(el => {
+      [threshEl, hostEl, portEl, userEl, passEl, recipEl, apiKeyEl, providerEl, engineHttpRadio, engineSmtpRadio].forEach(el => {
         if (el) el.disabled = !isAdmin;
       });
 
@@ -395,11 +407,27 @@ class App {
         if (userEl) userEl.value = c.user || "";
         if (passEl) passEl.value = c.pass || "";
         if (recipEl) recipEl.value = c.recipients || "psn5578@naver.com, psn5578@kihs.re.kr";
+        if (apiKeyEl) apiKeyEl.value = c.rawApiKey || "";
+        if (providerEl && c.provider && c.provider !== "AUTO") providerEl.value = c.provider;
+
+        // Toggle UI mode based on provider
+        if (c.effectiveProvider === "SMTP" && !c.rawApiKey) {
+          if (engineSmtpRadio) engineSmtpRadio.checked = true;
+        } else {
+          if (engineHttpRadio) engineHttpRadio.checked = true;
+        }
+        this.toggleEmailEngineUI();
         
         if (badgeEl) {
-          if (c.isConfigured) {
+          if (c.effectiveProvider === "RESEND") {
             badgeEl.className = "badge badge-green";
-            badgeEl.textContent = "✅ 실제 SMTP 발송 모드";
+            badgeEl.textContent = "✅ Resend HTTP API 발송 모드";
+          } else if (c.effectiveProvider === "BREVO") {
+            badgeEl.className = "badge badge-green";
+            badgeEl.textContent = "✅ Brevo HTTP API 발송 모드";
+          } else if (c.effectiveProvider === "SMTP") {
+            badgeEl.className = "badge badge-green";
+            badgeEl.textContent = "✅ 일반 SMTP 발송 모드";
           } else {
             badgeEl.className = "badge badge-blue";
             badgeEl.textContent = "시뮬레이션 모드 (가상 발송)";
@@ -415,18 +443,21 @@ class App {
     if (!window.apiClient) return;
     const threshEl = document.getElementById("smtp-threshold");
     const thresholdCount = threshEl ? parseInt(threshEl.value, 10) : 3;
-    const host = document.getElementById("smtp-host").value.trim() || "smtp.naver.com";
-    const port = document.getElementById("smtp-port").value.trim() || 465;
-    const user = document.getElementById("smtp-user").value.trim();
-    const pass = document.getElementById("smtp-pass").value.trim();
-    const recipients = document.getElementById("smtp-recipients").value.trim();
+    const isHttp = document.getElementById("engine-type-http")?.checked;
+    const provider = isHttp ? (document.getElementById("email-api-provider")?.value || "RESEND") : "SMTP";
+    const apiKey = document.getElementById("email-api-key")?.value.trim() || "";
+    const host = document.getElementById("smtp-host")?.value.trim() || "smtp.naver.com";
+    const port = document.getElementById("smtp-port")?.value.trim() || 465;
+    const user = document.getElementById("smtp-user")?.value.trim() || "";
+    const pass = document.getElementById("smtp-pass")?.value.trim() || "";
+    const recipients = document.getElementById("smtp-recipients")?.value.trim() || "";
 
     try {
-      const payload = { thresholdCount, host, port, user, pass, recipients, enabled: true };
+      const payload = { thresholdCount, provider, apiKey, host, port, user, pass, recipients, enabled: true };
 
       const res = await window.apiClient.updateNotificationConfig(payload);
       if (res.success) {
-        this.showToast(`알림 설정(기준: 연속 ${thresholdCount}회)이 저장되었습니다.`, "success");
+        this.showToast(`알림 설정(기준: 연속 ${thresholdCount}회, 방식: ${provider})이 저장되었습니다.`, "success");
         this.loadSmtpConfig();
       } else {
         alert(res.message || "설정 저장 실패");
