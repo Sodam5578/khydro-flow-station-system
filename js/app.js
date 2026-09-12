@@ -45,9 +45,10 @@ class App {
       console.error("Failed to init statsManager:", e);
     }
 
-    // 6. Initialize Maintenance Manager
+    // 6. Initialize Maintenance Manager & Maintenance History Manager
     try {
       window.maintenanceManager.init();
+      if (window.maintenanceHistoryManager) window.maintenanceHistoryManager.init();
     } catch(e) {
       console.error("Failed to init maintenanceManager:", e);
     }
@@ -190,6 +191,9 @@ class App {
         window.maintenanceManager.renderTaskOverview();
         window.maintenanceManager.renderMaintenanceTable();
       }
+      if (window.maintenanceHistoryManager && window.maintenanceHistoryManager.activeTab === "history") {
+        window.maintenanceHistoryManager.loadGlobalHistory();
+      }
     } else if (tabName === "calibration") {
       if (window.calibrationManager) {
         window.calibrationManager.renderKPIs();
@@ -323,27 +327,87 @@ class App {
     }
   }
 
-  async resetAllData() {
+  resetAllData() {
     if (window.apiClient && window.apiClient.user?.role !== "admin") {
       alert("데이터 원본 초기화는 최고 관리자(admin) 계정만 실행할 수 있습니다.");
       return;
     }
+    this.openResetPasswordModal();
+  }
 
-    if (!confirm("⚠️ 정말로 모든 시설 데이터를 초기 배포 원본(223개소)으로 초기화하시겠습니까?\n모든 수정 내역이 원본 상태로 되돌아갑니다.")) {
+  openResetPasswordModal() {
+    const modal = document.getElementById("reset-password-modal");
+    const input = document.getElementById("reset-admin-password-input");
+    const errEl = document.getElementById("reset-password-error");
+    if (modal) {
+      if (input) input.value = "";
+      if (errEl) {
+        errEl.textContent = "";
+        errEl.style.display = "none";
+      }
+      modal.classList.add("active");
+      setTimeout(() => { if (input) input.focus(); }, 100);
+    }
+  }
+
+  closeResetPasswordModal() {
+    const modal = document.getElementById("reset-password-modal");
+    if (modal) modal.classList.remove("active");
+  }
+
+  async confirmResetWithPassword(e) {
+    if (e) e.preventDefault();
+    const input = document.getElementById("reset-admin-password-input");
+    const errEl = document.getElementById("reset-password-error");
+    const submitBtn = document.getElementById("btn-submit-reset");
+    const password = (input?.value || "").trim();
+
+    if (!password) {
+      if (errEl) {
+        errEl.textContent = "관리자 비밀번호를 입력해주세요.";
+        errEl.style.display = "block";
+      }
       return;
     }
 
-    if (window.apiClient) {
-      try {
-        await window.apiClient.resetStations();
-      } catch(e) {
-        console.error("Server reset failed:", e);
-      }
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span>⏳</span> <span>초기화 진행중...</span>`;
     }
 
-    window.dataManager.resetToInitial();
-    this.refreshAll();
-    this.showToast("초기 223개소 원본 데이터로 초기화되었습니다.", "info");
+    try {
+      if (window.apiClient) {
+        const res = await window.apiClient.resetStations(password);
+        if (!res || !res.success) {
+          if (errEl) {
+            errEl.textContent = res.message || "비밀번호가 일치하지 않습니다. 다시 확인해주세요.";
+            errEl.style.display = "block";
+          }
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<span>🔄</span> <span>비밀번호 인증 후 초기화 실행</span>`;
+          }
+          return;
+        }
+      }
+
+      window.dataManager.resetToInitial();
+      this.closeResetPasswordModal();
+      this.refreshAll();
+      if (window.logsManager) await window.logsManager.fetchLogs();
+      this.showToast("초기 223개소 원본 데이터로 성공적으로 초기화되었습니다.", "success");
+    } catch (err) {
+      console.error("Factory reset failed:", err);
+      if (errEl) {
+        errEl.textContent = "초기화 처리 중 오류가 발생했습니다: " + err.message;
+        errEl.style.display = "block";
+      }
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span>🔄</span> <span>비밀번호 인증 후 초기화 실행</span>`;
+      }
+    }
   }
 
   refreshAll() {
@@ -353,6 +417,9 @@ class App {
     if (window.maintenanceManager) {
       window.maintenanceManager.renderTaskOverview();
       window.maintenanceManager.renderMaintenanceTable();
+    }
+    if (window.maintenanceHistoryManager && window.maintenanceHistoryManager.activeTab === "history") {
+      window.maintenanceHistoryManager.loadGlobalHistory();
     }
     if (window.calibrationManager) {
       window.calibrationManager.renderKPIs();
@@ -530,6 +597,195 @@ class App {
       }
     } catch (e) {
       alert("발송 로그 조회 실패");
+    }
+  }
+
+  // --- My Page Modal Handlers ---
+  async openMyPageModal() {
+    const modal = document.getElementById("mypage-modal");
+    if (!modal) return;
+
+    this.switchMyPageTab("profile");
+
+    // Populate user profile info
+    try {
+      let user = window.apiClient?.user;
+      const res = await window.apiClient?.getProfile();
+      if (res && res.success && res.user) {
+        user = res.user;
+      }
+
+      if (user) {
+        document.getElementById("mypage-info-username").textContent = user.username || "-";
+        const roleEl = document.getElementById("mypage-info-role");
+        if (roleEl) {
+          roleEl.textContent = user.role === "admin" ? "최고관리자 (admin)" : "일반사용자 (member)";
+          roleEl.className = user.role === "admin" ? "badge badge-purple" : "badge badge-blue";
+        }
+        document.getElementById("mypage-info-name").textContent = `${user.name || "-"} (${user.position || "팀원"})`;
+        document.getElementById("mypage-info-team").textContent = user.team || "수자원인프라팀";
+        document.getElementById("mypage-email-input").value = user.email || "";
+      }
+    } catch(e) {
+      console.warn("Failed to load profile:", e);
+    }
+
+    // Reset messages and forms
+    const profMsg = document.getElementById("mypage-profile-msg");
+    if (profMsg) profMsg.style.display = "none";
+    const pwdMsg = document.getElementById("mypage-pwd-msg");
+    if (pwdMsg) pwdMsg.style.display = "none";
+    const pwdForm = document.getElementById("mypage-password-form");
+    if (pwdForm) pwdForm.reset();
+
+    modal.classList.add("active");
+  }
+
+  closeMyPageModal() {
+    const modal = document.getElementById("mypage-modal");
+    if (modal) modal.classList.remove("active");
+  }
+
+  switchMyPageTab(tab) {
+    const profTab = document.getElementById("mypage-tab-profile");
+    const pwdTab = document.getElementById("mypage-tab-password");
+    const profBtn = document.getElementById("mypage-tab-btn-profile");
+    const pwdBtn = document.getElementById("mypage-tab-btn-password");
+
+    if (tab === "profile") {
+      if (profTab) profTab.style.display = "block";
+      if (pwdTab) pwdTab.style.display = "none";
+      if (profBtn) {
+        profBtn.style.borderBottom = "2px solid #2563eb";
+        profBtn.style.color = "#2563eb";
+        profBtn.style.fontWeight = "700";
+        profBtn.style.background = "#ffffff";
+      }
+      if (pwdBtn) {
+        pwdBtn.style.borderBottom = "2px solid transparent";
+        pwdBtn.style.color = "#64748b";
+        pwdBtn.style.fontWeight = "600";
+        pwdBtn.style.background = "#f8fafc";
+      }
+    } else {
+      if (profTab) profTab.style.display = "none";
+      if (pwdTab) pwdTab.style.display = "block";
+      if (pwdBtn) {
+        pwdBtn.style.borderBottom = "2px solid #2563eb";
+        pwdBtn.style.color = "#2563eb";
+        pwdBtn.style.fontWeight = "700";
+        pwdBtn.style.background = "#ffffff";
+      }
+      if (profBtn) {
+        profBtn.style.borderBottom = "2px solid transparent";
+        profBtn.style.color = "#64748b";
+        profBtn.style.fontWeight = "600";
+        profBtn.style.background = "#f8fafc";
+      }
+    }
+  }
+
+  async saveProfileEmail(e) {
+    e.preventDefault();
+    const emailInput = document.getElementById("mypage-email-input");
+    const msgEl = document.getElementById("mypage-profile-msg");
+    const btn = document.getElementById("btn-save-mypage-profile");
+    const email = emailInput.value.trim();
+
+    btn.disabled = true;
+    btn.innerHTML = `<span>⏳</span> <span>저장 중...</span>`;
+    msgEl.style.display = "none";
+
+    try {
+      const res = await window.apiClient.updateProfile({ email });
+      if (res && res.success) {
+        msgEl.style.display = "block";
+        msgEl.style.background = "#ecfdf5";
+        msgEl.style.color = "#065f46";
+        msgEl.style.border = "1px solid #a7f3d0";
+        msgEl.textContent = `✓ ${res.message || "이메일 정보가 성공적으로 저장되었습니다."}`;
+        
+        if (window.apiClient.user) {
+          window.apiClient.user.email = email;
+          localStorage.setItem("khydro_user_profile", JSON.stringify(window.apiClient.user));
+        }
+        this.showToast("이메일 정보 저장 완료", "success");
+      } else {
+        msgEl.style.display = "block";
+        msgEl.style.background = "#fef2f2";
+        msgEl.style.color = "#991b1b";
+        msgEl.style.border = "1px solid #fecaca";
+        msgEl.textContent = `⚠️ ${res?.message || "이메일 저장 실패"}`;
+      }
+    } catch(err) {
+      msgEl.style.display = "block";
+      msgEl.style.background = "#fef2f2";
+      msgEl.style.color = "#991b1b";
+      msgEl.style.border = "1px solid #fecaca";
+      msgEl.textContent = "서버 통신 오류가 발생했습니다.";
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span>💾</span> <span>이메일 정보 저장</span>`;
+    }
+  }
+
+  async changeAccountPassword(e) {
+    e.preventDefault();
+    const curPwd = document.getElementById("mypage-cur-pwd").value;
+    const newPwd = document.getElementById("mypage-new-pwd").value;
+    const confirmPwd = document.getElementById("mypage-confirm-pwd").value;
+    const msgEl = document.getElementById("mypage-pwd-msg");
+    const btn = document.getElementById("btn-submit-change-pwd");
+
+    if (newPwd !== confirmPwd) {
+      msgEl.style.display = "block";
+      msgEl.style.background = "#fef2f2";
+      msgEl.style.color = "#991b1b";
+      msgEl.style.border = "1px solid #fecaca";
+      msgEl.textContent = "⚠️ 새로 입력한 비밀번호와 비밀번호 확인이 일치하지 않습니다.";
+      return;
+    }
+
+    if (newPwd.length < 4) {
+      msgEl.style.display = "block";
+      msgEl.style.background = "#fef2f2";
+      msgEl.style.color = "#991b1b";
+      msgEl.style.border = "1px solid #fecaca";
+      msgEl.textContent = "⚠️ 새 비밀번호는 최소 4자 이상이어야 합니다.";
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = `<span>⏳</span> <span>비밀번호 변경 중...</span>`;
+    msgEl.style.display = "none";
+
+    try {
+      const res = await window.apiClient.changePassword(curPwd, newPwd);
+      if (res && res.success) {
+        msgEl.style.display = "block";
+        msgEl.style.background = "#ecfdf5";
+        msgEl.style.color = "#065f46";
+        msgEl.style.border = "1px solid #a7f3d0";
+        msgEl.textContent = `✓ ${res.message || "비밀번호가 성공적으로 변경되었습니다."}`;
+        
+        document.getElementById("mypage-password-form").reset();
+        this.showToast("비밀번호 변경 완료", "success");
+      } else {
+        msgEl.style.display = "block";
+        msgEl.style.background = "#fef2f2";
+        msgEl.style.color = "#991b1b";
+        msgEl.style.border = "1px solid #fecaca";
+        msgEl.textContent = `⚠️ ${res?.message || "비밀번호 변경 실패"}`;
+      }
+    } catch(err) {
+      msgEl.style.display = "block";
+      msgEl.style.background = "#fef2f2";
+      msgEl.style.color = "#991b1b";
+      msgEl.style.border = "1px solid #fecaca";
+      msgEl.textContent = "서버 통신 오류가 발생했습니다.";
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<span>🔑</span> <span>비밀번호 변경 실행</span>`;
     }
   }
 

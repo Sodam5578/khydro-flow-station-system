@@ -1,4 +1,4 @@
-window.INITIAL_STATIONS_DATA = [
+window.STATIONS_DATA = [
   {
     "id": 1,
     "seq": 1,
@@ -18587,9 +18587,9 @@ window.INITIAL_STATIONS_DATA = [
     "memo": "수위관측소 제방부착식, 상류 140m 교량 재가설공사에 따라 상류 1.5km 평동교 설치",
     "coords": {
       "lonDMS": "126-46-37",
-      "latDMS": "35-57-58",
+      "latDMS": "35-08-01",
       "lon": 126.776944,
-      "lat": 35.966111
+      "lat": 35.133611
     },
     "maintenance": {
       "hasMaintData": true,

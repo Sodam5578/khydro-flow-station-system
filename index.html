@@ -17,8 +17,8 @@
   <!-- Chart.js DataLabels Plugin CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
-  <!-- SheetJS (xlsx) CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Styled SheetJS (xlsx-js-style) CDN for Professional Excel Styling -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
   <!-- Custom CSS -->
   <link rel="stylesheet" href="css/main.css">
@@ -231,11 +231,11 @@
                   <input type="text" id="gis-search-input" class="search-input" placeholder="지점명, 하천명 검색...">
                 </div>
 
-                <div class="filter-section-title">수자원 표준유역</div>
+                <div class="filter-section-title">수자원 중권역</div>
                 <div class="filter-group">
                   <label class="checkbox-label" style="font-weight:700; color:#1e40af;">
                     <input type="checkbox" id="gis-check-basins" checked>
-                    <span>🏞️ 공식 표준유역(850개) 경계망 표시</span>
+                    <span>🏞️ 공식 중권역(117개) 경계망 표시</span>
                   </label>
                 </div>
 
@@ -353,7 +353,7 @@
               </select>
             </div>
 
-            <div style="display:flex; align-items:center; gap:0.5rem;">
+            <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
               <select id="table-page-size" class="filter-select">
                 <option value="25">25개씩 보기</option>
                 <option value="50">50개씩 보기</option>
@@ -361,8 +361,11 @@
                 <option value="all">전체 보기</option>
               </select>
 
-              <button class="btn btn-outline btn-sm" onclick="window.excelManager.exportToExcel(true)">
-                <span>📊</span> <span>필터 결과 엑셀 추출</span>
+              <button class="btn btn-outline btn-sm" onclick="window.excelManager.exportStationsMaster(true)" title="현재 검색/필터가 적용된 목록만 서식 적용 엑셀로 다운로드">
+                <span>📊</span> <span>필터결과 엑셀</span>
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="window.excelManager.exportStationsMaster(false)" title="전국 223개소 전체 상세 제원 엑셀 다운로드">
+                <span>📥</span> <span>시설 마스터 엑셀 (.xlsx)</span>
               </button>
             </div>
           </div>
@@ -412,109 +415,266 @@
             <div class="kpi-card">
               <div class="kpi-icon purple">📋</div>
               <div class="kpi-content">
-                <div class="kpi-label">유지관리 관리 대상 지점</div>
-                <div class="kpi-value" id="kpi-maint-total-stations">176개소</div>
-                <div class="kpi-sub">전국 4대 권역 운영시설</div>
-              </div>
+          <!-- Subtab Navigation for Maintenance Section -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.5rem;">
+            <div style="display:flex; gap:6px; background:#e2e8f0; padding:4px; border-radius:8px;">
+              <button class="btn btn-primary btn-sm" id="btn-subtab-checklist" onclick="window.maintenanceHistoryManager.switchSubTab('checklist')">
+                📋 2026년 유지관리 과업 총괄
+              </button>
+              <button class="btn btn-outline btn-sm" id="btn-subtab-history" onclick="window.maintenanceHistoryManager.switchSubTab('history')">
+                📜 전국 시설 유지관리 조치 이력 대장 (누적 로그)
+              </button>
             </div>
-            <div class="kpi-card">
-              <div class="kpi-icon amber">🛠️</div>
-              <div class="kpi-content">
-                <div class="kpi-label">2026년 총 조치 필요 과업</div>
-                <div class="kpi-value" id="kpi-maint-total-tasks">로딩중...</div>
-                <div class="kpi-sub">18종 유지관리 과업 총합</div>
-              </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-primary btn-sm" onclick="window.maintenanceHistoryManager.openCreateModal()">
+                ➕ 새 유지관리 조치 이력 등록
+              </button>
             </div>
-            <div class="kpi-card">
-              <div class="kpi-icon green">✅</div>
-              <div class="kpi-content">
-                <div class="kpi-label">과업 조치 완료 (진행률)</div>
-                <div class="kpi-value" id="kpi-maint-overall-prog">0% (0건 완료)</div>
-                <div class="kpi-sub">현장 보수 및 비치 이행률</div>
-              </div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-icon blue">🏢</div>
-              <div class="kpi-content">
-                <div class="kpi-label">과업 수행 주체</div>
-                <div class="kpi-value" style="font-size:1.15rem; font-weight:800; color:#1e3a8a;">
-                  RNS <span style="font-size:0.85rem; font-weight:600; color:#b45309;">(용역사)</span> + 기술원
+          </div>
+
+          <!-- SUBTAB 1: 2026 Checklist & Overview -->
+          <div id="maint-subtab-checklist">
+            <!-- Top KPI Summary Cards -->
+            <div class="kpi-grid">
+              <div class="kpi-card">
+                <div class="kpi-icon blue">📋</div>
+                <div class="kpi-content">
+                  <div class="kpi-label">유지관리 관리 대상 지점</div>
+                  <div class="kpi-value" id="kpi-maint-total-stations">176개소</div>
+                  <div class="kpi-sub">전국 4대 권역 운영시설</div>
                 </div>
-                <div class="kpi-sub">용역사 이행 과업 및 자체 점검</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon amber">🛠️</div>
+                <div class="kpi-content">
+                  <div class="kpi-label">2026년 총 조치 필요 과업</div>
+                  <div class="kpi-value" id="kpi-maint-total-tasks">로딩중...</div>
+                  <div class="kpi-sub">18종 유지관리 과업 총합</div>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon green">✅</div>
+                <div class="kpi-content">
+                  <div class="kpi-label">과업 조치 완료 (진행률)</div>
+                  <div class="kpi-value" id="kpi-maint-overall-prog">0% (0건 완료)</div>
+                  <div class="kpi-sub">현장 보수 및 비치 이행률</div>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon blue">🏢</div>
+                <div class="kpi-content">
+                  <div class="kpi-label">과업 수행 주체</div>
+                  <div class="kpi-value" style="font-size:1.15rem; font-weight:800; color:#1e3a8a;">
+                    RNS <span style="font-size:0.85rem; font-weight:600; color:#b45309;">(용역사)</span> + 기술원
+                  </div>
+                  <div class="kpi-sub">용역사 이행 과업 및 자체 점검</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section: 18 Maintenance Task Cards -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+              <div class="card-header" style="background:#f8fafc; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                <div class="card-title">
+                  <span>🛠️</span> 2026년 유지관리 과업별 조치 현황 (카드를 클릭하면 대상 지점만 즉시 필터링됩니다)
+                </div>
+                <div style="display:flex; gap:6px;">
+                  <button class="btn btn-outline btn-sm" onclick="window.maintenanceManager.filterByTask('all')">전체 과업 보기</button>
+                  <button class="btn btn-primary btn-sm" onclick="window.maintenanceManager.openMaintEditModal()">➕ 과업 직접 입력 / 신규 등록</button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="maint-task-grid" id="maint-task-grid">
+                  <!-- Dynamically populated from maintenance.js -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Section: Station Task Table -->
+            <div class="card">
+              <div class="card-header" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem;">
+                <div class="card-title" id="maint-selected-task-title">
+                  <span>📋</span> 전체 176개 운영 지점 유지관리 과업 현황
+                </div>
+
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem;">
+                  <div class="search-input-wrapper" style="min-width: 220px;">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="maint-search-input" class="search-input" placeholder="지점명, 하천명, 주소 검색...">
+                  </div>
+
+                  <select id="maint-filter-region" class="filter-select">
+                    <option value="all">전체 권역</option>
+                    <option value="한강">한강</option>
+                    <option value="낙동강">낙동강</option>
+                    <option value="금강">금강</option>
+                    <option value="영산강">영산강·섬진강</option>
+                  </select>
+
+                  <select id="maint-filter-status" class="filter-select">
+                    <option value="all">전체 상태</option>
+                    <option value="pending">⏳ 조치 대기 지점만</option>
+                    <option value="done">✅ 전체 조치 완료 지점</option>
+                  </select>
+
+                  <div style="font-size:0.85rem; color:#64748b; white-space:nowrap;">
+                    표시 지점: <b id="maint-table-count" style="color:#1e40af;">176</b>개소
+                  </div>
+
+                  <button class="btn btn-outline btn-sm" onclick="window.excelManager.exportMaintenanceChecklist()" title="2026 유지관리 과업현황 매트릭스 엑셀 다운로드">
+                    <span>📥</span> <span>과업현황 엑셀 (.xlsx)</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="card-body" style="padding:0;">
+                <div class="table-responsive" style="max-height:480px;">
+                  <table class="custom-table">
+                    <thead>
+                      <tr>
+                        <th>순번</th>
+                        <th>권역</th>
+                        <th>하천명</th>
+                        <th>관측소명(지점명)</th>
+                        <th>국사 / 설치형태</th>
+                        <th>필요과업수</th>
+                        <th>조치 필요 과업 목록 (To-Do)</th>
+                        <th>상세</th>
+                      </tr>
+                    </thead>
+                    <tbody id="maint-table-body">
+                      <!-- Dynamically populated from maintenance.js -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Section: 18 Maintenance Task Cards -->
-          <div class="card" style="margin-bottom: 1.5rem;">
-            <div class="card-header" style="background:#f8fafc;">
-              <div class="card-title">
-                <span>🛠️</span> 2026년 유지관리 과업별 조치 현황 (카드를 클릭하면 대상 지점만 즉시 필터링됩니다)
+          <!-- SUBTAB 2: Cumulative Maintenance Action History Logs -->
+          <div id="maint-subtab-history" style="display:none;">
+            <!-- Top History KPI Cards -->
+            <div class="kpi-grid">
+              <div class="kpi-card">
+                <div class="kpi-icon blue">📜</div>
+                <div class="kpi-content">
+                  <div class="kpi-label">총 누적 유지관리 조치</div>
+                  <div class="kpi-value" id="kpi-hist-total">0건</div>
+                  <div class="kpi-sub">전국 시설 누적 조치 이력</div>
+                </div>
               </div>
-              <button class="btn btn-outline btn-sm" onclick="window.maintenanceManager.filterByTask('all')">전체 과업 보기</button>
+              <div class="kpi-card">
+                <div class="kpi-icon green">📅</div>
+                <div class="kpi-content">
+                  <div class="kpi-label">2026년 조치 건수</div>
+                  <div class="kpi-value" id="kpi-hist-this-year">0건</div>
+                  <div class="kpi-sub">올해 현장 이행 실적</div>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon purple">🏢</div>
+                <div class="kpi-content">
+                  <div class="kpi-label">기술원 자체 점검/보수</div>
+                  <div class="kpi-value" id="kpi-hist-kihs">0건</div>
+                  <div class="kpi-sub">기술원 직접 수행 내역</div>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon amber">🚚</div>
+                <div class="kpi-content">
+                  <div class="kpi-label">용역사(리버앤씨) 조치 실적</div>
+                  <div class="kpi-value" id="kpi-hist-rns">0건</div>
+                  <div class="kpi-sub">리버앤씨 위탁수행 내역</div>
+                </div>
+              </div>
             </div>
-            <div class="card-body">
-              <div class="maint-task-grid" id="maint-task-grid">
-                <!-- Dynamically populated from maintenance.js -->
-              </div>
-            </div>
-          </div>
 
-          <!-- Section: Station Task Table -->
-          <div class="card">
-            <div class="card-header" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem;">
-              <div class="card-title" id="maint-selected-task-title">
-                <span>📋</span> 전체 176개 운영 지점 유지관리 과업 현황
+            <!-- History Filter & Table Card -->
+            <div class="card">
+              <div class="card-header" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem;">
+                <div class="card-title">
+                  <span>📜</span> 전국 관측시설 유지관리 조치 이력 대장
+                </div>
+
+                <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0.5rem;">
+                  <button class="btn btn-outline btn-sm" onclick="window.excelManager.exportMaintenanceHistory(true)" title="필터링된 조치 이력 대장을 서식 적용 엑셀(.xlsx)로 다운로드">
+                    <span>📥</span> <span>조치 이력 대장 엑셀 (.xlsx)</span>
+                  </button>
+                  <button class="btn btn-primary btn-sm" onclick="window.maintenanceHistoryManager.openCreateModal()">
+                    ➕ 새 조치 이력 등록
+                  </button>
+                </div>
               </div>
 
-              <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem;">
-                <div class="search-input-wrapper" style="min-width: 220px;">
+              <!-- Filter Toolbar -->
+              <div style="padding: 0.75rem 1rem; background:#f8fafc; border-bottom:1px solid #e2e8f0; display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center;">
+                <div class="search-input-wrapper" style="min-width: 200px; flex:1;">
                   <span class="search-icon">🔍</span>
-                  <input type="text" id="maint-search-input" class="search-input" placeholder="지점명, 하천명, 주소 검색...">
+                  <input type="text" id="maint-hist-search-input" class="search-input" placeholder="관측소명, 조치내용, 작업자, 장비 검색...">
                 </div>
 
-                <select id="maint-filter-region" class="filter-select">
-                  <option value="all">전체 권역</option>
-                  <option value="한강">한강</option>
-                  <option value="낙동강">낙동강</option>
-                  <option value="금강">금강</option>
-                  <option value="영산강">영산강·섬진강</option>
+                <select id="maint-hist-filter-type" class="filter-select">
+                  <option value="all">전체 조치유형</option>
+                  <option value="정기점검">🔍 정기점검</option>
+                  <option value="긴급보수">🚨 긴급보수</option>
+                  <option value="부품교체">🔧 부품교체</option>
+                  <option value="수위계정비">📏 수위계정비</option>
+                  <option value="통신/전원">⚡ 통신/전원조치</option>
+                  <option value="정도검정">🎯 정도검정</option>
+                  <option value="기타">🛠️ 기타</option>
                 </select>
 
-                <select id="maint-filter-status" class="filter-select">
-                  <option value="all">전체 상태</option>
-                  <option value="pending">⏳ 조치 대기 지점만</option>
-                  <option value="done">✅ 전체 조치 완료 지점</option>
+                <select id="maint-hist-filter-actor" class="filter-select">
+                  <option value="all">전체 수행주체</option>
+                  <option value="기술원(자체)">🏢 기술원(자체)</option>
+                  <option value="용역사(리버앤씨)">🚚 용역사(리버앤씨)</option>
+                  <option value="기타">✍️ 기타 / 직접입력</option>
                 </select>
 
-                <div style="font-size:0.85rem; color:#64748b; white-space:nowrap;">
-                  표시 지점: <b id="maint-table-count" style="color:#1e40af;">176</b>개소
+                <select id="maint-hist-filter-status" class="filter-select">
+                  <option value="all">전체 결과상태</option>
+                  <option value="완료">✅ 완료</option>
+                  <option value="진행중">🔄 진행중</option>
+                  <option value="추가조치필요">⚠️ 추가조치필요</option>
+                </select>
+
+                <div style="display:flex; align-items:center; gap:4px; font-size:0.8rem; color:#475569;">
+                  <span>기간:</span>
+                  <input type="date" id="maint-hist-start-date" class="form-input" style="font-size:0.75rem; padding:3px 6px; width:125px;">
+                  <span>~</span>
+                  <input type="date" id="maint-hist-end-date" class="form-input" style="font-size:0.75rem; padding:3px 6px; width:125px;">
+                </div>
+
+                <div style="font-size:0.85rem; color:#64748b; white-space:nowrap; margin-left:auto;">
+                  조회 건수: <b id="maint-hist-table-count" style="color:#1e40af;">0</b>건
                 </div>
               </div>
-            </div>
 
-            <div class="card-body" style="padding:0;">
-              <div class="table-responsive" style="max-height:480px;">
-                <table class="custom-table">
-                  <thead>
-                    <tr>
-                      <th>순번</th>
-                      <th>권역</th>
-                      <th>하천명</th>
-                      <th>관측소명(지점명)</th>
-                      <th>국사 / 설치형태</th>
-                      <th>필요과업수</th>
-                      <th>조치 필요 과업 목록 (To-Do)</th>
-                      <th>상세</th>
-                    </tr>
-                  </thead>
-                  <tbody id="maint-table-body">
-                    <!-- Dynamically populated from maintenance.js -->
-                  </tbody>
-                </table>
+              <div class="card-body" style="padding:0;">
+                <div class="table-responsive" style="max-height:520px;">
+                  <table class="custom-table">
+                    <thead>
+                      <tr>
+                        <th style="width:45px;">순번</th>
+                        <th style="width:115px;">발생일 / 조치일</th>
+                        <th style="width:130px;">관측소명</th>
+                        <th style="width:95px;">조치구분</th>
+                        <th style="width:110px;">대상장비</th>
+                        <th>조치 내용 및 결과</th>
+                        <th style="width:130px;">수행주체/작업자</th>
+                        <th style="width:85px;">상태</th>
+                        <th style="width:85px;">관리</th>
+                      </tr>
+                    </thead>
+                    <tbody id="maint-hist-table-body">
+                      <!-- Dynamically populated from history.js -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
+        </section>
         </section>
 
 
@@ -579,6 +739,10 @@
                 <div style="font-size:0.85rem; color:#64748b; white-space:nowrap;">
                   표시 지점: <b id="calib-table-count" style="color:#1e40af;">30</b>개소
                 </div>
+
+                <button class="btn btn-outline btn-sm" onclick="window.excelManager.exportCalibration()" title="2026 유속계 검정 대상 및 결과 대장 엑셀 다운로드">
+                  <span>📥</span> <span>검정 대장 엑셀 (.xlsx)</span>
+                </button>
               </div>
             </div>
 
@@ -668,6 +832,10 @@
                   <span>🔄</span> 새로고침
                 </button>
 
+                <button class="btn btn-outline btn-sm" onclick="window.excelManager.exportLogs(true)" title="필터링된 시스템 작업 이력 및 보안 감사 로그를 서식 적용 엑셀(.xlsx)로 다운로드">
+                  <span>📥</span> <span>작업 이력 엑셀 (.xlsx)</span>
+                </button>
+
                 <div style="font-size:0.85rem; color:#64748b; white-space:nowrap;">
                   표시 건수: <b id="log-table-count" style="color:#1e40af;">0</b>건
                 </div>
@@ -698,29 +866,84 @@
 
         <!-- 5. SETTINGS VIEW -->
         <section class="view-panel" id="view-settings">
-          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:1.5rem;">
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap:1.5rem;">
             
-            <!-- Excel Sync Card -->
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title"><span>📑</span> Excel 엑셀 데이터 연동</div>
+            <!-- Excel Master Pack & Tab Exports Card (Full Width) -->
+            <div class="card" style="grid-column: 1 / -1; border-top: 4px solid #1e3a8a;">
+              <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <div class="card-title"><span style="font-size:1.2rem;">📑</span> <span>2026년 자동유량관측시설 표준 서식 엑셀(.xlsx) 내보내기</span></div>
+                <span class="badge badge-blue">서식/헤더색상/열너비 자동최적화 적용</span>
               </div>
               <div class="card-body">
-                <p style="font-size:0.85rem; color:#64748b; margin-bottom:1.25rem;">
-                  수정된 전체 시설 데이터를 원본 엑셀 형식(.xlsx)으로 다운로드하거나, 관리자 권한으로 신규 엑셀을 업로드하여 데이터를 갱신합니다.
+                <p style="font-size:0.88rem; color:#475569; margin-bottom:1.25rem; line-height:1.5;">
+                  시스템에 축적된 모든 데이터(시설 제원, 유지관리 18개 과업 현황, 현장 조치 이력 로그, 유속계 검정, 일정표)를 
+                  <b>열 헤더 색상구분(#1E3A8A / #047857), 셀 테두리, 상태별 하이라이트(초록/노랑/빨강), 한글 열 너비 자동 최적화</b>가 적용된 전문가용 엑셀 통합 문서로 즉시 내려받습니다.
                 </p>
 
-                <div style="display:flex; flex-direction:column; gap:0.75rem;">
-                  <button class="btn btn-primary" onclick="window.excelManager.exportToExcel(false)">
-                    <span>📥</span> <span>최신 현황 엑셀 다운로드 (.xlsx)</span>
-                  </button>
-
-                  <div id="setting-admin-excel-import" style="position:relative; margin-top:0.5rem;">
-                    <input type="file" id="excel-file-input" accept=".xlsx, .xls" style="display:none;">
-                    <button class="btn btn-outline" style="width:100%;" onclick="window.excelManager.triggerExcelUpload()">
-                      <span>📤</span> <span>엑셀 파일 업로드하여 데이터 갱신 (관리자 전용)</span>
-                    </button>
+                <!-- Big Master Pack Button (Admin Only) -->
+                <div id="setting-admin-masterpack" style="background:linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding:1.25rem; border-radius:10px; color:#fff; display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+                  <div>
+                    <div style="font-size:1.05rem; font-weight:800; margin-bottom:0.25rem; display:flex; align-items:center; gap:0.5rem;">
+                      <span>📦</span> 2026년 전국 자동유량관측시설 종합 통합 마스터팩 (.xlsx) <span class="badge" style="background:rgba(255,255,255,0.2); color:#fff; font-size:0.7rem;">관리자 전용</span>
+                    </div>
+                    <div style="font-size:0.8rem; color:#bfdbfe;">
+                      5개 핵심 시트(시설제원 + 18과업현황 + 조치이력대장 + 검정현황 + 업무일정표)가 일괄 수록된 원클릭 종합 보고서
+                    </div>
                   </div>
+                  <button class="btn btn-sm" style="background:#fff; color:#1e3a8a; font-weight:800; border:none; padding:0.6rem 1.25rem; white-space:nowrap; box-shadow:0 2px 4px rgba(0,0,0,0.15);" onclick="window.excelManager.exportMasterPack()">
+                    <span>📥</span> <span>마스터팩 일괄 다운로드</span>
+                  </button>
+                </div>
+
+                <!-- Regular User Notice -->
+                <div id="setting-user-excel-notice" style="display:none; padding:0.9rem 1.1rem; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; margin-bottom:1.25rem; font-size:0.85rem; color:#166534;">
+                  ℹ️ <b>일반 사용자 안내</b>: 각 업무 화면(관측시설 목록, 유지관리 과업, 유속계 검정, 업무일정표)에 접속하시면 해당 화면 상단의 <b>[📥 엑셀 다운로드]</b> 버튼을 통해 필요한 데이터를 직접 내려받으실 수 있습니다.
+                </div>
+
+                <!-- Individual Module Exports Grid -->
+                <div style="font-size:0.82rem; font-weight:700; color:#64748b; margin-bottom:0.6rem;">
+                  📌 모듈별 개별 서식 엑셀 다운로드 (단일 시트)
+                </div>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:0.75rem;">
+                  <button class="btn btn-outline btn-sm" style="justify-content:flex-start; text-align:left; padding:0.65rem 0.85rem;" onclick="window.excelManager.exportStationsMaster(false)">
+                    <span>🏢</span> <span><b>1. 시설 상세 제원 대장</b> (223개소)</span>
+                  </button>
+                  <button class="btn btn-outline btn-sm" style="justify-content:flex-start; text-align:left; padding:0.65rem 0.85rem;" onclick="window.excelManager.exportMaintenanceChecklist()">
+                    <span>📋</span> <span><b>2. 18개 과업 현황표</b> (176개소)</span>
+                  </button>
+                  <button class="btn btn-outline btn-sm" style="justify-content:flex-start; text-align:left; padding:0.65rem 0.85rem;" onclick="window.excelManager.exportMaintenanceHistory(false)">
+                    <span>📜</span> <span><b>3. 유지관리 조치 이력 대장</b></span>
+                  </button>
+                  <button class="btn btn-outline btn-sm" style="justify-content:flex-start; text-align:left; padding:0.65rem 0.85rem;" onclick="window.excelManager.exportCalibration()">
+                    <span>🎯</span> <span><b>4. 유속계 검정 현황 대장</b> (30개소)</span>
+                  </button>
+                  <button class="btn btn-outline btn-sm" style="justify-content:flex-start; text-align:left; padding:0.65rem 0.85rem;" onclick="window.excelManager.exportSchedules()">
+                    <span>📅</span> <span><b>5. 업무/현장점검 일정표</b></span>
+                  </button>
+                  <button class="btn btn-outline btn-sm" style="justify-content:flex-start; text-align:left; padding:0.65rem 0.85rem;" onclick="window.excelManager.exportLogs(false)">
+                    <span>🛡️</span> <span><b>6. 관리자 작업 감사 로그</b></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Excel Sync & Upload Card -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title"><span>📤</span> 엑셀 수동 수정본 일괄 밀어넣기/반영 (관리자 전용)</div>
+              </div>
+              <div class="card-body">
+                <p style="font-size:0.85rem; color:#475569; margin-bottom:1rem; line-height:1.45;">
+                  다운로드받은 <b>종합 마스터팩(.xlsx)</b> 또는 <b>개별 시트(시설 제원, 18개 과업 현황, 유속계 검정, 조치 이력)</b>를 엑셀에서 직접 수정한 뒤 업로드하면, 
+                  시스템이 시트와 열을 자동으로 분석하여 <b>데이터베이스에 즉시 일괄 밀어넣기(반영)</b>합니다.
+                  <br><span style="font-size:0.78rem; color:#64748b;">* 작업 이력 및 일정표는 보호 목적으로 자동 밀어넣기 대상에서 제외됩니다.</span>
+                </p>
+
+                <div id="setting-admin-excel-import" style="position:relative;">
+                  <input type="file" id="excel-file-input" accept=".xlsx, .xls" style="display:none;">
+                  <button class="btn btn-primary" style="width:100%; font-weight:700;" onclick="window.excelManager.triggerExcelUpload()">
+                    <span>📤</span> <span>수정된 엑셀 파일 선택 및 데이터 일괄 밀어넣기</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -728,16 +951,16 @@
             <!-- JSON Backup Card -->
             <div class="card">
               <div class="card-header">
-                <div class="card-title"><span>💾</span> 시스템 백업 및 복원 (JSON)</div>
+                <div class="card-title"><span>💾</span> 시스템 전체 백업 및 복원 (JSON 스냅샷)</div>
               </div>
               <div class="card-body">
                 <p style="font-size:0.85rem; color:#64748b; margin-bottom:1.25rem;">
-                  모든 시설 제원과 유지관리 메모를 JSON 파일로 백업하거나, 관리자 권한으로 백업 파일을 복원합니다.
+                  관측시설 제원, 18개 과업 현황, 유지관리 조치 이력, 유속계 검정, 일정표, 알림 설정 등 모든 DB 데이터를 단일 JSON 스냅샷 파일로 백업/복원합니다.
                 </p>
 
                 <div style="display:flex; flex-direction:column; gap:0.75rem;">
-                  <button class="btn btn-outline" onclick="window.excelManager.exportBackupJSON()">
-                    <span>💾</span> <span>시스템 전체 JSON 백업 다운로드</span>
+                  <button class="btn btn-primary" onclick="window.excelManager.exportBackupJSON()">
+                    <span>💾</span> <span>시스템 전체 데이터 백업 (.json)</span>
                   </button>
 
                   <div id="setting-admin-json-restore" style="position:relative;">
@@ -962,7 +1185,10 @@
                 </div>
               </div>
 
-              <div style="display:flex; gap:0.5rem;">
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <button class="btn btn-outline btn-sm" onclick="window.excelManager.exportSchedules()" title="전체 등록된 일정표 서식 적용 엑셀(.xlsx) 다운로드">
+                  <span>📥</span> <span>일정표 엑셀 (.xlsx)</span>
+                </button>
                 <button class="btn btn-primary btn-sm" onclick="window.scheduleManager.openAddModal()">
                   <span>➕</span> <span>새 일정 등록</span>
                 </button>
@@ -1576,7 +1802,198 @@
     </div>
   </div>
 
-  <!-- 4. Water Level Comparison Modal -->
+  <!-- 4.1 Maintenance History Action Form Modal (Create / Edit) -->
+  <div class="modal-backdrop" id="maint-history-form-modal">
+    <div class="modal-dialog" style="max-width: 680px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="maint-hist-form-modal-title" style="font-size: 1.15rem;">🛠️ 유지관리 조치 이력 등록</div>
+          <div style="font-size: 0.82rem; color: #64748b; margin-top: 2px;">
+            관측시설의 점검, 보수, 부품교체, 정비 등 현장 조치 내역을 상세 기록합니다.
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="window.maintenanceHistoryManager.closeFormModal()">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.25rem; overflow-y: auto; flex: 1;">
+        <form id="maint-history-form" onsubmit="event.preventDefault(); window.maintenanceHistoryManager.saveForm();">
+          <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+            <div class="form-group" style="grid-column: span 2;">
+              <label class="form-label" style="font-weight: 700;">대상 관측시설 <span style="color:#dc2626;">*</span></label>
+              <select id="hist-form-station-id" class="form-select" required style="font-weight: 700; color: #1e40af;">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 600;">문제 발생(인지)일</label>
+              <input type="date" id="hist-form-issue-date" class="form-input" placeholder="문제 발생일">
+              <div style="font-size:0.72rem; color:#64748b; margin-top:2px;">* 미입력 시 조치일자와 동일하게 처리됩니다.</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 700;">조치 완료(작업)일 <span style="color:#dc2626;">*</span></label>
+              <input type="date" id="hist-form-date" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 700;">조치 구분 <span style="color:#dc2626;">*</span></label>
+              <select id="hist-form-type" class="form-select" required>
+                <option value="정기점검">🔍 정기점검</option>
+                <option value="긴급보수">🚨 긴급보수</option>
+                <option value="부품교체">🔧 부품교체</option>
+                <option value="수위계정비">📏 수위계정비</option>
+                <option value="통신/전원조치">⚡ 통신/전원조치</option>
+                <option value="정도검정">🎯 정도검정</option>
+                <option value="기타">🛠️ 기타</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">과업 분류</label>
+              <select id="hist-form-category" class="form-select">
+                <option value="전원·안전">⚡ 전원·안전</option>
+                <option value="통신·데이터">📡 통신·데이터</option>
+                <option value="센서·계측">🌊 센서·계측 (유속계/수위계)</option>
+                <option value="영상·감시">📹 영상·감시 (CCTV/NVR)</option>
+                <option value="현장표지">🪧 현장표지/점용</option>
+                <option value="시설일반">🏢 시설일반</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">대상 장비 및 부품</label>
+              <input type="text" id="hist-form-equipment" class="form-input" placeholder="예: 유속계(EWSV), 누전차단기, DP컨버터, 배터리 등">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 700;">유지관리 수행 주체 <span style="color:#dc2626;">*</span></label>
+              <select id="hist-form-actor-type" class="form-select" onchange="window.maintenanceHistoryManager.onActorTypeChange(this.value)">
+                <option value="기술원(자체)">🏢 기술원 (자체)</option>
+                <option value="용역사(리버앤씨)">🚚 용역사 (리버앤씨)</option>
+                <option value="custom">✍️ 직접 입력...</option>
+              </select>
+              <input type="text" id="hist-form-actor-custom" class="form-input" placeholder="수행 주체 / 업체명 직접 입력" style="display:none; margin-top:5px;">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">작업자 / 담당자명</label>
+              <input type="text" id="hist-form-worker" class="form-input" placeholder="예: 박세찬, 윤영선 등">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">조치 결과 상태</label>
+              <select id="hist-form-status" class="form-select">
+                <option value="완료">✅ 조치완료</option>
+                <option value="진행중">🔄 진행중</option>
+                <option value="추가조치필요">⚠️ 추가조치 필요</option>
+                <option value="자재발주대기">📦 부품/자재 발주대기</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">소요 비용 (원, 선택사항)</label>
+              <input type="number" id="hist-form-cost" class="form-input" placeholder="0" min="0" step="1000">
+            </div>
+
+            <div class="form-group" style="grid-column: span 2;">
+              <label class="form-label" style="font-weight: 700;">작업 상세 내용 및 조치 결과 <span style="color:#dc2626;">*</span></label>
+              <textarea id="hist-form-desc" class="form-textarea" rows="4" required placeholder="현장 조치 내용, 점검 결과, 교체 부품 시리얼 및 조치 전후 상태 등을 상세히 입력하세요."></textarea>
+            </div>
+
+            <div class="form-group" style="grid-column: span 2;">
+              <label class="form-label">특이사항 및 비고</label>
+              <input type="text" id="hist-form-memo" class="form-input" placeholder="후속 조치 필요사항, 기타 전달사항 등">
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer" style="justify-content: space-between; background: #ffffff; border-top: 1px solid #e2e8f0;">
+        <div style="font-size: 0.8rem; color: #64748b;">
+          * 등록된 이력은 DB에 영구 보존되며 감사 로그에 기록됩니다.
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="window.maintenanceHistoryManager.closeFormModal()">취소</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="window.maintenanceHistoryManager.saveForm()">💾 조치 이력 저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Maintenance Task Edit Modal (Direct Input & Modification) -->
+  <div class="modal-backdrop" id="maint-task-modal">
+    <div class="modal-dialog modal-lg" style="max-width: 960px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="maint-modal-title" style="font-size: 1.15rem;">🛠️ 유지관리 과업 직접 입력 및 편집</div>
+          <div style="font-size: 0.82rem; color: #64748b; margin-top: 2px;" id="maint-modal-sub">
+            선택 지점의 18종 유지관리 과업 대상 지정, 조치 상태(완료/대기), 완료일자, 비고 및 신규 과업을 직접 관리합니다.
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="window.maintenanceManager.closeMaintEditModal()">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.25rem; overflow-y: auto; flex: 1;">
+        <!-- Station Selector & Summary Info Bar -->
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; gap: 0.75rem;">
+          <div style="flex: 1; min-width: 260px;">
+            <label style="font-size: 0.78rem; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">대상 관측시설 선택</label>
+            <select id="maint-edit-station-select" class="form-select" style="font-weight: 700; color: #1e40af; width: 100%;" onchange="window.maintenanceManager.onStationSelectChange(this.value)">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: flex-end;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="window.maintenanceManager.clearAllTasks()">전체 해제</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="window.maintenanceManager.selectRecommendedTasks()">기본 추천과업 적용</button>
+          </div>
+        </div>
+
+        <!-- Task Count & Progress Bar Indicator -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <div style="font-size: 0.9rem; font-weight: 700; color: #1e293b;" id="maint-edit-summary-count">
+            조치 필요 과업: <b>0건</b> (0건 완료)
+          </div>
+          <div id="maint-edit-summary-badge" class="badge badge-gray">설정 대기</div>
+        </div>
+        <div class="maint-progress-bar-bg" style="margin-bottom: 1.25rem;">
+          <div class="maint-progress-bar-fill" id="maint-edit-prog-bar" style="width: 0%;"></div>
+        </div>
+
+        <!-- 18 Tasks Form Accordion/Grid -->
+        <div id="maint-task-form-container" style="display: flex; flex-direction: column; gap: 1rem;">
+          <!-- Dynamically populated with 5 categories of tasks -->
+        </div>
+
+        <!-- Custom Tasks Section -->
+        <div class="card" style="margin-top: 1.25rem; border: 1px solid #e2e8f0;">
+          <div class="card-header" style="background: #f8fafc; padding: 0.65rem 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <div class="card-title" style="font-size: 0.88rem; font-weight: 700;">
+              <span>➕</span> 추가 사용자 정의 과업 (직접 추가 과업)
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" onclick="window.maintenanceManager.addCustomTaskRow()">+ 신규 과업 추가</button>
+          </div>
+          <div class="card-body" style="padding: 0.75rem;">
+            <div id="maint-custom-tasks-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <!-- Custom task rows -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="justify-content: space-between; background: #ffffff; border-top: 1px solid #e2e8f0;">
+        <div style="font-size: 0.8rem; color: #64748b;">
+          * 저장 시 시스템 DB 및 권역별 과업 통계에 즉시 반영되며 작업 이력이 기록됩니다.
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="window.maintenanceManager.closeMaintEditModal()">취소</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="window.maintenanceManager.saveMaintEditModal()">💾 과업 변경사항 저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Water Level Comparison Modal -->
   <div class="modal-backdrop" id="waterlevel-modal">
     <div class="modal-dialog modal-lg" style="max-width: 1200px; width: 95vw; max-height: 94vh; overflow-y: auto;">
       <div class="modal-header">
@@ -1590,6 +2007,16 @@
         <div id="wl-loading" style="text-align: center; padding: 3rem; color: #64748b;">
           <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">⏳</div>
           <div>실시간 수위 비교 데이터를 불러오는 중입니다...</div>
+        </div>
+
+        <!-- No Data State (Before Acquisition / Not Linked to HydroMonitor) -->
+        <div id="wl-nodata" style="display: none; text-align: center; padding: 2.8rem 1.5rem; background: #f8fafc; border-radius: 12px; border: 1px dashed #cbd5e1; margin: 1rem 0;">
+          <div style="font-size: 2.5rem; margin-bottom: 0.8rem;">📡</div>
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;" id="wl-nodata-title">자료 취득 전 (HydroMonitor 실시간 수위비교 미제공)</h3>
+          <p style="color: #64748b; font-size: 0.88rem; line-height: 1.6; max-width: 540px; margin: 0 auto;" id="wl-nodata-desc">
+            해당 관측소는 아직 HydroMonitor 실시간 수위비교 시스템에 수위계가 연계되지 않았거나 관측 자료 취득 전 상태입니다.<br>
+            <span style="font-size: 0.82rem; color: #94a3b8; display: block; margin-top: 6px;">(HydroMonitor 서버 실시간 수위비교 수집 대상: 171개 관측소)</span>
+          </p>
         </div>
 
         <div id="wl-content" style="display: none;">
@@ -1705,6 +2132,144 @@
     </div>
   </div>
 
+  <!-- 8. ADMIN FACTORY RESET PASSWORD CONFIRMATION MODAL -->
+  <div class="modal-backdrop" id="reset-password-modal">
+    <div class="modal-dialog" style="max-width: 480px; width: 95vw; background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);">
+      <div class="modal-header" style="border-bottom: 2px solid #ef4444; background: #ffffff; padding: 1.1rem 1.4rem;">
+        <div class="modal-title" style="color: #b91c1c; display:flex; align-items:center; gap:0.5rem; font-size:1.1rem; font-weight: 800;">
+          <span>⚠️</span> <span>시스템 데이터 원본 초기화 (보안 인증)</span>
+        </div>
+        <button class="modal-close-btn" onclick="window.app.closeResetPasswordModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem 1.4rem; background: #ffffff;">
+        <div style="background:#fef2f2; border:1px solid #fecaca; padding:1rem; border-radius:8px; margin-bottom:1.25rem;">
+          <div style="font-weight:700; color:#991b1b; margin-bottom:0.35rem; display:flex; align-items:center; gap:0.35rem; font-size:0.92rem;">
+            <span>🚨</span> 주의: 되돌릴 수 없는 초기화 작업입니다.
+          </div>
+          <div style="font-size:0.84rem; color:#7f1d1d; line-height:1.5;">
+            초기화 시 지금까지 수정한 모든 관측시설 제원 및 18개 과업 현황이 <b>초기 223개소 원본 데이터</b>로 완전히 되돌아갑니다.
+          </div>
+        </div>
+
+        <form id="reset-password-form" onsubmit="window.app.confirmResetWithPassword(event)">
+          <div class="form-group" style="margin-bottom:1rem;">
+            <label class="form-label" style="font-weight:700; color:#1e293b;">
+              최고 관리자(admin) 계정 비밀번호 확인 *
+            </label>
+            <input type="password" id="reset-admin-password-input" class="form-input" placeholder="관리자 비밀번호를 입력해주세요" required autocomplete="current-password" style="font-size:0.95rem; padding: 0.7rem 0.9rem; border: 1px solid #cbd5e1; border-radius: 8px;">
+            <div id="reset-password-error" style="display:none; color:#dc2626; font-size:0.82rem; margin-top:0.45rem; font-weight:600;"></div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1.5rem;">
+            <button type="button" class="btn btn-outline" onclick="window.app.closeResetPasswordModal()">취소</button>
+            <button type="submit" class="btn btn-danger" id="btn-submit-reset" style="font-weight:700;">
+              <span>🔄</span> <span>비밀번호 인증 후 초기화 실행</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. MY PAGE (내 계정 관리 & 비밀번호 변경) MODAL -->
+  <div class="modal-backdrop" id="mypage-modal">
+    <div class="modal-dialog" style="max-width: 540px; width: 95vw; background: #ffffff; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); overflow: hidden;">
+      <div class="modal-header" style="background:#f8fafc; border-bottom:1px solid #e2e8f0; padding:1.1rem 1.4rem;">
+        <div class="modal-title" style="display:flex; align-items:center; gap:0.5rem; font-size:1.15rem; color:#0f172a; font-weight:800;">
+          <span>👤</span> <span>마이페이지 (내 계정 & 보안 설정)</span>
+        </div>
+        <button class="modal-close-btn" onclick="window.app.closeMyPageModal()">&times;</button>
+      </div>
+
+      <!-- Tab Switcher -->
+      <div style="display:flex; border-bottom:1px solid #e2e8f0; background:#f8fafc;">
+        <button id="mypage-tab-btn-profile" type="button" onclick="window.app.switchMyPageTab('profile')" style="flex:1; border:none; border-bottom:2px solid #2563eb; padding:0.85rem 0.5rem; font-weight:700; color:#2563eb; background:#ffffff; font-size:0.92rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:0.4rem;">
+          <span>👤</span> <span>기본 정보 & 이메일 관리</span>
+        </button>
+        <button id="mypage-tab-btn-password" type="button" onclick="window.app.switchMyPageTab('password')" style="flex:1; border:none; border-bottom:2px solid transparent; padding:0.85rem 0.5rem; font-weight:600; color:#64748b; background:#f8fafc; font-size:0.92rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:0.4rem;">
+          <span>🔒</span> <span>비밀번호 변경</span>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.5rem 1.4rem; background: #ffffff;">
+        <!-- TAB 1: Profile & Email -->
+        <div id="mypage-tab-profile">
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:1.1rem 1.25rem; margin-bottom:1.25rem;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.85rem 1.25rem; font-size:0.88rem;">
+              <div>
+                <span style="color:#64748b; font-size:0.78rem; display:block; margin-bottom:3px; font-weight:600;">사용자 아이디 (ID)</span>
+                <strong id="mypage-info-username" style="color:#0f172a; font-size:1rem;">-</strong>
+              </div>
+              <div>
+                <span style="color:#64748b; font-size:0.78rem; display:block; margin-bottom:3px; font-weight:600;">계정 권한</span>
+                <span id="mypage-info-role" class="badge badge-blue" style="font-size:0.8rem; padding:3px 8px;">-</span>
+              </div>
+              <div>
+                <span style="color:#64748b; font-size:0.78rem; display:block; margin-bottom:3px; font-weight:600;">성명 / 직책</span>
+                <span id="mypage-info-name" style="color:#0f172a; font-weight:700;">-</span>
+              </div>
+              <div>
+                <span style="color:#64748b; font-size:0.78rem; display:block; margin-bottom:3px; font-weight:600;">소속 부서</span>
+                <span id="mypage-info-team" style="color:#0f172a; font-weight:600;">-</span>
+              </div>
+            </div>
+          </div>
+
+          <form id="mypage-profile-form" onsubmit="window.app.saveProfileEmail(event)">
+            <div class="form-group" style="margin-bottom:1rem;">
+              <label class="form-label" style="font-weight:700; color:#1e293b; display:flex; justify-content:space-between; align-items:center;">
+                <span>등록된 이메일 주소 (Email) *</span>
+                <span style="font-size:0.78rem; font-weight:600; color:#2563eb;">비밀번호 재설정 수신용</span>
+              </label>
+              <input type="email" id="mypage-email-input" class="form-input" placeholder="이메일 주소를 직접 입력해주세요 (예: user@kihs.re.kr)" required style="font-size:0.95rem; padding:0.75rem 0.9rem; border:1px solid #cbd5e1; border-radius:8px; width:100%; box-sizing:border-box;">
+              <div style="background:#eff6ff; border:1px solid #dbeafe; padding:0.75rem 0.9rem; border-radius:8px; font-size:0.82rem; color:#1e40af; margin-top:0.6rem; line-height:1.5;">
+                💡 <b>이메일 등록 안내:</b> 비밀번호를 잊으셨을 때 <b>로그인 화면의 [비밀번호 찾기]</b>를 통해 위 이메일 주소로 임시 비밀번호가 안전하게 발송됩니다.
+              </div>
+            </div>
+
+            <div id="mypage-profile-msg" style="display:none; padding:0.75rem; border-radius:8px; font-size:0.84rem; font-weight:600; margin-bottom:1rem; line-height:1.4;"></div>
+
+            <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1.25rem;">
+              <button type="button" class="btn btn-outline" onclick="window.app.closeMyPageModal()">닫기</button>
+              <button type="submit" class="btn btn-primary" id="btn-save-mypage-profile" style="font-weight:700;">
+                <span>💾</span> <span>이메일 정보 저장</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- TAB 2: Change Password -->
+        <div id="mypage-tab-password" style="display:none;">
+          <form id="mypage-password-form" onsubmit="window.app.changeAccountPassword(event)">
+            <div class="form-group" style="margin-bottom:1rem;">
+              <label class="form-label" style="font-weight:700; color:#1e293b;">현재 비밀번호 *</label>
+              <input type="password" id="mypage-cur-pwd" class="form-input" placeholder="현재 비밀번호를 입력해주세요" required autocomplete="current-password" style="font-size:0.95rem; padding:0.75rem 0.9rem; border:1px solid #cbd5e1; border-radius:8px; width:100%; box-sizing:border-box;">
+            </div>
+
+            <div class="form-group" style="margin-bottom:1rem;">
+              <label class="form-label" style="font-weight:700; color:#1e293b;">변경할 새 비밀번호 *</label>
+              <input type="password" id="mypage-new-pwd" class="form-input" placeholder="새 비밀번호 입력 (최소 4자 이상)" required minlength="4" autocomplete="new-password" style="font-size:0.95rem; padding:0.75rem 0.9rem; border:1px solid #cbd5e1; border-radius:8px; width:100%; box-sizing:border-box;">
+            </div>
+
+            <div class="form-group" style="margin-bottom:1.25rem;">
+              <label class="form-label" style="font-weight:700; color:#1e293b;">새 비밀번호 확인 *</label>
+              <input type="password" id="mypage-confirm-pwd" class="form-input" placeholder="새 비밀번호 재입력" required minlength="4" autocomplete="new-password" style="font-size:0.95rem; padding:0.75rem 0.9rem; border:1px solid #cbd5e1; border-radius:8px; width:100%; box-sizing:border-box;">
+            </div>
+
+            <div id="mypage-pwd-msg" style="display:none; padding:0.75rem; border-radius:8px; font-size:0.84rem; font-weight:600; margin-bottom:1rem; line-height:1.4;"></div>
+
+            <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1.25rem;">
+              <button type="button" class="btn btn-outline" onclick="window.app.closeMyPageModal()">닫기</button>
+              <button type="submit" class="btn btn-primary" id="btn-submit-change-pwd" style="font-weight:700;">
+                <span>🔑</span> <span>비밀번호 변경 실행</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container"></div>
 
@@ -1719,6 +2284,7 @@
   <script src="js/table.js?v=2.2"></script>
   <script src="js/stats.js?v=2.2"></script>
   <script src="js/maintenance.js?v=2.2"></script>
+  <script src="js/history.js?v=2.2"></script>
   <script src="js/calibration.js?v=2.2"></script>
   <script src="js/schedule.js?v=2.2"></script>
   <script src="js/monitor.js?v=2.2"></script>

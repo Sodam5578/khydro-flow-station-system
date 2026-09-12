@@ -98,31 +98,30 @@ class GISManager {
         const c = feature.properties.color || "#3b82f6";
         return {
           color: c,
-          weight: 1.2,
-          opacity: 0.85,
+          weight: 1.5,
+          opacity: 0.9,
           fillColor: c,
-          fillOpacity: 0.08
+          fillOpacity: 0.12
         };
       },
       onEachFeature: (feature, layer) => {
         const props = feature.properties || {};
-        const title = props.name || "표준유역";
+        const title = props.name || "중권역";
         const code = props.code || "";
-        const area = props.area ? `${props.area.toLocaleString()} ㎢` : "-";
-        const mainRiver = props.mainRiver || "-";
+        const major = props.majorBasin || props.region || "-";
 
         layer.bindTooltip(`
           <div style="font-family:'Pretendard',sans-serif; font-size:12px; line-height:1.4;">
-            <div style="font-weight:700; color:#1e3a8a;">🌊 ${title} <span style="font-size:10px; color:#64748b;">(${code})</span></div>
-            <div style="color:#475569; font-size:11px;">본류: <b>${mainRiver}</b> | 면적: <b>${area}</b></div>
+            <div style="font-weight:800; color:#1e3a8a;">🌊 ${title} 중권역 <span style="font-size:10px; color:#64748b; font-weight:normal;">(코드: ${code})</span></div>
+            <div style="color:#475569; font-size:11px; margin-top:2px;">대권역 수계: <b>${major}</b></div>
           </div>
         `, { sticky: true, className: 'basin-leaflet-tooltip' });
 
         layer.on("mouseover", () => {
           layer.setStyle({
-            weight: 2.5,
+            weight: 2.8,
             opacity: 1,
-            fillOpacity: 0.2
+            fillOpacity: 0.25
           });
         });
 

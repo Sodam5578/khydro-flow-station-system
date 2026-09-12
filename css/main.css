@@ -951,6 +951,69 @@ body {
   transition: width 0.3s ease;
 }
 
+/* Maintenance Task Direct Edit Modal Styles */
+.maint-edit-category {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.maint-edit-category-header {
+  background: #f8fafc;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.maint-task-edit-row {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px dashed #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: background 0.15s ease;
+}
+
+.maint-task-edit-row:last-child {
+  border-bottom: none;
+}
+
+.maint-task-edit-row.selected {
+  background: #f8fafc;
+}
+
+.maint-task-edit-row.completed {
+  background: #f0fdf4;
+}
+
+.maint-task-edit-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.maint-task-edit-fields {
+  display: grid;
+  grid-template-columns: 130px 140px 140px 1fr;
+  gap: 0.45rem;
+  padding-left: 1.75rem;
+}
+
+@media (max-width: 768px) {
+  .maint-task-edit-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* ==========================================================================
    Responsive Web Design (Mobile & Tablet UI/UX Overhaul)
    ========================================================================== */

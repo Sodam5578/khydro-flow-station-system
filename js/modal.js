@@ -157,6 +157,10 @@ class ModalManager {
 
     const modal = document.getElementById("detail-modal");
     if (modal) modal.classList.add("active");
+
+    if (window.maintenanceHistoryManager) {
+      window.maintenanceHistoryManager.loadStationHistory(st.id);
+    }
   }
 
   renderDetailBody(st) {
@@ -219,14 +223,20 @@ class ModalManager {
 
     let checklistHtml = "";
     if (totalTasks === 0) {
-      checklistHtml = `<div style="padding:0.75rem; background:#f8fafc; border-radius:6px; color:#64748b; font-size:0.85rem;">현재 등록된 유지관리 조치 필요사항이 없습니다. (정상 상태)</div>`;
+      checklistHtml = `
+        <div style="padding:0.75rem 1rem; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:6px; color:#64748b; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
+          <span>현재 등록된 유지관리 조치 필요사항이 없습니다.</span>
+          <button class="btn btn-primary btn-sm" onclick="window.maintenanceManager.openMaintEditModal(${st.id})" style="font-size:0.75rem; padding:2px 8px;">+ 과업 신규 지정</button>
+        </div>
+      `;
     } else {
       checklistHtml = `
         <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.85rem; margin-bottom:1rem;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-            <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; flex-wrap:wrap; gap:4px;">
+            <div style="display:flex; align-items:center; gap:6px;">
               <span style="font-size:0.85rem; font-weight:700; color:#1e293b;">🛠️ 2026년 유지관리 과업 조치 현황</span>
-              <span style="font-size:0.75rem; color:#64748b; margin-left:6px;">(총 ${totalTasks}건 중 <b>${completedCount}건 조치완료</b>)</span>
+              <span style="font-size:0.75rem; color:#64748b;">(총 ${totalTasks}건 중 <b>${completedCount}건 완료</b>)</span>
+              <button class="btn btn-outline btn-sm" onclick="window.maintenanceManager.openMaintEditModal(${st.id})" style="font-size:0.72rem; padding:1px 7px; margin-left:4px;">✏️ 과업 편집</button>
             </div>
             <span class="badge ${progressPct === 100 ? "badge-green" : "badge-amber"}" style="font-size:0.8rem; font-weight:700;">추진율 ${progressPct}%</span>
           </div>
@@ -317,6 +327,16 @@ class ModalManager {
 
       <div class="detail-section-title">🛠️ 2026년 유지관리 과업 체크리스트 (관리자 상태 변경)</div>
       ${checklistHtml}
+
+      <div class="detail-section-title" style="display:flex; justify-content:space-between; align-items:center; margin-top:1.25rem;">
+        <span>📜 시설 유지관리 조치 이력 (누적 로그)</span>
+        <button class="btn btn-primary btn-sm" onclick="window.maintenanceHistoryManager.openCreateModal(${st.id})" style="font-size:0.75rem; padding:3px 10px;">
+          ➕ 새 조치 이력 등록
+        </button>
+      </div>
+      <div id="station-history-container-${st.id}" style="margin-bottom:1.25rem;">
+        <div style="text-align:center; padding:1rem; color:#64748b;">⏳ 유지관리 조치 이력을 불러오는 중...</div>
+      </div>
 
       <div class="detail-section-title">📍 시설 기본 제원 및 위치 정보</div>
       <table class="detail-table">

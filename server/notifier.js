@@ -512,6 +512,107 @@ class SmartNotifierService {
       return { success: true, simulated: true, message: `가상 시뮬레이션 모드: 메일 발송 테스트 로그가 성공적으로 생성되었습니다. (API Key 또는 SMTP 계정 입력 필요)` };
     }
   }
+
+  /**
+   * Send Temporary Password Reset Email to User
+   */
+  async sendPasswordResetEmail(targetEmail, username, name, tempPassword) {
+    const eff = this.getEffectiveProvider();
+    const subject = `[한국수자원조사기술원] 자동유량관측시스템 임시 비밀번호 안내 (${username})`;
+    const userDisplayName = name ? `${name} (${username})` : username;
+    const sendTime = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+
+    const html = `
+      <div style="font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif; max-width:580px; margin:0 auto; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; background:#ffffff; box-shadow:0 4px 12px rgba(0,0,0,0.06);">
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); padding:24px 28px; color:#ffffff;">
+          <div style="font-size:12px; font-weight:700; letter-spacing:0.5px; opacity:0.85; margin-bottom:4px;">한국수자원조사기술원 수자원인프라팀</div>
+          <h2 style="margin:0; font-size:20px; font-weight:800; line-height:1.3;">🔐 임시 비밀번호 발급 안내</h2>
+        </div>
+
+        <!-- Body -->
+        <div style="padding:28px;">
+          <p style="font-size:15px; color:#1e293b; line-height:1.6; margin-top:0;">
+            안녕하세요, <strong>${userDisplayName}</strong>님.<br>
+            자동유량관측시설 관리시스템 계정의 비밀번호 재설정 요청이 정상적으로 접수되었습니다.
+          </p>
+
+          <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:20px; margin:24px 0; text-align:center;">
+            <div style="font-size:13px; font-weight:600; color:#64748b; margin-bottom:8px;">발급된 임시 비밀번호</div>
+            <div style="display:inline-block; background:#ffffff; border:2px dashed #2563eb; padding:10px 24px; border-radius:8px; font-family:'Courier New',monospace; font-size:22px; font-weight:800; color:#1d4ed8; letter-spacing:2px;">
+              ${tempPassword}
+            </div>
+            <div style="font-size:12px; color:#94a3b8; margin-top:8px;">* 대소문자 및 특수기호를 정확하게 입력해 주세요.</div>
+          </div>
+
+          <div style="background:#eff6ff; border-left:4px solid #3b82f6; padding:14px 16px; border-radius:0 8px 8px 0; font-size:13px; color:#1e40af; line-height:1.6; margin-bottom:20px;">
+            <b>📌 로그인 후 필수 조치 안내:</b><br>
+            위 임시 비밀번호로 로그인하신 후, 우측 상단의 <b>[마이페이지] > [비밀번호 변경]</b> 메뉴에서 본인만의 안전한 새 비밀번호로 반드시 변경해 주시기 바랍니다.
+          </div>
+
+          <div style="font-size:12px; color:#64748b; line-height:1.5; border-top:1px solid #f1f5f9; padding-top:16px;">
+            • 발송 일시: ${sendTime}<br>
+            • 발송 방식: ${eff} 엔진<br>
+            • 본인이 요청하지 않은 경우 시스템 관리자에게 즉시 문의하시기 바랍니다.
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="background:#f8fafc; padding:14px 28px; font-size:11px; color:#94a3b8; text-align:center; border-top:1px solid #e2e8f0;">
+          © 한국수자원조사기술원(KIHS) 수자원인프라팀 관제시스템 | 본 메일은 발신전용입니다.
+        </div>
+      </div>
+    `;
+
+    const logItem = {
+      id: "pwd_" + Date.now(),
+      timestamp: new Date().toISOString(),
+      stationName: `계정 [${username}]`,
+      level: "PASSWORD_RESET",
+      count: 1,
+      recipients: targetEmail,
+      mode: eff,
+      status: "PENDING"
+    };
+
+    if (eff === "RESEND") {
+      const res = await this.sendViaResend([targetEmail], subject, html);
+      logItem.status = res.success ? "SUCCESS" : "FAILED";
+      if (!res.success) logItem.error = res.error;
+    } else if (eff === "BREVO") {
+      const res = await this.sendViaBrevo([targetEmail], subject, html);
+      logItem.status = res.success ? "SUCCESS" : "FAILED";
+      if (!res.success) logItem.error = res.error;
+    } else if (eff === "SMTP" && this.transporter) {
+      try {
+        const fromAddr = this.getFromAddress();
+        await this.transporter.sendMail({
+          from: fromAddr,
+          to: targetEmail,
+          subject,
+          html
+        });
+        logItem.status = "SUCCESS";
+      } catch (e) {
+        logItem.status = "FAILED";
+        logItem.error = e.message;
+      }
+    } else {
+      logItem.status = "SIMULATED";
+      console.log(`📨 [SmartNotifier Simulation] Password reset email for ${username} (${targetEmail}): Temp Password = ${tempPassword}`);
+    }
+
+    this.notificationLogs.unshift(logItem);
+    if (this.notificationLogs.length > this.maxLogs) {
+      this.notificationLogs = this.notificationLogs.slice(0, this.maxLogs);
+    }
+
+    return {
+      success: logItem.status === "SUCCESS" || logItem.status === "SIMULATED",
+      mode: eff,
+      error: logItem.error
+    };
+  }
 }
 
 const notifier = new SmartNotifierService();

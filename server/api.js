@@ -50,8 +50,188 @@ router.post("/auth/login", async (req, res) => {
 });
 
 // 2. Auth: Get Current User Profile
-router.get("/auth/me", verifyToken, (req, res) => {
-  res.json({ success: true, user: req.user });
+router.get("/auth/me", verifyToken, async (req, res) => {
+  try {
+    const user = await dbService.getUserByUsername(req.user.username);
+    if (user) {
+      return res.json({
+        success: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          position: user.position || "팀원",
+          role: user.role,
+          region: user.region,
+          team: user.team,
+          email: user.email || ""
+        }
+      });
+    }
+    res.json({ success: true, user: req.user });
+  } catch (e) {
+    res.json({ success: true, user: req.user });
+  }
+});
+
+// 2-1. Auth: Get Profile Details
+router.get("/auth/profile", verifyToken, async (req, res) => {
+  try {
+    const user = await dbService.getUserByUsername(req.user.username);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "사용자를 찾을 수 없습니다." });
+    }
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        position: user.position || "팀원",
+        role: user.role,
+        region: user.region,
+        team: user.team,
+        email: user.email || ""
+      }
+    });
+  } catch (err) {
+    console.error("Get profile error:", err);
+    res.status(500).json({ success: false, message: "프로필 조회 실패" });
+  }
+});
+
+// 2-2. Auth: Update User Profile (Email)
+router.put("/auth/profile", verifyToken, async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (email !== undefined && email !== "") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        return res.status(400).json({ success: false, message: "올바른 이메일 형식(예: user@kihs.re.kr)을 입력해주세요." });
+      }
+    }
+
+    await dbService.updateUserProfile(req.user.username, { email });
+    const updated = await dbService.getUserByUsername(req.user.username);
+
+    logActivity(req.user, "정보수정", "마이페이지 프로필", `이메일 정보 설정 (${email || "미설정"})`, req.ip || req.connection.remoteAddress);
+
+    res.json({
+      success: true,
+      message: "회원 정보가 성공적으로 수정되었습니다.",
+      user: {
+        id: updated.id,
+        username: updated.username,
+        name: updated.name,
+        position: updated.position || "팀원",
+        role: updated.role,
+        region: updated.region,
+        team: updated.team,
+        email: updated.email || ""
+      }
+    });
+  } catch (err) {
+    console.error("Update profile error:", err);
+    res.status(500).json({ success: false, message: "프로필 수정 실패" });
+  }
+});
+
+// 2-3. Auth: Change Password
+router.put("/auth/password", verifyToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, message: "현재 비밀번호와 새 비밀번호를 모두 입력해주세요." });
+    }
+
+    if (newPassword.length < 4) {
+      return res.status(400).json({ success: false, message: "새 비밀번호는 최소 4자 이상이어야 합니다." });
+    }
+
+    const user = await dbService.getUserByUsername(req.user.username);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "사용자 계정을 찾을 수 없습니다." });
+    }
+
+    const isMatch = bcrypt.compareSync(currentPassword, user.password_hash);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: "현재 비밀번호가 일치하지 않습니다." });
+    }
+
+    const newHash = bcrypt.hashSync(newPassword, 10);
+    await dbService.updateUserPassword(req.user.username, newHash);
+
+    logActivity(req.user, "비밀번호변경", "마이페이지 보안", "사용자 비밀번호 변경 완료", req.ip || req.connection.remoteAddress);
+
+    res.json({ success: true, message: "비밀번호가 성공적으로 변경되었습니다." });
+  } catch (err) {
+    console.error("Change password error:", err);
+    res.status(500).json({ success: false, message: "비밀번호 변경 실패" });
+  }
+});
+
+// 2-4. Auth: Forgot Password (Send Temp Password to Email)
+router.post("/auth/forgot-password", async (req, res) => {
+  try {
+    const { username, email } = req.body;
+    if (!username || !email) {
+      return res.status(400).json({ success: false, message: "아이디와 등록된 이메일 주소를 모두 입력해주세요." });
+    }
+
+    const cleanUser = username.trim();
+    const cleanEmail = email.trim();
+
+    // 1. Check if user exists
+    const user = await dbService.getUserByUsername(cleanUser);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: `등록되지 않은 아이디('${cleanUser}')입니다. 아이디를 다시 확인해주세요.`
+      });
+    }
+
+    // 2. Check if user has registered an email
+    if (!user.email || user.email.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: `계정('${cleanUser}')에 등록된 이메일 주소가 없습니다. 관리자에게 문의하여 비밀번호를 재설정하거나, 로그인 후 [마이페이지]에서 이메일을 먼저 등록해주세요.`
+      });
+    }
+
+    // 3. Check if email matches
+    if (user.email.trim().toLowerCase() !== cleanEmail.toLowerCase()) {
+      return res.status(400).json({
+        success: false,
+        message: "입력하신 이메일 주소가 계정에 등록된 이메일과 일치하지 않습니다. 등록된 이메일을 입력해주세요."
+      });
+    }
+
+    // Generate random 8-character temporary password
+    const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+    let randStr = "";
+    for (let i = 0; i < 5; i++) {
+      randStr += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    const tempPassword = `kh!${randStr}${Math.floor(10 + Math.random() * 90)}`;
+
+    const newHash = bcrypt.hashSync(tempPassword, 10);
+    await dbService.updateUserPassword(user.username, newHash);
+
+    // Send email via notifier
+    const mailRes = await notifier.sendPasswordResetEmail(user.email, user.username, user.name, tempPassword);
+
+    logActivity(user, "비밀번호초기화", "비밀번호 찾기", `임시 비밀번호 발급 및 메일 전송 (${user.email})`, req.ip || req.connection.remoteAddress);
+
+    res.json({
+      success: true,
+      message: `등록된 이메일(${user.email})로 임시 비밀번호가 발송되었습니다. 이메일을 확인한 후 로그인해 주세요.`,
+      email: user.email,
+      mode: mailRes.mode
+    });
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    res.status(500).json({ success: false, message: "비밀번호 재설정 처리 중 오류가 발생했습니다." });
+  }
 });
 
 // 3. Activity Logs: Get Audit History (Admin Only)
@@ -206,6 +386,123 @@ router.put("/stations/:id", verifyToken, async (req, res) => {
   }
 });
 
+// 5-2. Stations: Batch Update Stations (Admin Only Excel Import & Sync)
+router.post("/stations/batch", verifyToken, async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "관측시설 데이터 일괄 갱신은 최고 관리자(admin)만 가능합니다." });
+    }
+    const { stations } = req.body;
+    if (!Array.isArray(stations) || stations.length === 0) {
+      return res.status(400).json({ success: false, message: "일괄 갱신할 지점 데이터가 비어있습니다." });
+    }
+
+    let updatedCount = 0;
+    for (const st of stations) {
+      const id = parseInt(st.id, 10);
+      if (!id) continue;
+
+      let maint = typeof st.maintenance === "object" && st.maintenance !== null ? { ...st.maintenance } : {};
+      maint.mountType = st.mountType || "-";
+      maint.shelterType = st.shelterType || "-";
+
+      if (st.rvBox) {
+        maint.rvBox = st.rvBox;
+      } else if (st.rvBoxStatus || st.rvBoxInstalled !== undefined) {
+        maint.rvBox = {
+          isTarget: st.rvBoxStatus !== "미운영/대상외",
+          installed: st.rvBoxInstalled === true ? true : (st.rvBoxInstalled === false ? false : null),
+          status: st.rvBoxStatus || (st.rvBoxInstalled === true ? "설치완료" : (st.rvBoxInstalled === false ? "미설치" : "미운영/대상외")),
+          logger: (st.rvBoxAgents || []).find(a => a.endsWith('_L') || a.includes('양수장')) ? { agentName: (st.rvBoxAgents || []).find(a => a.endsWith('_L') || a.includes('양수장')), installed: st.rvBoxInstalled === true } : null,
+          sender: (st.rvBoxAgents || []).find(a => a.endsWith('_S')) ? { agentName: (st.rvBoxAgents || []).find(a => a.endsWith('_S')), installed: st.rvBoxInstalled === true } : null,
+          agents: st.rvBoxAgents || []
+        };
+      }
+      if (st.rvBoxInstalled !== undefined) maint.rvBoxInstalled = st.rvBoxInstalled;
+      if (st.rvBoxAgents) maint.rvBoxAgents = st.rvBoxAgents;
+
+      const updateFields = {
+        seq: st.seq || id,
+        region: st.region,
+        river: st.river,
+        name: st.name,
+        code: st.code,
+        address: st.address,
+        install_year: st.installYear,
+        obs_start_year: st.obsStartYear,
+        is_operating: st.isOperating2026 ? 1 : 0,
+        gauge_type: st.gaugeType,
+        is_dual: st.isDualGauge ? 1 : 0,
+        advm_count: st.advmCount,
+        ewsv_count: st.ewsvCount,
+        calib_2026: st.calib2026 ? 1 : 0,
+        calib_count: st.calibCount2026,
+        calib_status: st.calibrationStatus || st.calibStatus || "pending",
+        calib_date: st.calibrationDate || st.calibDate || "",
+        solar_install: st.solarInstall ? 1 : 0,
+        flood_alert: st.floodAlert ? 1 : 0,
+        drought_alert: st.droughtAlert ? 1 : 0,
+        pollution_total: st.pollutionTotal ? 1 : 0,
+        water_level_type: st.waterLevelType,
+        ref_water_level: st.refWaterLevel,
+        mount_type: st.mountType || "-",
+        shelter_type: st.shelterType || "-",
+        rv_box_installed: st.rvBoxInstalled === true ? 1 : (st.rvBoxInstalled === false ? 0 : null),
+        rv_box_agents: JSON.stringify(st.rvBoxAgents || []),
+        memo: st.memo,
+        lat: st.coords?.lat || null,
+        lon: st.coords?.lon || null,
+        lat_dms: st.coords?.latDMS || "",
+        lon_dms: st.coords?.lonDMS || "",
+        maintenance_json: JSON.stringify(maint)
+      };
+
+      await dbService.updateStation(id, updateFields);
+      updatedCount++;
+    }
+
+    logActivity(req.user, "엑셀일괄갱신", `${updatedCount}개소 일괄반영`, `관리자 엑셀 수동 편집 파일 일괄 데이터베이스 밀어넣기 처리`, req.ip);
+    res.json({ success: true, count: updatedCount, message: `${updatedCount}개 지점의 데이터가 일괄 갱신되었습니다.` });
+  } catch (err) {
+    console.error("Batch update stations error:", err);
+    res.status(500).json({ success: false, message: "지점 일괄 갱신 실패: " + err.message });
+  }
+});
+
+// 5-3. Stations: Factory Reset to Initial 223 Stations (Admin Only with Password Check)
+router.post("/stations/reset", verifyToken, async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "데이터 원본 초기화는 최고 관리자(admin)만 실행할 수 있습니다." });
+    }
+
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ success: false, message: "관리자 비밀번호를 입력해주세요." });
+    }
+
+    // Verify admin account password
+    const adminUser = await dbService.getUserByUsername(req.user.username);
+    if (!adminUser) {
+      return res.status(404).json({ success: false, message: "관리자 계정 정보를 찾을 수 없습니다." });
+    }
+
+    const isMatch = bcrypt.compareSync(password, adminUser.password_hash);
+    if (!isMatch) {
+      logActivity(req.user, "초기화실패", "전체지점", "관리자 비밀번호 불일치로 원본 초기화 거부됨", req.ip);
+      return res.status(401).json({ success: false, message: "관리자 비밀번호가 일치하지 않습니다. 비밀번호를 다시 확인해주세요." });
+    }
+
+    const initialStations = await dbService.resetStationsToInitial();
+    logActivity(req.user, "데이터초기화", "전체 223개소", "관리자 비밀번호 인증 후 시스템 전체를 초기 223개소 원본 데이터셋으로 롤백", req.ip);
+
+    res.json({ success: true, count: initialStations.length, message: "초기 223개소 원본 데이터로 성공적으로 초기화되었습니다." });
+  } catch (err) {
+    console.error("Reset stations error:", err);
+    res.status(500).json({ success: false, message: "데이터 초기화 실패: " + err.message });
+  }
+});
+
 // 6. Maintenance: Toggle Task Completion (Audit Logged)
 router.post("/stations/:id/maintenance/toggle", verifyToken, async (req, res) => {
   try {
@@ -249,6 +546,38 @@ router.post("/stations/:id/maintenance/toggle", verifyToken, async (req, res) =>
   } catch (err) {
     console.error("Maintenance toggle error:", err);
     res.status(500).json({ success: false, message: "유지관리 상태 갱신 실패" });
+  }
+});
+
+// 6-2. Maintenance: Full Save / Edit Tasks (User Direct Input & Modification)
+router.post("/stations/:id/maintenance/save", verifyToken, async (req, res) => {
+  try {
+    const stationId = parseInt(req.params.id, 10);
+    const { maintenance } = req.body;
+
+    const row = await dbService.getStationById(stationId);
+    if (!row) return res.status(404).json({ success: false, message: "지점을 찾을 수 없습니다." });
+
+    if (!maintenance || typeof maintenance !== "object") {
+      return res.status(400).json({ success: false, message: "유효한 유지관리 데이터가 아닙니다." });
+    }
+
+    maintenance.hasMaintData = true;
+
+    await dbService.updateStation(stationId, { maintenance_json: JSON.stringify(maintenance) });
+
+    logActivity(
+      req.user,
+      "유지관리수정",
+      row.name,
+      `유지관리 과업 항목 및 조치 현황 직접 수정/입력`,
+      req.ip
+    );
+
+    res.json({ success: true, maintenance });
+  } catch (err) {
+    console.error("Maintenance save error:", err);
+    res.status(500).json({ success: false, message: "유지관리 과업 저장 실패: " + err.message });
   }
 });
 
@@ -389,7 +718,100 @@ router.delete("/schedules/:id", verifyToken, async (req, res) => {
   }
 });
 
-// 11. Live Monitor: Summary KPI & Issues
+// ========================================================
+// 11. Maintenance History: Facility Action History Management
+// ========================================================
+router.get("/maintenance-history", verifyToken, async (req, res) => {
+  try {
+    const { stationId, actionType, category, actorType, resultStatus, startDate, endDate, keyword, limit } = req.query;
+    const rows = await dbService.getAllMaintenanceHistory({
+      stationId, actionType, category, actorType, resultStatus, startDate, endDate, keyword, limit: limit ? parseInt(limit, 10) : 500
+    });
+    res.json({ success: true, count: rows.length, data: rows });
+  } catch (err) {
+    console.error("Get maintenance history error:", err);
+    res.status(500).json({ success: false, message: "유지관리 이력 조회 실패: " + err.message });
+  }
+});
+
+router.get("/stations/:id/maintenance-history", verifyToken, async (req, res) => {
+  try {
+    const stationId = parseInt(req.params.id, 10);
+    const rows = await dbService.getMaintenanceHistoryByStation(stationId);
+    res.json({ success: true, count: rows.length, data: rows });
+  } catch (err) {
+    console.error("Get station maintenance history error:", err);
+    res.status(500).json({ success: false, message: "관측소 유지관리 이력 조회 실패: " + err.message });
+  }
+});
+
+router.post("/maintenance-history", verifyToken, async (req, res) => {
+  try {
+    const { station_id, station_name, issue_date, action_date, action_type, category, target_equipment, description, actor_type, worker_name, result_status, cost, memo } = req.body;
+    if (!station_id || !action_date || !description) {
+      return res.status(400).json({ success: false, message: "필수 항목(관측시설, 조치일자, 작업내용)을 입력해주세요." });
+    }
+
+    const createdBy = `${req.user.name} (${req.user.username})`;
+    const record = await dbService.createMaintenanceHistory({
+      station_id, station_name, issue_date, action_date, action_type, category, target_equipment, description, actor_type, worker_name, result_status, cost, memo, created_by: createdBy
+    });
+
+    logActivity(req.user, "유지관리이력등록", station_name, `[${action_type || "유지관리"}] ${description} (작업자: ${worker_name || actor_type || "미지정"})`, req.ip);
+
+    res.json({ success: true, data: record, message: "유지관리 조치 이력이 등록되었습니다." });
+  } catch (err) {
+    console.error("Create maintenance history error:", err);
+    res.status(500).json({ success: false, message: "유지관리 이력 등록 실패: " + err.message });
+  }
+});
+
+router.put("/maintenance-history/:id", verifyToken, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { station_id, station_name, issue_date, action_date, action_type, category, target_equipment, description, actor_type, worker_name, result_status, cost, memo } = req.body;
+
+    const record = await dbService.updateMaintenanceHistory(id, {
+      station_id, station_name, issue_date, action_date, action_type, category, target_equipment, description, actor_type, worker_name, result_status, cost, memo
+    });
+
+    logActivity(req.user, "유지관리이력수정", station_name, `[${action_type || "유지관리"}] 이력 수정 (${action_date})`, req.ip);
+
+    res.json({ success: true, data: record, message: "유지관리 조치 이력이 수정되었습니다." });
+  } catch (err) {
+    console.error("Update maintenance history error:", err);
+    res.status(500).json({ success: false, message: "유지관리 이력 수정 실패: " + err.message });
+  }
+});
+
+router.delete("/maintenance-history/:id", verifyToken, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    await dbService.deleteMaintenanceHistory(id);
+    logActivity(req.user, "유지관리이력삭제", `이력 #${id}`, `유지관리 조치 이력 삭제 처리`, req.ip);
+    res.json({ success: true, message: "유지관리 조치 이력이 삭제되었습니다." });
+  } catch (err) {
+    console.error("Delete maintenance history error:", err);
+    res.status(500).json({ success: false, message: "유지관리 이력 삭제 실패: " + err.message });
+  }
+});
+
+router.post("/maintenance-history/batch", verifyToken, async (req, res) => {
+  try {
+    const { records } = req.body;
+    if (!Array.isArray(records) || records.length === 0) {
+      return res.status(400).json({ success: false, message: "가져올 이력 데이터 목록이 비어있습니다." });
+    }
+    const result = await dbService.batchCreateMaintenanceHistory(records);
+    logActivity(req.user, "유지관리이력일괄등록", `${records.length}건`, `유지관리 이력 일괄 가져오기 처리`, req.ip);
+    res.json({ success: true, count: result.count, message: `${result.count}건의 유지관리 이력이 일괄 등록되었습니다.` });
+  } catch (err) {
+    console.error("Batch maintenance history error:", err);
+    res.status(500).json({ success: false, message: "유지관리 이력 일괄 등록 실패: " + err.message });
+  }
+});
+
+// 12. Live Monitor: Summary KPI & Issues
 router.get("/monitor/summary", (req, res) => {
   try {
     const data = liveMonitor.getData();

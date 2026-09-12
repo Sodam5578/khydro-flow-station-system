@@ -175,6 +175,35 @@ class DataManager {
     return st;
   }
 
+  async updateStationMaintenance(stationId, maintenanceData) {
+    const st = this.getById(stationId);
+    if (!st) return null;
+
+    st.maintenance = {
+      ...(st.maintenance || {}),
+      ...maintenanceData,
+      hasMaintData: true
+    };
+
+    // If rvBox task is in completedTasks, sync rvBoxInstalled
+    if (st.maintenance.completedTasks && st.maintenance.completedTasks["rvBox"]) {
+      st.rvBoxInstalled = true;
+      st.rvBoxStatus = "설치완료";
+    }
+
+    // Sync with Server DB
+    if (this.isServerConnected && window.apiClient) {
+      try {
+        await window.apiClient.saveMaintenance(stationId, st.maintenance);
+      } catch(e) {
+        console.error("Server save maintenance failed:", e);
+      }
+    }
+
+    this.saveToStorage();
+    return st;
+  }
+
   async updateCalibration(stationId, status, date = "", certNo = "") {
     const st = this.getById(stationId);
     if (!st) return;
