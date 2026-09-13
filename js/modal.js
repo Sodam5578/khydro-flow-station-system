@@ -144,9 +144,14 @@ class ModalManager {
             <span class="badge badge-blue">${st.region || "-"}권역</span>
             ${isDual ? `<span class="badge badge-purple" style="font-weight:700;">⚡ EWSV+ADVM 이중화</span>` : ""}
           </div>
-          <button class="btn btn-primary btn-sm" style="font-size:0.75rem; padding:3px 10px; background:#2563eb; border-color:#2563eb;" onclick="window.waterLevelManager.openModal('${st.code || st.id}')">
-            📊 실시간 수위비교 차트
-          </button>
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <button class="btn btn-primary btn-sm" style="font-size:0.75rem; padding:4px 10px; background:#0284c7; border-color:#0284c7;" onclick="window.modalManager.closeDetail(); window.timeSeriesMenuManager.openForStation('${st.code || st.id}');">
+              📈 실시간 관측자료 분석
+            </button>
+            <button class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:4px 10px; background:#ffffff;" onclick="window.waterLevelManager.openModal('${st.code || st.id}')">
+              📊 수위비교
+            </button>
+          </div>
         </div>
       `;
     }
@@ -317,7 +322,7 @@ class ModalManager {
     }
 
     modalBody.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding:0.75rem 1rem; background:${isDual ? "#fdf4ff; border:1px solid #f0abfc;" : "#eff6ff; border:1px solid #bfdbfe;"} border-radius:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; padding:0.75rem 1rem; background:${isDual ? "#fdf4ff; border:1px solid #f0abfc;" : "#eff6ff; border:1px solid #bfdbfe;"} border-radius:8px;">
         <div>
           <div style="font-size:0.8rem; color:${isDual ? "#86198f" : "#1e40af"}; font-weight:600;">지점 관리코드</div>
           <div style="font-size:1.2rem; font-weight:800; color:${isDual ? "#701a75" : "#1e3a8a"};">${st.code || "미부여"}</div>
@@ -390,6 +395,32 @@ class ModalManager {
     `;
   }
 
+  switchDetailTab(tabKey) {
+    const btnInfo = document.getElementById("detail-tab-btn-info");
+    const btnGraph = document.getElementById("detail-tab-btn-graph");
+    const panelInfo = document.getElementById("detail-panel-info");
+    const panelGraph = document.getElementById("detail-panel-graph");
+
+    if (tabKey === "info") {
+      if (btnInfo) { btnInfo.className = "btn btn-sm btn-primary"; btnInfo.style.background = "#1e40af"; btnInfo.style.color = "#ffffff"; }
+      if (btnGraph) { btnGraph.className = "btn btn-sm btn-outline"; btnGraph.style.background = "#ffffff"; btnGraph.style.color = "#334155"; }
+      if (panelInfo) panelInfo.style.display = "block";
+      if (panelGraph) panelGraph.style.display = "none";
+    } else {
+      if (btnInfo) { btnInfo.className = "btn btn-sm btn-outline"; btnInfo.style.background = "#ffffff"; btnInfo.style.color = "#334155"; }
+      if (btnGraph) { btnGraph.className = "btn btn-sm btn-primary"; btnGraph.style.background = "#1e40af"; btnGraph.style.color = "#ffffff"; }
+      if (panelInfo) panelInfo.style.display = "none";
+      if (panelGraph) panelGraph.style.display = "block";
+
+      if (window.timeSeriesChartManager && this.currentStationId) {
+        const st = window.dataManager.getById(this.currentStationId);
+        if (st) {
+          window.timeSeriesChartManager.loadAndRender(st.code || st.id, 'waterLevel');
+        }
+      }
+    }
+  }
+
   toggleTask(stationId, taskKey, isChecked) {
     const updated = window.dataManager.toggleTaskCompletion(stationId, taskKey, isChecked);
     if (updated) {
@@ -413,6 +444,9 @@ class ModalManager {
   closeDetail() {
     const modal = document.getElementById("detail-modal");
     if (modal) modal.classList.remove("active");
+    if (window.timeSeriesChartManager) {
+      window.timeSeriesChartManager.destroy();
+    }
   }
 
   openEdit(id) {

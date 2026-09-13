@@ -66,6 +66,10 @@
           <span class="nav-icon">🛰️</span>
           <span>실시간 관측 모니터링</span>
         </button>
+        <button class="nav-item" data-tab="timeseries">
+          <span class="nav-icon">📈</span>
+          <span>실시간 관측자료 분석</span>
+        </button>
         <button class="nav-item" data-tab="logs" id="nav-logs-btn">
           <span class="nav-icon">📜</span>
           <span>작업 이력 관리</span>
@@ -110,9 +114,6 @@
 
           <!-- Quick Action Buttons -->
           <div class="header-btn-group">
-            <button class="btn btn-outline btn-sm" onclick="window.excelManager.exportToExcel(false)" title="전국 관측시설 엑셀 다운로드">
-              <span>📥</span> <span>엑셀 전체 다운로드</span>
-            </button>
             <button class="btn btn-primary btn-sm" onclick="window.modalManager.openAdd()" title="신규 관측소 등록">
               <span>➕</span> <span>신규 관측소 등록</span>
             </button>
@@ -1281,7 +1282,7 @@
                   🔄 실시간 데이터 갱신
                 </button>
                 <a href="http://183.96.156.168:8080/" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="color:#ffffff; border-color:rgba(255,255,255,0.5);">
-                  🌐 원본 모니터링 서버
+                  🌐 HydroMonitor
                 </a>
               </div>
             </div>
@@ -1391,6 +1392,120 @@
                 </tbody>
               </table>
             </div>
+          </div>
+        </section>
+
+        <!-- 9. REAL-TIME TIME-SERIES ANALYSIS VIEW -->
+        <section class="view-panel" id="view-timeseries" style="display:none;">
+          <!-- 1. Header Banner -->
+          <div class="card" style="margin-bottom: 1rem; background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: #ffffff; padding: 1.2rem 1.5rem; border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(37,99,235,0.2);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+              <div>
+                <div style="display:flex; align-items:center; gap:0.6rem;">
+                  <span style="font-size:1.6rem;">📈</span>
+                  <h2 style="font-size:1.3rem; font-weight:800; margin:0; color:#ffffff;" id="ts-station-title">실시간 관측자료 시계열 정밀 분석</h2>
+                </div>
+                <div style="font-size:0.85rem; color:#bfdbfe; margin-top:4px;" id="ts-station-desc">
+                  원천 SFTP(211.114.42.234) 10분 주기 수집 원시자료 기반 최근 24시간 시계열 분석
+                </div>
+              </div>
+              <div style="display:flex; gap:0.5rem; align-items:center;">
+                <span class="badge" style="background:rgba(255,255,255,0.2); color:#ffffff; font-weight:700; padding:6px 12px; font-size:0.82rem; border-radius:20px;" id="ts-header-status-badge">
+                  전국 223개소 관제
+                </span>
+                <button class="btn btn-sm" onclick="window.timeSeriesMenuManager.reloadCurrentStation()" style="background:#ffffff; color:#1e40af; font-weight:700; height:34px; border:none; border-radius:6px; padding:0 14px; box-shadow:0 2px 6px rgba(0,0,0,0.15);">
+                  🔄 새로고침
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Integrated Search & Multi-Filter Control Workbench -->
+          <div class="card" style="margin-bottom: 1.25rem; padding: 1.1rem 1.25rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <!-- Top Row: Search & Filters -->
+            <div style="display:grid; grid-template-columns: minmax(260px, 1.8fr) 1fr 1fr 1.2fr auto; gap: 0.65rem; align-items: center; margin-bottom: 0.85rem;">
+              <!-- Real-time Text Search Input -->
+              <div style="position:relative;">
+                <span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:0.9rem; color:#64748b;">🔍</span>
+                <input type="text" id="ts-search-input" class="form-input" placeholder="관측소명, 지점코드(7자리), 하천명 입력..." 
+                       style="padding-left:32px; padding-right:26px; height:38px; font-size:0.86rem; border-radius:8px; border:1px solid #cbd5e1; width:100%; box-sizing:border-box;" 
+                       oninput="window.timeSeriesMenuManager.onFilterChange()">
+                <button id="ts-search-clear-btn" type="button" onclick="window.timeSeriesMenuManager.clearSearch()" 
+                        style="display:none; position:absolute; right:8px; top:50%; transform:translateY(-50%); border:none; background:none; color:#94a3b8; cursor:pointer; font-size:0.9rem; padding:2px 4px;">✕</button>
+              </div>
+
+              <!-- Region Filter -->
+              <div>
+                <select id="ts-region-filter" class="form-input" style="height:38px; font-size:0.84rem; border-radius:8px; border:1px solid #cbd5e1; width:100%; box-sizing:border-box; background:#f8fafc; font-weight:600;" onchange="window.timeSeriesMenuManager.onFilterChange()">
+                  <option value="all">🌐 전체 권역 (전체)</option>
+                  <option value="한강">🌊 한강권역</option>
+                  <option value="낙동강">🌊 낙동강권역</option>
+                  <option value="금강">🌊 금강권역</option>
+                  <option value="영산강">🌊 영산강권역</option>
+                </select>
+              </div>
+
+              <!-- Gauge Type Filter -->
+              <div>
+                <select id="ts-gauge-filter" class="form-input" style="height:38px; font-size:0.84rem; border-radius:8px; border:1px solid #cbd5e1; width:100%; box-sizing:border-box; background:#f8fafc; font-weight:600;" onchange="window.timeSeriesMenuManager.onFilterChange()">
+                  <option value="all">🎯 전체 형식</option>
+                  <option value="ADVM">ADVM (도플러유속계)</option>
+                  <option value="EWSV">EWSV (전자파표면유속계)</option>
+                  <option value="DUAL">⚡ 이중화 (EWSV+ADVM)</option>
+                </select>
+              </div>
+
+              <!-- Collection & Operating Status Filter -->
+              <div>
+                <select id="ts-status-filter" class="form-input" style="height:38px; font-size:0.84rem; border-radius:8px; border:1px solid #cbd5e1; width:100%; box-sizing:border-box; background:#f8fafc; font-weight:600;" onchange="window.timeSeriesMenuManager.onFilterChange()">
+                  <option value="all">📡 전체 수집/운영 상태</option>
+                  <option value="operating" selected>🟢 실시간 수집·운영중 지점</option>
+                  <option value="scheduled">⚪ 2026년 구축예정/미수집 지점</option>
+                </select>
+              </div>
+
+              <!-- Reset Button -->
+              <div>
+                <button class="btn btn-outline" onclick="window.timeSeriesMenuManager.resetFilters()" title="필터 초기화" style="height:38px; padding:0 12px; font-size:0.82rem; border-radius:8px; display:flex; align-items:center; gap:4px; white-space:nowrap; background:#f8fafc;">
+                  <span>↺</span> <span>초기화</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Bottom Row: Dynamic Station Selector & Grid View Toggle -->
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; padding-top:0.65rem; border-top:1px dashed #e2e8f0;">
+              <div style="display:flex; align-items:center; gap:0.5rem; flex:1; min-width:280px;">
+                <span style="font-size:0.85rem; font-weight:700; color:#334155; white-space:nowrap;">📍 관측시설 선택:</span>
+                <select id="ts-station-select" class="form-input" style="height:38px; font-size:0.88rem; font-weight:700; color:#1e3a8a; border-radius:8px; border:2px solid #3b82f6; width:100%; max-width:540px; box-sizing:border-box; background:#eff6ff;" onchange="window.timeSeriesMenuManager.selectStation(this.value)">
+                  <!-- Dynamic Options populated by JavaScript -->
+                </select>
+                <span class="badge badge-gray" id="ts-result-count-badge" style="font-size:0.78rem; padding:4px 8px; font-weight:600; white-space:nowrap;">
+                  총 223개소
+                </span>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <button class="btn btn-sm btn-outline" id="ts-toggle-grid-btn" onclick="window.timeSeriesMenuManager.toggleGrid()" style="font-size:0.8rem; font-weight:600; padding:6px 12px; border-radius:8px; background:#ffffff; color:#475569;">
+                  <span>📑</span> <span id="ts-toggle-grid-text">지점 빠른 탐색창 열기</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Collapsible Quick Station Grid Drawer -->
+            <div id="ts-quick-station-grid" style="display:none; margin-top:0.85rem; padding:0.85rem; background:#f8fafc; border-radius:10px; border:1px solid #e2e8f0; max-height:220px; overflow-y:auto;">
+              <div style="font-size:0.78rem; color:#64748b; font-weight:700; margin-bottom:6px; display:flex; justify-content:space-between;">
+                <span>⚡ 지점 카드를 클릭하면 즉시 해당 관측소의 시계열 자료로 전환됩니다:</span>
+                <span id="ts-grid-count-text">총 0개</span>
+              </div>
+              <div id="ts-grid-items-container" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:6px;">
+                <!-- Dynamically populated cards -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Content Container (KPIs + Chart + Raw Data Grid) -->
+          <div id="ts-content-container">
+            <!-- Rendered by TimeSeriesMenuManager -->
           </div>
         </section>
 
@@ -2274,24 +2389,26 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Initial Dataset Script -->
-  <script src="data/stations_initial.js?v=2.2"></script>
-  <script src="data/real_standard_basins.js?v=2.2"></script>
+  <script src="data/stations_initial.js?v=3.1"></script>
+  <script src="data/real_standard_basins.js?v=3.1"></script>
 
   <!-- Application Modules -->
-  <script src="js/api.js?v=2.2"></script>
-  <script src="js/data.js?v=2.2"></script>
-  <script src="js/gis.js?v=2.2"></script>
-  <script src="js/table.js?v=2.2"></script>
-  <script src="js/stats.js?v=2.2"></script>
-  <script src="js/maintenance.js?v=2.2"></script>
-  <script src="js/history.js?v=2.2"></script>
-  <script src="js/calibration.js?v=2.2"></script>
-  <script src="js/schedule.js?v=2.2"></script>
-  <script src="js/monitor.js?v=2.2"></script>
-  <script src="js/waterlevel.js?v=2.2"></script>
-  <script src="js/logs.js?v=2.2"></script>
-  <script src="js/modal.js?v=2.2"></script>
-  <script src="js/excel.js?v=2.2"></script>
-  <script src="js/app.js?v=2.2"></script>
+  <script src="js/api.js?v=3.1"></script>
+  <script src="js/data.js?v=3.1"></script>
+  <script src="js/gis.js?v=3.1"></script>
+  <script src="js/table.js?v=3.1"></script>
+  <script src="js/stats.js?v=3.1"></script>
+  <script src="js/maintenance.js?v=3.1"></script>
+  <script src="js/history.js?v=3.1"></script>
+  <script src="js/calibration.js?v=3.1"></script>
+  <script src="js/schedule.js?v=3.1"></script>
+  <script src="js/monitor.js?v=3.1"></script>
+  <script src="js/waterlevel.js?v=3.1"></script>
+  <script src="js/logs.js?v=3.1"></script>
+  <script src="js/timeseriesChart.js?v=3.1"></script>
+  <script src="js/timeseriesMenu.js?v=3.1"></script>
+  <script src="js/modal.js?v=3.1"></script>
+  <script src="js/excel.js?v=3.1"></script>
+  <script src="js/app.js?v=3.1"></script>
 </body>
 </html>

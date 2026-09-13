@@ -350,6 +350,12 @@ class ApiClient {
     return await res.json();
   }
 
+  // REST API: 24h 7-metric Time Series
+  async getTimeSeries(stCode) {
+    const res = await fetch(`${this.baseUrl}/monitor/timeseries/${encodeURIComponent(stCode)}`, { headers: this.getHeaders() });
+    return await res.json();
+  }
+
   // REST API: User Profile & Password
   async getProfile() {
     const res = await fetch(`${this.baseUrl}/auth/profile`, { headers: this.getHeaders() });

@@ -77,6 +77,12 @@ class DataManager {
     return this.stations.find(s => String(s.id) === String(id));
   }
 
+  getByCode(code) {
+    if (!code) return null;
+    const str = String(code).trim();
+    return this.stations.find(s => String(s.code || "").trim() === str || String(s.id || "").trim() === str) || null;
+  }
+
   async add(stationData) {
     const nextId = this.stations.length > 0 ? Math.max(...this.stations.map(s => Number(s.id) || 0)) + 1 : 1;
     const nextSeq = this.stations.length > 0 ? Math.max(...this.stations.map(s => Number(s.seq) || 0)) + 1 : 1;

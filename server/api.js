@@ -6,6 +6,7 @@ const { generateToken, verifyToken } = require("./auth");
 const liveMonitor = require("./monitor");
 const notifier = require("./notifier");
 const waterLevelService = require("./waterlevel");
+const timeseriesService = require("./timeseries");
 
 // 1. Auth: Login
 router.post("/auth/login", async (req, res) => {
@@ -837,6 +838,30 @@ router.get("/monitor/station/:code", (req, res) => {
     const codeOrName = req.params.code;
     const issues = liveMonitor.getIssuesForStation(codeOrName);
     res.json({ success: true, count: issues.length, issues });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 14. Live Monitor: Manual On-Demand Sync
+router.post("/monitor/sync", async (req, res) => {
+  try {
+    const result = await liveMonitor.sync();
+    const data = liveMonitor.getData();
+    res.json({ success: true, ...result, data });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 14-1. Live Monitor: 24h Time Series for 7 Metrics
+router.get("/monitor/timeseries/:code", (req, res) => {
+  try {
+    const code = req.params.code;
+    const monitorData = liveMonitor.getData();
+    const liveMetrics = monitorData.latestMetricsMap ? monitorData.latestMetricsMap[code] : null;
+    const data = timeseriesService.get24hTimeSeries(code, liveMetrics);
+    res.json({ success: true, ...data });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }

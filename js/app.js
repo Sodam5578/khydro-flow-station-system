@@ -65,12 +65,13 @@ class App {
       console.error("Failed to init logsManager:", e);
     }
 
-    // 8. Initialize Schedule & Monitor Managers
+    // 8. Initialize Schedule, Monitor & TimeSeries Managers
     try {
       if (window.scheduleManager) window.scheduleManager.init();
       if (window.monitorManager) window.monitorManager.init();
+      if (window.timeSeriesMenuManager) window.timeSeriesMenuManager.init();
     } catch(e) {
-      console.error("Failed to init schedule/monitor manager:", e);
+      console.error("Failed to init schedule/monitor/timeseries manager:", e);
     }
 
     // 9. Bind Mobile & Modal Specific Events
@@ -166,6 +167,7 @@ class App {
       "calibration": "2026년 유속계 검정 관리",
       "schedules": "팀원 업무 및 현장점검 일정 관리",
       "monitor": "전국 자동유량 실시간 관측자료 품질 모니터링",
+      "timeseries": "실시간 관측자료 시계열 분석",
       "logs": "팀원 작업 이력 및 감사 로그",
       "settings": "데이터 백업 및 시스템 설정"
     };
@@ -206,6 +208,10 @@ class App {
     } else if (tabName === "monitor") {
       if (window.monitorManager) {
         window.monitorManager.loadData();
+      }
+    } else if (tabName === "timeseries") {
+      if (window.timeSeriesMenuManager) {
+        window.timeSeriesMenuManager.onTabVisible();
       }
     } else if (tabName === "logs") {
       if (window.logsManager) {

@@ -1,11 +1,15 @@
 const http = require("http");
 const notifier = require("./notifier");
+const sftpCollector = require("./sftpCollector");
+const ruleEngine = require("./ruleEngine");
 
 class LiveMonitorService {
   constructor() {
     this.targetUrl = "http://183.96.156.168:8080/";
+    this.issueStateMap = {}; // issueKey -> { continuousCount, lastSeenTargetDT }
     this.cache = {
       targetTime: "",
+      source: "INITIALIZING",
       summary: {
         totalTarget: 187,
         received: 186,
@@ -21,6 +25,7 @@ class LiveMonitorService {
       },
       issues: [],
       stationIssuesMap: {},
+      latestMetricsMap: {},
       lastSyncTime: null
     };
     this.syncInterval = 5 * 60 * 1000; // 5 minutes
@@ -30,7 +35,7 @@ class LiveMonitorService {
   init() {
     this.sync();
     this.timer = setInterval(() => this.sync(), this.syncInterval);
-    console.log("🛰️ LiveMonitorService initialized with 5m sync interval.");
+    console.log("🛰️ LiveMonitorService initialized (Primary: SFTP Native, Secondary: HTTP Fallback).");
   }
 
   fetchHtml() {
@@ -47,26 +52,98 @@ class LiveMonitorService {
     });
   }
 
+  /**
+   * Main Sync Dispatcher with Automatic Dual-Source Failover.
+   * 1. Tries Native SFTP Collector & Rule Engine
+   * 2. Falls back to HTTP Scraper if SFTP is unreachable
+   * 3. Retains last known state if both fail
+   */
   async sync() {
+    const targetDT = sftpCollector.getLatestTargetDT();
+    
+    // -------------------------------------------------------------
+    // 1. Primary Source: SFTP Direct Collection & Native Rule Engine
+    // -------------------------------------------------------------
     try {
+      const sftpResult = await sftpCollector.fetchFiles(targetDT);
+      if (sftpResult.success && (Object.keys(sftpResult.advmFiles).length > 0 || Object.keys(sftpResult.ewsvFiles).length > 0)) {
+        const evalResult = ruleEngine.evaluateAll(
+          targetDT,
+          sftpResult.advmFiles,
+          sftpResult.ewsvFiles,
+          this.issueStateMap
+        );
+
+        // Update state map
+        this.issueStateMap = evalResult.nextIssueStateMap;
+
+        // Build stationIssuesMap with aliases (code & station names)
+        const stationIssuesMap = {};
+        evalResult.issues.forEach(iss => {
+          const addMap = (k) => {
+            if (!k) return;
+            const keyStr = String(k).trim();
+            if (!stationIssuesMap[keyStr]) stationIssuesMap[keyStr] = [];
+            stationIssuesMap[keyStr].push(iss);
+          };
+          addMap(iss.stCode);
+          addMap(iss.stationName);
+          addMap(iss.stationName.replace(/[\(\)\s]/g, ""));
+        });
+
+        this.cache = {
+          targetTime: `${targetDT.slice(0, 4)}-${targetDT.slice(4, 6)}-${targetDT.slice(6, 8)} ${targetDT.slice(8, 10)}:${targetDT.slice(10, 12)}`,
+          targetDT,
+          source: "SFTP_NATIVE",
+          summary: evalResult.summary,
+          issues: evalResult.issues,
+          stationIssuesMap,
+          latestMetricsMap: evalResult.latestMetricsMap,
+          lastSyncTime: new Date().toISOString()
+        };
+
+        // Trigger Smart Email Notifier
+        notifier.checkAndNotify(this.cache.issues, this.cache.targetTime).catch(err => {
+          console.warn("⚠️ [LiveMonitor] Notifier error:", err.message);
+        });
+
+        console.log(`✓ [LiveMonitor] SFTP Native Sync success at ${this.cache.lastSyncTime} (${evalResult.issues.length} issues, ${evalResult.summary.actionRequiredStations} stations, source: SFTP_NATIVE)`);
+        return { success: true, source: "SFTP_NATIVE", count: this.cache.issues.length };
+      }
+    } catch (sftpErr) {
+      console.warn("⚠️ [LiveMonitor] Primary SFTP fetch skipped/failed:", sftpErr.message);
+    }
+
+    // -------------------------------------------------------------
+    // 2. Secondary Source: HTTP Fallback Scraper (183.96.156.168:8080)
+    // -------------------------------------------------------------
+    try {
+      console.log("🔄 [LiveMonitor] Switching to Secondary HTTP Fallback scraper...");
       const html = await this.fetchHtml();
-      this.parseAndCache(html);
+      this.parseAndCacheHttp(html);
+      this.cache.source = "HTTP_FALLBACK";
       this.cache.lastSyncTime = new Date().toISOString();
 
-      // Trigger Smart Email Notifier (3-count warning / 6-count critical / resolved)
+      // Trigger Smart Email Notifier
       notifier.checkAndNotify(this.cache.issues, this.cache.targetTime).catch(err => {
         console.warn("⚠️ [LiveMonitor] Notifier error:", err.message);
       });
 
-      console.log(`✓ [LiveMonitor] Synced successfully at ${this.cache.lastSyncTime} (${this.cache.issues.length} issues, ${this.cache.summary.actionRequiredStations} unique stations)`);
-      return { success: true, count: this.cache.issues.length };
-    } catch (e) {
-      console.warn("⚠️ [LiveMonitor] Failed to sync from live server:", e.message);
-      return { success: false, error: e.message };
+      console.log(`✓ [LiveMonitor] HTTP Fallback Sync success at ${this.cache.lastSyncTime} (${this.cache.issues.length} issues, source: HTTP_FALLBACK)`);
+      return { success: true, source: "HTTP_FALLBACK", count: this.cache.issues.length };
+    } catch (httpErr) {
+      console.warn("⚠️ [LiveMonitor] Secondary HTTP Fallback failed:", httpErr.message);
+      if (this.cache.lastSyncTime) {
+        this.cache.source = "CACHED_OFFLINE";
+      }
+      return { success: false, error: httpErr.message, source: this.cache.source };
     }
   }
 
-  parseAndCache(html) {
+  /**
+   * Scrapes HTML from secondary server when SFTP is unreachable.
+   */
+  parseAndCacheHttp(html) {
     if (!html) return;
 
     // 1. Target Time
@@ -88,7 +165,7 @@ class LiveMonitorService {
     const resolvedCount = cards["해소"] || 0;
     const rxRate = totalTarget > 0 ? Number(((received / totalTarget) * 100).toFixed(1)) : 0;
 
-    // 3. Bulletproof Table Parsing via Row Split
+    // 3. Table Parsing
     const issues = [];
     const stationIssuesMap = {};
 
@@ -99,18 +176,13 @@ class LiveMonitorService {
         const tdMatches = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map(m => m[1].trim());
         if (tdMatches.length < 9) return;
 
-        // TD[0]: <span class='tag ongoing'>지속</span>
         const tagMatch = tdMatches[0].match(/class='tag\s*([^']*)'>([^<]*)</i);
         const statusType = tagMatch ? tagMatch[1].trim() : "ongoing";
         const statusLabel = tagMatch ? tagMatch[2].trim() : "지속";
 
-        // TD[1]: method (EWSV / ADVM)
         const method = tdMatches[1];
-
-        // TD[2]: basin (한강 / 낙동강 / 금강 / 영산강)
         const basin = tdMatches[2];
 
-        // TD[3]: 평창군(사초교)<br><small>1002535</small>
         let stationName = tdMatches[3];
         let stCode = "";
         const codeMatch = tdMatches[3].match(/^(.*?)<br><small>(.*?)<\/small>/i);
@@ -121,19 +193,10 @@ class LiveMonitorService {
           stationName = stationName.replace(/<[^>]+>/g, "").trim();
         }
 
-        // TD[4]: sensorNo
         const sensorNo = tdMatches[4];
-
-        // TD[5]: ruleId (e.g. EWSV-R04)
         const ruleId = tdMatches[5];
-
-        // TD[6]: problem
         const problem = tdMatches[6];
-
-        // TD[7]: detail
         const detail = tdMatches[7];
-
-        // TD[8]: continuousCount
         const continuousCount = parseInt(tdMatches[8], 10) || 0;
 
         const issueItem = {
@@ -152,7 +215,6 @@ class LiveMonitorService {
 
         issues.push(issueItem);
 
-        // Register into lookup map with multiple keys
         const addMap = (k) => {
           if (!k) return;
           const keyStr = String(k).trim();
@@ -166,7 +228,6 @@ class LiveMonitorService {
       });
     }
 
-    // Calculate unique abnormal station count
     const uniqueCodes = new Set();
     issues.forEach(i => {
       if (i.stCode) uniqueCodes.add(i.stCode);
@@ -178,6 +239,7 @@ class LiveMonitorService {
 
     this.cache = {
       targetTime,
+      source: "HTTP_FALLBACK",
       summary: {
         totalTarget,
         received,
@@ -193,6 +255,7 @@ class LiveMonitorService {
       },
       issues,
       stationIssuesMap,
+      latestMetricsMap: {},
       lastSyncTime: new Date().toISOString()
     };
   }
