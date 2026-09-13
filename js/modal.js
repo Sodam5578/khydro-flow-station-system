@@ -325,19 +325,6 @@ class ModalManager {
         <div>${operatingHtml}</div>
       </div>
 
-      <div class="detail-section-title">🛠️ 2026년 유지관리 과업 체크리스트 (관리자 상태 변경)</div>
-      ${checklistHtml}
-
-      <div class="detail-section-title" style="display:flex; justify-content:space-between; align-items:center; margin-top:1.25rem;">
-        <span>📜 시설 유지관리 조치 이력 (누적 로그)</span>
-        <button class="btn btn-primary btn-sm" onclick="window.maintenanceHistoryManager.openCreateModal(${st.id})" style="font-size:0.75rem; padding:3px 10px;">
-          ➕ 새 조치 이력 등록
-        </button>
-      </div>
-      <div id="station-history-container-${st.id}" style="margin-bottom:1.25rem;">
-        <div style="text-align:center; padding:1rem; color:#64748b;">⏳ 유지관리 조치 이력을 불러오는 중...</div>
-      </div>
-
       <div class="detail-section-title">📍 시설 기본 제원 및 위치 정보</div>
       <table class="detail-table">
         <tr>
@@ -387,6 +374,19 @@ class ModalManager {
           <td colspan="3" style="color:#b91c1c; font-weight:600;">${st.memo || "특이사항 없음"}</td>
         </tr>
       </table>
+
+      <div class="detail-section-title" style="margin-top:1.25rem;">🛠️ 2026년 유지관리 과업 체크리스트 (관리자 상태 변경)</div>
+      ${checklistHtml}
+
+      <div class="detail-section-title" style="display:flex; justify-content:space-between; align-items:center; margin-top:1.25rem;">
+        <span>📜 시설 유지관리 조치 이력 (누적 로그)</span>
+        <button class="btn btn-primary btn-sm" onclick="window.maintenanceHistoryManager.openCreateModal(${st.id})" style="font-size:0.75rem; padding:3px 10px;">
+          ➕ 새 조치 이력 등록
+        </button>
+      </div>
+      <div id="station-history-container-${st.id}" style="margin-bottom:1.25rem;">
+        <div style="text-align:center; padding:1rem; color:#64748b;">⏳ 유지관리 조치 이력을 불러오는 중...</div>
+      </div>
     `;
   }
 
