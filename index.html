@@ -21,8 +21,8 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="css/main.css">
-  <link rel="stylesheet" href="css/leaflet-custom.css">
+  <link rel="stylesheet" href="css/main.css?v=4.1">
+  <link rel="stylesheet" href="css/leaflet-custom.css?v=3.6">
 </head>
 <body>
 
@@ -141,8 +141,8 @@
               <div class="kpi-icon green">⚡</div>
               <div class="kpi-content">
                 <div class="kpi-label">2026년 정상 운영</div>
-                <div class="kpi-value" id="kpi-operating-stations">137개소</div>
-                <div class="kpi-sub" id="kpi-operating-rate">운영율 61%</div>
+                <div class="kpi-value" id="kpi-operating-stations">176개소</div>
+                <div class="kpi-sub" id="kpi-operating-rate">운영율 78.9%</div>
               </div>
             </div>
 
@@ -150,8 +150,8 @@
               <div class="kpi-icon purple">🌊</div>
               <div class="kpi-content">
                 <div class="kpi-label">유속계 형식 분포 (단독 / 이중화)</div>
-                <div class="kpi-value" id="kpi-gauge-ewsv" style="font-size:1.1rem; line-height:1.2;">로딩중...</div>
-                <div class="kpi-sub">단독 213개소 + 복합이중화 10개소</div>
+                <div class="kpi-value" id="kpi-gauge-ewsv">로딩중...</div>
+                <div class="kpi-sub" id="kpi-gauge-sub">단독 198개소 + 복합이중화 25개소</div>
               </div>
             </div>
 
@@ -164,11 +164,11 @@
               </div>
             </div>
 
-            <div class="kpi-card">
+            <div class="kpi-card" onclick="window.tableManager && window.tableManager.filterBySolarFromDashboard()" style="cursor:pointer;" title="클릭하여 태양광 설치 지점(42개소) 목록 바로 보기">
               <div class="kpi-icon cyan">☀️</div>
               <div class="kpi-content">
-                <div class="kpi-label">태양광 발전 설치</div>
-                <div class="kpi-value" id="kpi-solar-stations">45개소</div>
+                <div class="kpi-label">태양광 발전 설치 <span style="font-size:0.7rem; color:#0284c7; font-weight:700;">(목록보기 ↗)</span></div>
+                <div class="kpi-value" id="kpi-solar-stations">42개소</div>
                 <div class="kpi-sub">친환경 독립전원 지점</div>
               </div>
             </div>
@@ -255,7 +255,7 @@
                 <div class="filter-group">
                   <select id="gis-filter-gauge" class="filter-select" style="width:100%;">
                     <option value="all">전체 형식 보기</option>
-                    <option value="DUAL">⚡ EWSV + ADVM (이중화 10개소)</option>
+                    <option value="DUAL">⚡ EWSV + ADVM (이중화 25개소)</option>
                     <option value="EWSV">EWSV (전자파 단독)</option>
                     <option value="ADVM">ADVM (초음파 단독)</option>
                   </select>
@@ -281,7 +281,11 @@
                 <div class="filter-group">
                   <label class="checkbox-label" style="font-weight:600; color:#7c3aed;">
                     <input type="checkbox" id="gis-check-dual">
-                    <span>⚡ 이중화(EWSV+ADVM) 지점</span>
+                    <span>⚡ 이중화 지점</span>
+                  </label>
+                  <label class="checkbox-label" style="font-weight:600; color:#0284c7;">
+                    <input type="checkbox" id="gis-check-wireless">
+                    <span>📶 EWSV 무선지점</span>
                   </label>
                   <label class="checkbox-label">
                     <input type="checkbox" id="gis-check-operating">
@@ -352,6 +356,16 @@
               <select id="table-filter-year" class="filter-select">
                 <option value="all">전체 설치년도</option>
               </select>
+
+              <label id="table-filter-solar-label" style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.42rem 0.75rem; border:1px solid #cbd5e1; border-radius:8px; background:#ffffff; font-size:0.84rem; font-weight:600; color:#334155; cursor:pointer; user-select:none; transition:all 0.15s ease;">
+                <input type="checkbox" id="table-filter-solar" style="width:15px; height:15px; accent-color:#d97706; cursor:pointer; margin:0;">
+                <span>☀️ 태양광 지점</span>
+              </label>
+
+              <label id="table-filter-wireless-label" style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.42rem 0.75rem; border:1px solid #cbd5e1; border-radius:8px; background:#ffffff; font-size:0.84rem; font-weight:600; color:#334155; cursor:pointer; user-select:none; transition:all 0.15s ease;">
+                <input type="checkbox" id="table-filter-wireless" style="width:15px; height:15px; accent-color:#0284c7; cursor:pointer; margin:0;">
+                <span>📶 EWSV 무선지점</span>
+              </label>
             </div>
 
             <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
@@ -367,6 +381,9 @@
               </button>
               <button class="btn btn-primary btn-sm" onclick="window.excelManager.exportStationsMaster(false)" title="전국 223개소 전체 기본정보 엑셀 다운로드">
                 <span>📥</span> <span>관측시설 기본정보 엑셀 (.xlsx)</span>
+              </button>
+              <button id="btn-stations-excel-import" class="btn btn-outline btn-sm" style="display:none; border-color:#7c3aed; color:#6d28d9; background:#f5f3ff; font-weight:700;" onclick="window.excelManager.triggerExcelUpload()" title="다운로드한 엑셀 또는 현황 엑셀(.xlsx) 수정본을 업로드하여 DB에 즉시 일괄 반영 (관리자 전용)">
+                <span>📤</span> <span>엑셀 밀어넣기</span>
               </button>
             </div>
           </div>
@@ -388,6 +405,7 @@
                     <th onclick="window.tableManager.setSort('mountType')" style="cursor:pointer;">설치방식 ↕</th>
                     <th onclick="window.tableManager.setSort('shelterType')" style="cursor:pointer;">국사형태 ↕</th>
                     <th>26년 운영</th>
+                    <th>태양광</th>
                     <th>홍수특보</th>
                     <th>검정대상</th>
                     <th>관리</th>
@@ -935,9 +953,9 @@
               </div>
               <div class="card-body">
                 <p style="font-size:0.85rem; color:#475569; margin-bottom:1rem; line-height:1.45;">
-                  다운로드받은 <b>종합 마스터팩(.xlsx)</b> 또는 <b>개별 시트(시설 제원, 18개 과업 현황, 유속계 검정, 조치 이력)</b>를 엑셀에서 직접 수정한 뒤 업로드하면, 
-                  시스템이 시트와 열을 자동으로 분석하여 <b>데이터베이스에 즉시 일괄 밀어넣기(반영)</b>합니다.
-                  <br><span style="font-size:0.78rem; color:#64748b;">* 작업 이력 및 일정표는 보호 목적으로 자동 밀어넣기 대상에서 제외됩니다.</span>
+                  시스템에서 다운로드한 <b>관측시설 기본정보 엑셀 / 종합 마스터팩(.xlsx)</b> 또는 <b>원본 현황 엑셀(.xlsx)</b>에서 관측소명, 주소, 유속계 형식·대수, <b>이중화 지점</b>, <b>EWSV 무선지점</b>, <b>태양광 설치 지점</b> 등을 수정한 뒤 업로드하면,
+                  시스템이 열을 자동 분석하여 <b>데이터베이스에 동일 형식으로 즉시 일괄 밀어넣기(반영)</b>합니다.
+                  <br><span style="font-size:0.78rem; color:#64748b;">* 전체 목록 엑셀뿐 아니라 필터 추출된 부분 엑셀(.xlsx)을 수정해 업로드해도 해당 지점만 안전하게 반영됩니다.</span>
                 </p>
 
                 <div id="setting-admin-excel-import" style="position:relative;">
@@ -1524,7 +1542,7 @@
         <!-- Rendered dynamically -->
       </div>
       <div class="modal-footer">
-        <button class="btn btn-danger btn-sm" onclick="window.modalManager.deleteCurrentStation()">삭제</button>
+        <button class="btn btn-danger btn-sm" id="detail-btn-delete" style="display:none;" onclick="window.modalManager.deleteCurrentStation()">삭제</button>
         <button class="btn btn-outline btn-sm" onclick="window.modalManager.openEdit(window.modalManager.currentStationId)">정보 수정</button>
         <button class="btn btn-primary btn-sm" onclick="window.modalManager.closeDetail()">닫기</button>
       </div>
@@ -1684,6 +1702,9 @@
                 </label>
                 <label class="checkbox-label">
                   <input type="checkbox" id="form-solar-install"> 태양광 설치
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="form-ewsv-wireless"> EWSV 무선지점
                 </label>
                 <label class="checkbox-label">
                   <input type="checkbox" id="form-calib-2026"> 26년 검정대상
@@ -2389,26 +2410,26 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Initial Dataset Script -->
-  <script src="data/stations_initial.js?v=3.1"></script>
-  <script src="data/real_standard_basins.js?v=3.1"></script>
+  <script src="data/stations_initial.js?v=4.2"></script>
+  <script src="data/real_standard_basins.js?v=3.7"></script>
 
   <!-- Application Modules -->
-  <script src="js/api.js?v=3.1"></script>
-  <script src="js/data.js?v=3.1"></script>
-  <script src="js/gis.js?v=3.1"></script>
-  <script src="js/table.js?v=3.1"></script>
-  <script src="js/stats.js?v=3.1"></script>
-  <script src="js/maintenance.js?v=3.1"></script>
-  <script src="js/history.js?v=3.1"></script>
-  <script src="js/calibration.js?v=3.1"></script>
-  <script src="js/schedule.js?v=3.1"></script>
-  <script src="js/monitor.js?v=3.1"></script>
-  <script src="js/waterlevel.js?v=3.1"></script>
-  <script src="js/logs.js?v=3.1"></script>
-  <script src="js/timeseriesChart.js?v=3.1"></script>
-  <script src="js/timeseriesMenu.js?v=3.1"></script>
-  <script src="js/modal.js?v=3.1"></script>
-  <script src="js/excel.js?v=3.1"></script>
-  <script src="js/app.js?v=3.1"></script>
+  <script src="js/api.js?v=4.4"></script>
+  <script src="js/data.js?v=4.4"></script>
+  <script src="js/gis.js?v=3.8"></script>
+  <script src="js/table.js?v=3.7"></script>
+  <script src="js/stats.js?v=4.1"></script>
+  <script src="js/maintenance.js?v=3.7"></script>
+  <script src="js/history.js?v=3.7"></script>
+  <script src="js/calibration.js?v=3.7"></script>
+  <script src="js/schedule.js?v=3.7"></script>
+  <script src="js/monitor.js?v=3.7"></script>
+  <script src="js/waterlevel.js?v=3.7"></script>
+  <script src="js/logs.js?v=3.7"></script>
+  <script src="js/timeseriesChart.js?v=3.7"></script>
+  <script src="js/timeseriesMenu.js?v=3.7"></script>
+  <script src="js/modal.js?v=4.4"></script>
+  <script src="js/excel.js?v=4.3"></script>
+  <script src="js/app.js?v=3.7"></script>
 </body>
 </html>

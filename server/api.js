@@ -272,18 +272,23 @@ router.get("/stations", verifyToken, async (req, res) => {
         installYear: r.install_year,
         obsStartYear: r.obs_start_year,
         isOperating2026: r.is_operating === 1,
+        installDirection: maint.installDirection || "",
         gaugeType: r.gauge_type,
         gaugeCategory: r.is_dual === 1 ? "DUAL" : (r.gauge_type?.includes("EWSV") ? "EWSV" : "ADVM"),
         isDualGauge: r.is_dual === 1,
         advmCount: r.advm_count,
         ewsvCount: r.ewsv_count,
+        ewsvWireless: r.ewsv_wireless === 1 || !!maint.ewsvWireless,
         calib2026: r.calib_2026 === 1,
         calibCount2026: r.calib_count,
         calibrationStatus: r.calib_status || "pending",
         calibrationDate: r.calib_date || "",
+        calibrationCertNo: maint.calibrationCertNo || "",
         solarInstall: r.solar_install === 1,
         floodAlert: r.flood_alert === 1,
         droughtAlert: r.drought_alert === 1,
+        drainage: !!maint.drainage,
+        tide: !!maint.tide,
         pollutionTotal: r.pollution_total === 1,
         waterLevelType: r.water_level_type,
         refWaterLevel: r.ref_water_level,
@@ -326,6 +331,13 @@ router.put("/stations/:id", verifyToken, async (req, res) => {
     let maint = typeof st.maintenance === "object" && st.maintenance !== null ? { ...st.maintenance } : {};
     maint.mountType = st.mountType || "-";
     maint.shelterType = st.shelterType || "-";
+    maint.ewsvWireless = !!st.ewsvWireless;
+    if (st.installDirection !== undefined) maint.installDirection = st.installDirection || "";
+    if (st.drainage !== undefined) maint.drainage = !!st.drainage;
+    if (st.tide !== undefined) maint.tide = !!st.tide;
+    if (st.calibrationCertNo !== undefined || st.calibCertNo !== undefined) {
+      maint.calibrationCertNo = st.calibrationCertNo || st.calibCertNo || "";
+    }
 
     if (st.rvBox) {
       maint.rvBox = st.rvBox;
@@ -356,6 +368,7 @@ router.put("/stations/:id", verifyToken, async (req, res) => {
       is_dual: st.isDualGauge ? 1 : 0,
       advm_count: st.advmCount,
       ewsv_count: st.ewsvCount,
+      ewsv_wireless: st.ewsvWireless ? 1 : 0,
       calib_2026: st.calib2026 ? 1 : 0,
       calib_count: st.calibCount2026,
       calib_status: st.calibrationStatus || "pending",
@@ -387,6 +400,97 @@ router.put("/stations/:id", verifyToken, async (req, res) => {
   }
 });
 
+// 5-1. Stations: Add New Station
+router.post("/stations", verifyToken, async (req, res) => {
+  try {
+    const st = req.body;
+    const id = parseInt(st.id, 10);
+    if (!id) {
+      return res.status(400).json({ success: false, message: "유효하지 않은 관측소 ID입니다." });
+    }
+
+    let maint = typeof st.maintenance === "object" && st.maintenance !== null ? { ...st.maintenance } : {};
+    maint.mountType = st.mountType || "-";
+    maint.shelterType = st.shelterType || "-";
+    maint.ewsvWireless = !!st.ewsvWireless;
+    if (st.installDirection !== undefined) maint.installDirection = st.installDirection || "";
+    if (st.drainage !== undefined) maint.drainage = !!st.drainage;
+    if (st.tide !== undefined) maint.tide = !!st.tide;
+    if (st.rvBox) maint.rvBox = st.rvBox;
+    if (st.rvBoxInstalled !== undefined) maint.rvBoxInstalled = st.rvBoxInstalled;
+    if (st.rvBoxAgents) maint.rvBoxAgents = st.rvBoxAgents;
+
+    const insertFields = {
+      seq: st.seq || id,
+      region: st.region || "",
+      river: st.river || "",
+      name: st.name || "",
+      code: st.code || "",
+      address: st.address || "",
+      install_year: st.installYear || "",
+      obs_start_year: st.obsStartYear || "",
+      is_operating: st.isOperating2026 ? 1 : 0,
+      gauge_type: st.gaugeType || "",
+      is_dual: st.isDualGauge ? 1 : 0,
+      advm_count: st.advmCount || "",
+      ewsv_count: st.ewsvCount || "",
+      ewsv_wireless: st.ewsvWireless ? 1 : 0,
+      calib_2026: st.calib2026 ? 1 : 0,
+      calib_count: st.calibCount2026 || "",
+      calib_status: st.calibrationStatus || "pending",
+      calib_date: st.calibrationDate || "",
+      solar_install: st.solarInstall ? 1 : 0,
+      flood_alert: st.floodAlert ? 1 : 0,
+      drought_alert: st.droughtAlert ? 1 : 0,
+      pollution_total: st.pollutionTotal ? 1 : 0,
+      water_level_type: st.waterLevelType || "",
+      ref_water_level: st.refWaterLevel || "",
+      mount_type: st.mountType || "-",
+      shelter_type: st.shelterType || "-",
+      rv_box_installed: st.rvBoxInstalled === true ? 1 : (st.rvBoxInstalled === false ? 0 : null),
+      rv_box_agents: JSON.stringify(st.rvBoxAgents || []),
+      memo: st.memo || "",
+      lat: st.coords?.lat || null,
+      lon: st.coords?.lon || null,
+      lat_dms: st.coords?.latDMS || "",
+      lon_dms: st.coords?.lonDMS || "",
+      maintenance_json: JSON.stringify(maint)
+    };
+
+    await dbService.upsertStation(id, insertFields);
+    logActivity(req.user, "신규등록", st.name, `신규 관측소 등록 (코드: ${st.code || "-"})`, req.ip);
+    res.json({ success: true, message: "신규 관측시설이 등록되었습니다." });
+  } catch (err) {
+    console.error("Add station error:", err);
+    res.status(500).json({ success: false, message: "신규 지점 등록 실패" });
+  }
+});
+
+// 5-1b. Stations: Delete Station (Admin Only)
+router.delete("/stations/:id", verifyToken, async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "관측소 정보 삭제는 최고 관리자(admin)만 가능합니다." });
+    }
+    const id = parseInt(req.params.id, 10);
+    if (!id) {
+      return res.status(400).json({ success: false, message: "유효하지 않은 관측소 ID입니다." });
+    }
+
+    const existing = await dbService.getStationById(id);
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "삭제할 관측소를 찾을 수 없습니다." });
+    }
+
+    await dbService.deleteStation(id);
+    logActivity(req.user, "관측소삭제", existing.name || `지점 #${id}`, `관측시설 정보 삭제 처리 (코드: ${existing.code || "-"})`, req.ip);
+    res.json({ success: true, message: "관측시설이 삭제되었습니다." });
+  } catch (err) {
+    console.error("Delete station error:", err);
+    res.status(500).json({ success: false, message: "관측소 삭제 실패: " + err.message });
+  }
+});
+
 // 5-2. Stations: Batch Update Stations (Admin Only Excel Import & Sync)
 router.post("/stations/batch", verifyToken, async (req, res) => {
   try {
@@ -398,68 +502,82 @@ router.post("/stations/batch", verifyToken, async (req, res) => {
       return res.status(400).json({ success: false, message: "일괄 갱신할 지점 데이터가 비어있습니다." });
     }
 
+    const validStations = stations.filter(st => parseInt(st.id, 10) > 0);
     let updatedCount = 0;
-    for (const st of stations) {
-      const id = parseInt(st.id, 10);
-      if (!id) continue;
 
-      let maint = typeof st.maintenance === "object" && st.maintenance !== null ? { ...st.maintenance } : {};
-      maint.mountType = st.mountType || "-";
-      maint.shelterType = st.shelterType || "-";
+    // Process in parallel chunks of 20 for fast & reliable Supabase + SQLite sync
+    const chunkSize = 20;
+    for (let i = 0; i < validStations.length; i += chunkSize) {
+      const chunk = validStations.slice(i, i + chunkSize);
+      await Promise.all(chunk.map(async (st) => {
+        const id = parseInt(st.id, 10);
 
-      if (st.rvBox) {
-        maint.rvBox = st.rvBox;
-      } else if (st.rvBoxStatus || st.rvBoxInstalled !== undefined) {
-        maint.rvBox = {
-          isTarget: st.rvBoxStatus !== "미운영/대상외",
-          installed: st.rvBoxInstalled === true ? true : (st.rvBoxInstalled === false ? false : null),
-          status: st.rvBoxStatus || (st.rvBoxInstalled === true ? "설치완료" : (st.rvBoxInstalled === false ? "미설치" : "미운영/대상외")),
-          logger: (st.rvBoxAgents || []).find(a => a.endsWith('_L') || a.includes('양수장')) ? { agentName: (st.rvBoxAgents || []).find(a => a.endsWith('_L') || a.includes('양수장')), installed: st.rvBoxInstalled === true } : null,
-          sender: (st.rvBoxAgents || []).find(a => a.endsWith('_S')) ? { agentName: (st.rvBoxAgents || []).find(a => a.endsWith('_S')), installed: st.rvBoxInstalled === true } : null,
-          agents: st.rvBoxAgents || []
+        let maint = typeof st.maintenance === "object" && st.maintenance !== null ? { ...st.maintenance } : {};
+        maint.mountType = st.mountType || "-";
+        maint.shelterType = st.shelterType || "-";
+        maint.ewsvWireless = !!st.ewsvWireless;
+        if (st.installDirection !== undefined) maint.installDirection = st.installDirection || "";
+        if (st.drainage !== undefined) maint.drainage = !!st.drainage;
+        if (st.tide !== undefined) maint.tide = !!st.tide;
+        if (st.calibrationCertNo !== undefined || st.calibCertNo !== undefined) {
+          maint.calibrationCertNo = st.calibrationCertNo || st.calibCertNo || "";
+        }
+
+        if (st.rvBox) {
+          maint.rvBox = st.rvBox;
+        } else if (st.rvBoxStatus || st.rvBoxInstalled !== undefined) {
+          maint.rvBox = {
+            isTarget: st.rvBoxStatus !== "미운영/대상외" && st.rvBoxStatus !== "대상외",
+            installed: st.rvBoxInstalled === true ? true : (st.rvBoxInstalled === false ? false : null),
+            status: st.rvBoxStatus || (st.rvBoxInstalled === true ? "설치완료" : (st.rvBoxInstalled === false ? "미설치" : "미운영/대상외")),
+            logger: (st.rvBoxAgents || []).find(a => a.endsWith('_L') || a.includes('양수장')) ? { agentName: (st.rvBoxAgents || []).find(a => a.endsWith('_L') || a.includes('양수장')), installed: st.rvBoxInstalled === true } : null,
+            sender: (st.rvBoxAgents || []).find(a => a.endsWith('_S')) ? { agentName: (st.rvBoxAgents || []).find(a => a.endsWith('_S')), installed: st.rvBoxInstalled === true } : null,
+            agents: st.rvBoxAgents || []
+          };
+        }
+        if (st.rvBoxInstalled !== undefined) maint.rvBoxInstalled = st.rvBoxInstalled;
+        if (st.rvBoxAgents) maint.rvBoxAgents = st.rvBoxAgents;
+
+        const updateFields = {
+          seq: st.seq || id,
+          region: st.region || "",
+          river: st.river || "",
+          name: st.name || "",
+          code: st.code || "",
+          address: st.address || "",
+          install_year: st.installYear || "",
+          obs_start_year: st.obsStartYear || "",
+          is_operating: st.isOperating2026 ? 1 : 0,
+          gauge_type: st.gaugeType || "",
+          is_dual: st.isDualGauge ? 1 : 0,
+          advm_count: st.advmCount || "",
+          ewsv_count: st.ewsvCount || "",
+          ewsv_wireless: st.ewsvWireless ? 1 : 0,
+          calib_2026: st.calib2026 ? 1 : 0,
+          calib_count: st.calibCount2026 || "",
+          calib_status: st.calibrationStatus || st.calibStatus || "pending",
+          calib_date: st.calibrationDate || st.calibDate || "",
+          solar_install: st.solarInstall ? 1 : 0,
+          flood_alert: st.floodAlert ? 1 : 0,
+          drought_alert: st.droughtAlert ? 1 : 0,
+          pollution_total: st.pollutionTotal ? 1 : 0,
+          water_level_type: st.waterLevelType || "",
+          ref_water_level: st.refWaterLevel || "",
+          mount_type: st.mountType || "-",
+          shelter_type: st.shelterType || "-",
+          rv_box_installed: st.rvBoxInstalled === true ? 1 : (st.rvBoxInstalled === false ? 0 : null),
+          rv_box_agents: JSON.stringify(st.rvBoxAgents || []),
+          memo: st.memo || "",
+          lat: st.coords?.lat || null,
+          lon: st.coords?.lon || null,
+          lat_dms: st.coords?.latDMS || "",
+          lon_dms: st.coords?.lonDMS || "",
+          maintenance_json: JSON.stringify(maint)
         };
-      }
-      if (st.rvBoxInstalled !== undefined) maint.rvBoxInstalled = st.rvBoxInstalled;
-      if (st.rvBoxAgents) maint.rvBoxAgents = st.rvBoxAgents;
 
-      const updateFields = {
-        seq: st.seq || id,
-        region: st.region,
-        river: st.river,
-        name: st.name,
-        code: st.code,
-        address: st.address,
-        install_year: st.installYear,
-        obs_start_year: st.obsStartYear,
-        is_operating: st.isOperating2026 ? 1 : 0,
-        gauge_type: st.gaugeType,
-        is_dual: st.isDualGauge ? 1 : 0,
-        advm_count: st.advmCount,
-        ewsv_count: st.ewsvCount,
-        calib_2026: st.calib2026 ? 1 : 0,
-        calib_count: st.calibCount2026,
-        calib_status: st.calibrationStatus || st.calibStatus || "pending",
-        calib_date: st.calibrationDate || st.calibDate || "",
-        solar_install: st.solarInstall ? 1 : 0,
-        flood_alert: st.floodAlert ? 1 : 0,
-        drought_alert: st.droughtAlert ? 1 : 0,
-        pollution_total: st.pollutionTotal ? 1 : 0,
-        water_level_type: st.waterLevelType,
-        ref_water_level: st.refWaterLevel,
-        mount_type: st.mountType || "-",
-        shelter_type: st.shelterType || "-",
-        rv_box_installed: st.rvBoxInstalled === true ? 1 : (st.rvBoxInstalled === false ? 0 : null),
-        rv_box_agents: JSON.stringify(st.rvBoxAgents || []),
-        memo: st.memo,
-        lat: st.coords?.lat || null,
-        lon: st.coords?.lon || null,
-        lat_dms: st.coords?.latDMS || "",
-        lon_dms: st.coords?.lonDMS || "",
-        maintenance_json: JSON.stringify(maint)
-      };
-
-      await dbService.updateStation(id, updateFields);
-      updatedCount++;
+        await dbService.upsertStation(id, updateFields);
+        updatedCount++;
+      }));
     }
 
     logActivity(req.user, "엑셀일괄갱신", `${updatedCount}개소 일괄반영`, `관리자 엑셀 수동 편집 파일 일괄 데이터베이스 밀어넣기 처리`, req.ip);
@@ -563,9 +681,11 @@ router.post("/stations/:id/maintenance/save", verifyToken, async (req, res) => {
       return res.status(400).json({ success: false, message: "유효한 유지관리 데이터가 아닙니다." });
     }
 
-    maintenance.hasMaintData = true;
+    let existingMaint = {};
+    try { existingMaint = JSON.parse(row.maintenance_json || "{}"); } catch(e) {}
+    const mergedMaint = { ...existingMaint, ...maintenance, hasMaintData: true };
 
-    await dbService.updateStation(stationId, { maintenance_json: JSON.stringify(maintenance) });
+    await dbService.updateStation(stationId, { maintenance_json: JSON.stringify(mergedMaint) });
 
     logActivity(
       req.user,
@@ -575,7 +695,7 @@ router.post("/stations/:id/maintenance/save", verifyToken, async (req, res) => {
       req.ip
     );
 
-    res.json({ success: true, maintenance });
+    res.json({ success: true, maintenance: mergedMaint });
   } catch (err) {
     console.error("Maintenance save error:", err);
     res.status(500).json({ success: false, message: "유지관리 과업 저장 실패: " + err.message });

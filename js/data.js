@@ -130,18 +130,19 @@ class DataManager {
   }
 
   async delete(id) {
+    if (window.apiClient && window.apiClient.user?.role !== "admin") {
+      throw new Error("관측소 정보 삭제는 최고 관리자(admin)만 가능합니다.");
+    }
     const idx = this.stations.findIndex(s => String(s.id) === String(id));
     if (idx !== -1) {
-      const removed = this.stations.splice(idx, 1);
-
       if (this.isServerConnected && window.apiClient) {
-        try {
-          await window.apiClient.deleteStation(id);
-        } catch(e) {
-          console.error("Server delete station failed:", e);
+        const res = await window.apiClient.deleteStation(id);
+        if (!res || !res.success) {
+          throw new Error(res?.message || "관측소 삭제 권한이 없거나 서버 오류가 발생했습니다.");
         }
       }
 
+      const removed = this.stations.splice(idx, 1);
       this.saveToStorage();
       return removed[0];
     }
@@ -229,6 +230,15 @@ class DataManager {
 
     this.saveToStorage();
     return st;
+  }
+
+  importAll(stations) {
+    if (Array.isArray(stations)) {
+      this.stations = JSON.parse(JSON.stringify(stations));
+      this.saveToStorage();
+      return true;
+    }
+    return false;
   }
 
   resetToInitial() {

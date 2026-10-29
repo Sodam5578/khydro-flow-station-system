@@ -107,6 +107,7 @@ async function initDb() {
     // Ensure columns exist in SQLite if migrated
     sqliteDb.run(`ALTER TABLE stations ADD COLUMN mount_type TEXT DEFAULT "-"`, () => {});
     sqliteDb.run(`ALTER TABLE stations ADD COLUMN shelter_type TEXT DEFAULT "-"`, () => {});
+    sqliteDb.run(`ALTER TABLE stations ADD COLUMN ewsv_wireless INTEGER DEFAULT 0`, () => {});
 
     sqliteDb.run(`
       CREATE TABLE IF NOT EXISTS activity_logs (
@@ -378,6 +379,7 @@ const dbService = {
       delete supabaseFields.shelter_type;
       delete supabaseFields.rv_box_installed;
       delete supabaseFields.rv_box_agents;
+      delete supabaseFields.ewsv_wireless;
       const { data, error } = await supabase.from("stations").update(supabaseFields).eq("id", id).select();
       if (error) console.warn("Supabase update warning:", error.message);
     }
@@ -388,6 +390,48 @@ const dbService = {
     values.push(id);
     return new Promise((resolve, reject) => {
       sqliteDb.run(`UPDATE stations SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, values, function(err) {
+        if (err) return reject(err);
+        resolve({ id, changes: this.changes });
+      });
+    });
+  },
+
+  async upsertStation(id, updateFields) {
+    if (supabase) {
+      const supabaseFields = { id, ...updateFields };
+      delete supabaseFields.mount_type;
+      delete supabaseFields.shelter_type;
+      delete supabaseFields.rv_box_installed;
+      delete supabaseFields.rv_box_agents;
+      delete supabaseFields.ewsv_wireless;
+      const { error } = await supabase.from("stations").upsert(supabaseFields, { onConflict: "id" });
+      if (error) console.warn("Supabase upsert warning:", error.message);
+    }
+    const keys = Object.keys(updateFields);
+    const values = Object.values(updateFields);
+    const setClause = keys.map(k => `${k} = ?`).join(", ");
+    const updateVals = [...values, id];
+    return new Promise((resolve, reject) => {
+      sqliteDb.run(`UPDATE stations SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, updateVals, function(err) {
+        if (err) return reject(err);
+        if (this.changes > 0) return resolve({ id, changes: this.changes });
+        const insKeys = ["id", ...keys];
+        const placeholders = insKeys.map(() => "?").join(", ");
+        sqliteDb.run(`INSERT INTO stations (${insKeys.join(", ")}) VALUES (${placeholders})`, [id, ...values], function(insErr) {
+          if (insErr) return reject(insErr);
+          resolve({ id, changes: 1, inserted: true });
+        });
+      });
+    });
+  },
+
+  async deleteStation(id) {
+    if (supabase) {
+      const { error } = await supabase.from("stations").delete().eq("id", id);
+      if (error) console.warn("Supabase station delete warning:", error.message);
+    }
+    return new Promise((resolve, reject) => {
+      sqliteDb.run("DELETE FROM stations WHERE id = ?", [id], function(err) {
         if (err) return reject(err);
         resolve({ id, changes: this.changes });
       });
@@ -414,11 +458,11 @@ const dbService = {
       const stmt = `INSERT INTO stations (
         id, seq, region, river, name, code, address,
         install_year, obs_start_year, is_operating, gauge_type, is_dual,
-        advm_count, ewsv_count, calib_2026, calib_count, calib_status, calib_date,
+        advm_count, ewsv_count, ewsv_wireless, calib_2026, calib_count, calib_status, calib_date,
         solar_install, flood_alert, drought_alert, pollution_total,
         water_level_type, ref_water_level, mount_type, shelter_type,
         memo, lat, lon, lat_dms, lon_dms, maintenance_json
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
       const values = [
         st.id,
@@ -435,6 +479,7 @@ const dbService = {
         st.isDualGauge ? 1 : 0,
         st.advmCount || "",
         st.ewsvCount || "",
+        st.ewsvWireless ? 1 : 0,
         st.calib2026 ? 1 : 0,
         st.calibCount2026 || "",
         st.calibrationStatus || "pending",

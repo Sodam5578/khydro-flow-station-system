@@ -40,7 +40,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -54,7 +58,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 2,
@@ -97,7 +102,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -111,7 +120,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 3,
@@ -119,7 +129,7 @@
     "region": "한강",
     "river": "골지천",
     "name": "정선군(남평대교)",
-    "address": "강원도 정선군 북평면 남평리 남평대교",
+    "address": "강원특별자치도 정선군 북평면 남평리 남평대교",
     "code": "1001529",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -183,7 +193,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -209,7 +223,8 @@
         "1001529_남평대교_L",
         "1001529_남평대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 4,
@@ -252,7 +267,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -266,7 +285,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 5,
@@ -274,7 +294,7 @@
     "region": "한강",
     "river": "어천",
     "name": "정선군(와평교)",
-    "address": "강원도 정선군 정선읍 신월리 와평교",
+    "address": "강원특별자치도 정선군 정선읍 신월리 와평교",
     "code": "1001545",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -338,7 +358,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -364,7 +388,8 @@
         "1001545_와평교_L",
         "1001545_와평교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 6,
@@ -436,7 +461,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -462,7 +491,8 @@
         "1001555_정선제1교_L",
         "1001555_정선제1교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 7,
@@ -470,7 +500,7 @@
     "region": "한강",
     "river": "한강",
     "name": "영월군(영월대교)",
-    "address": "강원도 영월군 영월읍 덕포리 486-28",
+    "address": "강원특별자치도 영월군 영월읍 덕포리 486-28",
     "code": "1001590",
     "installYear": "2014",
     "obsStartYear": "2014",
@@ -534,7 +564,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -560,7 +594,8 @@
         "1001590_영월대교_L",
         "1001590_영월대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 8,
@@ -568,7 +603,7 @@
     "region": "한강",
     "river": "대화천",
     "name": "평창군(사초교)",
-    "address": "강원도 평창군 대화면 하안미리 사초교",
+    "address": "강원특별자치도 평창군 대화면 하안미리 사초교",
     "code": "1002535",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -632,7 +667,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -658,7 +697,8 @@
         "1002535_사초교_L",
         "1002535_사초교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 9,
@@ -730,7 +770,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -756,7 +800,8 @@
         "1002550_평창교_L",
         "1002550_평창교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 10,
@@ -764,7 +809,7 @@
     "region": "한강",
     "river": "주천강",
     "name": "영월군(주천교)",
-    "address": "강원도 영월군 주천면 주천리 주천교",
+    "address": "강원특별자치도 영월군 주천면 주천리 주천교",
     "code": "1002585",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -828,7 +873,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -854,7 +903,8 @@
         "1002585_주천교_L",
         "1002585_주천교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 11,
@@ -862,7 +912,7 @@
     "region": "한강",
     "river": "평창강",
     "name": "영월군(팔괴교)",
-    "address": "강원도 영월군 영월읍 하송리 팔괴교",
+    "address": "강원특별자치도 영월군 영월읍 하송리 팔괴교",
     "code": "1002598",
     "installYear": "2017",
     "obsStartYear": "2017",
@@ -926,7 +976,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -952,7 +1006,8 @@
         "1002598_팔괴교_L",
         "1002598_팔괴교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 12,
@@ -995,7 +1050,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -1009,7 +1068,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 13,
@@ -1074,7 +1134,11 @@
         "cctvWired": true,
         "solar": true
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -1100,7 +1164,8 @@
         "1003530_북벽교_L",
         "1003530_북벽교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 14,
@@ -1172,7 +1237,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -1198,7 +1267,8 @@
         "1003545_단양1교_L",
         "1003545_단양1교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 15,
@@ -1270,7 +1340,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -1296,7 +1370,8 @@
         "1003558_부수동교_L",
         "1003558_부수동교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 16,
@@ -1339,7 +1414,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -1353,7 +1432,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 17,
@@ -1425,7 +1505,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -1451,7 +1535,8 @@
         "1004593_목도교_L",
         "1004593_목도교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 18,
@@ -1523,7 +1608,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -1549,7 +1638,8 @@
         "1004595_국원대교_L",
         "1004595_국원대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 19,
@@ -1568,11 +1658,11 @@
     "drainage": true,
     "tide": false,
     "pollutionTotal": true,
-    "gaugeType": "ADVM",
-    "gaugeCategory": "ADVM",
-    "isDualGauge": false,
+    "gaugeType": "EWSV, ADVM",
+    "gaugeCategory": "DUAL",
+    "isDualGauge": true,
     "advmCount": "2",
-    "ewsvCount": "-",
+    "ewsvCount": "2",
     "calib2026": false,
     "calibCount2026": "",
     "solarInstall": true,
@@ -1614,7 +1704,11 @@
         "cctvWired": false,
         "solar": true
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": true,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -1640,7 +1734,8 @@
         "1005597_남한강대교_L",
         "1005597_남한강대교_S"
       ]
-    }
+    },
+    "ewsvWireless": true
   },
   {
     "id": 20,
@@ -1648,7 +1743,7 @@
     "region": "한강",
     "river": "원주천",
     "name": "원주시(원주교)",
-    "address": "강원도 원주시 봉산동 원주교",
+    "address": "강원특별자치도 원주시 봉산동 원주교",
     "code": "1006565",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -1712,7 +1807,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -1738,7 +1837,8 @@
         "1006565_원주교_L",
         "1006565_원주교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 21,
@@ -1746,7 +1846,7 @@
     "region": "한강",
     "river": "섬강",
     "name": "원주시(지정대교)",
-    "address": "강원도 원주시 지정면 간현리 1023-10",
+    "address": "강원특별자치도 원주시 지정면 간현리 1023-10",
     "code": "1006580",
     "installYear": "2015",
     "obsStartYear": "2015",
@@ -1760,7 +1860,7 @@
     "gaugeType": "ADVM",
     "gaugeCategory": "ADVM",
     "isDualGauge": false,
-    "advmCount": "1",
+    "advmCount": "2",
     "ewsvCount": "-",
     "calib2026": false,
     "calibCount2026": "",
@@ -1810,7 +1910,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -1836,7 +1940,8 @@
         "1006580_지정대교_L",
         "1006580_지정대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 22,
@@ -1908,7 +2013,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -1934,7 +2043,8 @@
         "1006590_문막교_L",
         "1006590_문막교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 23,
@@ -2006,7 +2116,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -2027,7 +2141,8 @@
       "agents": [
         "1007501_대신양수장"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 24,
@@ -2099,7 +2214,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -2120,7 +2239,8 @@
       "agents": [
         "1007502_능서1양수장"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 25,
@@ -2192,7 +2312,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -2218,7 +2342,8 @@
         "1007510_총천교_L",
         "1007510_총천교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 26,
@@ -2290,7 +2415,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -2316,7 +2445,8 @@
         "1007515_원부교_L",
         "1007515_원부교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 27,
@@ -2381,7 +2511,11 @@
         "cctvWired": true,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -2407,7 +2541,8 @@
         "1007525_남한강교_L",
         "1007525_남한강교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 28,
@@ -2472,7 +2607,11 @@
         "cctvWired": false,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -2498,7 +2637,8 @@
         "1007535_여주대교_L",
         "1007535_여주대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 29,
@@ -2570,7 +2710,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -2596,7 +2740,8 @@
         "1007540_율극교_L",
         "1007540_율극교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 30,
@@ -2668,7 +2813,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -2694,7 +2843,8 @@
         "1007541_여주보(하류)_L",
         "1007541_여주보(하류)_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 31,
@@ -2766,7 +2916,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -2792,7 +2946,8 @@
         "1007562_이포보(상류)_L",
         "1007562_이포보(상류)_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 32,
@@ -2857,7 +3012,11 @@
         "cctvWired": false,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -2883,7 +3042,8 @@
         "1007585_양평교_L",
         "1007585_양평교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 33,
@@ -2891,7 +3051,7 @@
     "region": "한강",
     "river": "내린천",
     "name": "인제군(왕성동교)",
-    "address": "강원도 인제군 상남면 미산리 왕성동교",
+    "address": "강원특별자치도 인제군 상남면 미산리 왕성동교",
     "code": "1012530",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -2955,7 +3115,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -2981,7 +3145,8 @@
         "1012530_왕성동교_L",
         "1012530_왕성동교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 34,
@@ -2989,7 +3154,7 @@
     "region": "한강",
     "river": "방태천",
     "name": "인제군(현리교)",
-    "address": "강원도 인제군 기린면 현리 현리교",
+    "address": "강원특별자치도 인제군 기린면 현리 현리교",
     "code": "1012540",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -3053,7 +3218,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -3079,7 +3248,8 @@
         "1012540_현리교_L",
         "1012540_현리교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 35,
@@ -3151,7 +3321,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -3177,7 +3351,8 @@
         "1013555_가평교_L",
         "1013555_가평교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 36,
@@ -3249,7 +3424,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -3275,7 +3454,8 @@
         "1014550_홍천교_L",
         "1014550_홍천교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 37,
@@ -3347,7 +3527,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -3373,7 +3557,8 @@
         "1015520_대보교_L",
         "1015520_대보교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 38,
@@ -3416,7 +3601,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -3430,7 +3619,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 39,
@@ -3473,7 +3663,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -3487,7 +3681,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 40,
@@ -3559,7 +3754,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -3585,7 +3784,8 @@
         "1018540_광진교_L",
         "1018540_광진교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 41,
@@ -3604,11 +3804,11 @@
     "drainage": true,
     "tide": false,
     "pollutionTotal": true,
-    "gaugeType": "ADVM",
-    "gaugeCategory": "ADVM",
-    "isDualGauge": false,
+    "gaugeType": "EWSV, ADVM",
+    "gaugeCategory": "DUAL",
+    "isDualGauge": true,
     "advmCount": "1",
-    "ewsvCount": "-",
+    "ewsvCount": "2",
     "calib2026": false,
     "calibCount2026": "",
     "solarInstall": false,
@@ -3657,7 +3857,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -3683,7 +3887,8 @@
         "1018555_대곡교_L",
         "1018555_대곡교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 42,
@@ -3726,7 +3931,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -3740,7 +3949,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 43,
@@ -3805,7 +4015,11 @@
         "cctvWired": true,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -3831,7 +4045,8 @@
         "1018575_중랑교_L",
         "1018575_중랑교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 44,
@@ -3903,7 +4118,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": false,
+      "tide": true
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -3929,7 +4148,8 @@
         "1018583_한강대교_L",
         "1018583_한강대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 45,
@@ -4001,7 +4221,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -4027,7 +4251,8 @@
         "1018595_너부대교_L",
         "1018595_너부대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 46,
@@ -4050,7 +4275,7 @@
     "gaugeCategory": "EWSV",
     "isDualGauge": false,
     "advmCount": "-",
-    "ewsvCount": "1",
+    "ewsvCount": "10",
     "calib2026": true,
     "calibCount2026": "10",
     "solarInstall": false,
@@ -4099,7 +4324,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -4125,7 +4354,8 @@
         "1018597_오금교_L",
         "1018597_오금교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 47,
@@ -4190,7 +4420,11 @@
         "cctvWired": false,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -4216,7 +4450,8 @@
         "1018598_신대방1교_L",
         "1018598_신대방1교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 48,
@@ -4288,7 +4523,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -4314,7 +4553,8 @@
         "1019567_원당교_L",
         "1019567_원당교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 49,
@@ -4386,7 +4626,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -4412,7 +4656,8 @@
         "1021550_필승교_L",
         "1021550_필승교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 50,
@@ -4484,7 +4729,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -4510,7 +4759,8 @@
         "1021580_임진교_L",
         "1021580_임진교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 51,
@@ -4553,7 +4803,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -4567,7 +4821,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 52,
@@ -4639,7 +4894,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -4665,7 +4924,8 @@
         "1022547_포천대교_L",
         "1022547_포천대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 53,
@@ -4708,7 +4968,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -4722,7 +4986,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 54,
@@ -4794,7 +5059,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -4820,7 +5089,8 @@
         "1022562_차탄교_L",
         "1022562_차탄교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 55,
@@ -4863,7 +5133,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -4877,7 +5151,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 56,
@@ -4949,7 +5224,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -4975,7 +5254,8 @@
         "1022570_신천교_L",
         "1022570_신천교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 57,
@@ -5047,7 +5327,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -5073,7 +5357,8 @@
         "1022580_사랑교_L",
         "1022580_사랑교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 58,
@@ -5092,11 +5377,11 @@
     "drainage": false,
     "tide": false,
     "pollutionTotal": false,
-    "gaugeType": "ADVM",
-    "gaugeCategory": "ADVM",
-    "isDualGauge": false,
+    "gaugeType": "EWSV, ADVM",
+    "gaugeCategory": "DUAL",
+    "isDualGauge": true,
     "advmCount": "1",
-    "ewsvCount": "-",
+    "ewsvCount": "2",
     "calib2026": false,
     "calibCount2026": "",
     "solarInstall": false,
@@ -5138,7 +5423,11 @@
         "cctvWired": true,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -5164,7 +5453,8 @@
         "1023560_비룡대교_L",
         "1023560_비룡대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 59,
@@ -5236,7 +5526,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": true
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -5262,7 +5556,8 @@
         "1023570_통일대교_L",
         "1023570_통일대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 60,
@@ -5327,7 +5622,11 @@
         "cctvWired": true,
         "solar": true
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -5353,7 +5652,8 @@
         "1101535_군문교_L",
         "1101535_군문교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 61,
@@ -5425,7 +5725,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -5451,7 +5755,8 @@
         "1101545_탑동대교_L",
         "1101545_탑동대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 62,
@@ -5523,7 +5828,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -5549,7 +5858,8 @@
         "1101570_동연교_L",
         "1101570_동연교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 63,
@@ -5621,7 +5931,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -5647,7 +5961,8 @@
         "1101580_팽성대교_L",
         "1101580_팽성대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 64,
@@ -5655,7 +5970,7 @@
     "region": "한강",
     "river": "강릉 남대천",
     "name": "강릉시(회산교)",
-    "address": "강원도 강릉시 회산동 회산교",
+    "address": "강원특별자치도 강릉시 회산동 회산교",
     "code": "1302548",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -5719,7 +6034,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -5745,7 +6064,8 @@
         "1302548_회산교_L",
         "1302548_회산교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 65,
@@ -5788,7 +6108,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -5802,7 +6126,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 66,
@@ -5810,7 +6135,7 @@
     "region": "낙동강",
     "river": "황지천",
     "name": "태백시(문화교)",
-    "address": "강원도 태백시 장성동 216 (문화교)",
+    "address": "강원특별자치도 태백시 장성동 216 (문화교)",
     "code": "2001510",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -5874,7 +6199,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -5900,7 +6229,8 @@
         "2001510_문화교_L",
         "2001510_문화교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 67,
@@ -5965,7 +6295,11 @@
         "cctvWired": true,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -5991,7 +6325,8 @@
         "2003570_구담교_L",
         "2003570_구담교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 68,
@@ -6034,7 +6369,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -6048,7 +6387,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 69,
@@ -6091,7 +6431,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -6105,7 +6449,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 70,
@@ -6177,7 +6522,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -6203,7 +6552,8 @@
         "2004568_신예천교_L",
         "2004568_신예천교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 71,
@@ -6275,7 +6625,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -6301,7 +6655,8 @@
         "2004580_회룡교_L",
         "2004580_회룡교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 72,
@@ -6373,7 +6728,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -6399,7 +6758,8 @@
         "2004595_산양교_L",
         "2004595_산양교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 73,
@@ -6471,7 +6831,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -6497,7 +6861,8 @@
         "2005560_김용리_L",
         "2005560_김용리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 74,
@@ -6540,7 +6905,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -6554,7 +6923,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 75,
@@ -6626,7 +6996,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -6652,7 +7026,8 @@
         "2006565_후천교_L",
         "2006565_후천교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 76,
@@ -6695,7 +7070,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -6709,7 +7088,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 77,
@@ -6731,7 +7111,7 @@
     "gaugeType": "ADVM",
     "gaugeCategory": "ADVM",
     "isDualGauge": false,
-    "advmCount": "1",
+    "advmCount": "2",
     "ewsvCount": "-",
     "calib2026": false,
     "calibCount2026": "",
@@ -6774,7 +7154,11 @@
         "cctvWired": false,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -6800,7 +7184,8 @@
         "2007560_상풍교_L",
         "2007560_상풍교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 78,
@@ -6865,7 +7250,11 @@
         "cctvWired": false,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -6891,7 +7280,8 @@
         "2007586_강창교_L",
         "2007586_강창교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 79,
@@ -6934,7 +7324,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -6948,7 +7342,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 80,
@@ -7020,7 +7415,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -7046,7 +7445,8 @@
         "2008533_장송교_L",
         "2008533_장송교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 81,
@@ -7118,7 +7518,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -7144,7 +7548,8 @@
         "2008550_무성리_L",
         "2008550_무성리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 82,
@@ -7209,7 +7614,11 @@
         "cctvWired": true,
         "solar": true
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -7235,7 +7644,8 @@
         "2009520_낙단교_L",
         "2009520_낙단교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 83,
@@ -7300,7 +7710,11 @@
         "cctvWired": true,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -7326,7 +7740,8 @@
         "2009570_일선교_L",
         "2009570_일선교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 84,
@@ -7398,7 +7813,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -7424,7 +7843,8 @@
         "2010550_김천교_L",
         "2010550_김천교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 85,
@@ -7496,7 +7916,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -7522,7 +7946,8 @@
         "2011525_양포교_L",
         "2011525_양포교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 86,
@@ -7587,7 +8012,11 @@
         "cctvWired": true,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -7613,7 +8042,8 @@
         "2011540_구미대교_L",
         "2011540_구미대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 87,
@@ -7678,7 +8108,11 @@
         "cctvWired": true,
         "solar": true
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -7704,7 +8138,8 @@
         "2011550_호국의다리_L",
         "2011550_호국의다리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 88,
@@ -7769,7 +8204,11 @@
         "cctvWired": true,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -7795,7 +8234,8 @@
         "2011560_성주대교_L",
         "2011560_성주대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 89,
@@ -7838,7 +8278,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -7852,7 +8296,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 90,
@@ -7924,7 +8369,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -7950,7 +8399,8 @@
         "2012528_영동교_L",
         "2012528_영동교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 91,
@@ -8022,7 +8472,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -8048,7 +8502,8 @@
         "2012540_금창교_L",
         "2012540_금창교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 92,
@@ -8091,7 +8546,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -8105,7 +8564,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 93,
@@ -8170,7 +8630,11 @@
         "cctvWired": false,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -8196,7 +8660,8 @@
         "2012560_신암동_L",
         "2012560_신암동_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 94,
@@ -8239,7 +8704,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -8253,7 +8722,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 95,
@@ -8325,7 +8795,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -8351,7 +8825,8 @@
         "2012595_강창교_L",
         "2012595_강창교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 96,
@@ -8423,7 +8898,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -8449,7 +8928,8 @@
         "2013540_귀원교_L",
         "2013540_귀원교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 97,
@@ -8521,7 +9001,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -8547,7 +9031,8 @@
         "2013550_회천교_L",
         "2013550_회천교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 98,
@@ -8566,11 +9051,11 @@
     "drainage": true,
     "tide": false,
     "pollutionTotal": false,
-    "gaugeType": "ADVM",
-    "gaugeCategory": "ADVM",
-    "isDualGauge": false,
+    "gaugeType": "EWSV, ADVM",
+    "gaugeCategory": "DUAL",
+    "isDualGauge": true,
     "advmCount": "2",
-    "ewsvCount": "-",
+    "ewsvCount": "2",
     "calib2026": false,
     "calibCount2026": "",
     "solarInstall": false,
@@ -8612,7 +9097,11 @@
         "cctvWired": false,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": true,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -8638,7 +9127,8 @@
         "2013590_도진교_L",
         "2013590_도진교_S"
       ]
-    }
+    },
+    "ewsvWireless": true
   },
   {
     "id": 99,
@@ -8710,7 +9200,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -8736,7 +9230,8 @@
         "2014540_고령교_L",
         "2014540_고령교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 100,
@@ -8808,7 +9303,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -8834,7 +9333,8 @@
         "2014560_성하리_L",
         "2014560_성하리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 101,
@@ -8906,7 +9406,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -8932,7 +9436,8 @@
         "2014590_율지교_L",
         "2014590_율지교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 102,
@@ -8975,7 +9480,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -8989,7 +9498,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 103,
@@ -9061,7 +9571,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -9087,7 +9601,8 @@
         "2016580_황강교_L",
         "2016580_황강교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 104,
@@ -9152,7 +9667,11 @@
         "cctvWired": true,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -9178,7 +9697,8 @@
         "2017520_적포교_L",
         "2017520_적포교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 105,
@@ -9250,7 +9770,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -9276,7 +9800,8 @@
         "2018509_안의교_L",
         "2018509_안의교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 106,
@@ -9295,11 +9820,11 @@
     "drainage": true,
     "tide": false,
     "pollutionTotal": true,
-    "gaugeType": "ADVM",
-    "gaugeCategory": "ADVM",
-    "isDualGauge": false,
+    "gaugeType": "EWSV, ADVM",
+    "gaugeCategory": "DUAL",
+    "isDualGauge": true,
     "advmCount": "2",
-    "ewsvCount": "-",
+    "ewsvCount": "2",
     "calib2026": false,
     "calibCount2026": "",
     "solarInstall": true,
@@ -9348,7 +9873,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": true,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -9374,7 +9903,8 @@
         "2018574_묵곡교_L",
         "2018574_묵곡교_S"
       ]
-    }
+    },
+    "ewsvWireless": true
   },
   {
     "id": 107,
@@ -9439,7 +9969,11 @@
         "cctvWired": true,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -9465,7 +9999,8 @@
         "2019520_송도교_L",
         "2019520_송도교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 108,
@@ -9508,7 +10043,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -9522,7 +10061,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 109,
@@ -9565,7 +10105,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -9579,7 +10123,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 110,
@@ -9598,11 +10143,11 @@
     "drainage": true,
     "tide": false,
     "pollutionTotal": false,
-    "gaugeType": "ADVM",
-    "gaugeCategory": "ADVM",
-    "isDualGauge": false,
+    "gaugeType": "EWSV, ADVM",
+    "gaugeCategory": "DUAL",
+    "isDualGauge": true,
     "advmCount": "1",
-    "ewsvCount": "-",
+    "ewsvCount": "2",
     "calib2026": false,
     "calibCount2026": "",
     "solarInstall": true,
@@ -9651,7 +10196,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": true,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -9677,7 +10226,8 @@
         "2019555_정암교_L",
         "2019555_정암교_S"
       ]
-    }
+    },
+    "ewsvWireless": true
   },
   {
     "id": 111,
@@ -9696,10 +10246,10 @@
     "drainage": true,
     "tide": false,
     "pollutionTotal": false,
-    "gaugeType": "EWSV",
-    "gaugeCategory": "EWSV",
-    "isDualGauge": false,
-    "advmCount": "-",
+    "gaugeType": "EWSV, ADVM",
+    "gaugeCategory": "DUAL",
+    "isDualGauge": true,
+    "advmCount": "1",
     "ewsvCount": "4",
     "calib2026": true,
     "calibCount2026": "4",
@@ -9749,7 +10299,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -9775,7 +10329,8 @@
         "2019580_서촌리_L",
         "2019580_서촌리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 112,
@@ -9840,7 +10395,11 @@
         "cctvWired": false,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -9866,7 +10425,8 @@
         "2020515_계내리_L",
         "2020515_계내리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 113,
@@ -9938,7 +10498,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -9964,7 +10528,8 @@
         "2020550_청암리_L",
         "2020550_청암리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 114,
@@ -10036,7 +10601,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -10062,7 +10631,8 @@
         "2021540_원리_L",
         "2021540_원리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 115,
@@ -10084,8 +10654,8 @@
     "gaugeType": "EWSV, ADVM",
     "gaugeCategory": "DUAL",
     "isDualGauge": true,
-    "advmCount": "1",
-    "ewsvCount": "3",
+    "advmCount": "2",
+    "ewsvCount": "2",
     "calib2026": false,
     "calibCount2026": "",
     "solarInstall": false,
@@ -10134,7 +10704,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -10160,7 +10734,8 @@
         "2021575_용평동_L",
         "2021575_용평동_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 116,
@@ -10203,7 +10778,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -10217,7 +10796,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 117,
@@ -10282,7 +10862,11 @@
         "cctvWired": true,
         "solar": true
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -10308,7 +10892,8 @@
         "2022510_삼랑진교_L",
         "2022510_삼랑진교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 118,
@@ -10351,7 +10936,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -10365,7 +10954,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 119,
@@ -10437,7 +11027,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -10463,7 +11057,8 @@
         "2022578_대동낙동강교_L",
         "2022578_대동낙동강교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 120,
@@ -10528,7 +11123,11 @@
         "cctvWired": true,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -10554,7 +11153,8 @@
         "2022580_구포대교_L",
         "2022580_구포대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 121,
@@ -10626,7 +11226,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -10652,7 +11256,8 @@
         "2022585_정천교_L",
         "2022585_정천교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 122,
@@ -10717,7 +11322,11 @@
         "cctvWired": true,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": false,
+      "tide": true
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -10743,7 +11352,8 @@
         "2101575_강동대교_L",
         "2101575_강동대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 123,
@@ -10762,11 +11372,11 @@
     "drainage": false,
     "tide": true,
     "pollutionTotal": false,
-    "gaugeType": "ADVM",
-    "gaugeCategory": "ADVM",
-    "isDualGauge": false,
+    "gaugeType": "EWSV, ADVM",
+    "gaugeCategory": "DUAL",
+    "isDualGauge": true,
     "advmCount": "1",
-    "ewsvCount": "-",
+    "ewsvCount": "2",
     "calib2026": false,
     "calibCount2026": "",
     "solarInstall": false,
@@ -10815,7 +11425,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": false,
+      "tide": true
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -10841,7 +11455,8 @@
         "2101590_형산교_L",
         "2101590_형산교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 124,
@@ -10913,7 +11528,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -10939,7 +11558,8 @@
         "2201530_사연교_L",
         "2201530_사연교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 125,
@@ -10958,11 +11578,11 @@
     "drainage": false,
     "tide": true,
     "pollutionTotal": false,
-    "gaugeType": "ADVM",
-    "gaugeCategory": "ADVM",
-    "isDualGauge": false,
+    "gaugeType": "EWSV, ADVM",
+    "gaugeCategory": "DUAL",
+    "isDualGauge": true,
     "advmCount": "1",
-    "ewsvCount": "-",
+    "ewsvCount": "2",
     "calib2026": false,
     "calibCount2026": "",
     "solarInstall": false,
@@ -11011,7 +11631,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": true,
+      "installDirection": "구조물",
+      "drainage": false,
+      "tide": true
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -11037,7 +11661,8 @@
         "2201570_태화교_L",
         "2201570_태화교_S"
       ]
-    }
+    },
+    "ewsvWireless": true
   },
   {
     "id": 126,
@@ -11109,7 +11734,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -11135,7 +11764,8 @@
         "2201590_병영교_L",
         "2201590_병영교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 127,
@@ -11207,7 +11837,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -11233,7 +11867,8 @@
         "2301570_덕신교_L",
         "2301570_덕신교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 128,
@@ -11305,7 +11940,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": true
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -11331,7 +11970,8 @@
         "2302550_원동교_L",
         "2302550_원동교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 129,
@@ -11403,7 +12043,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -11429,7 +12073,8 @@
         "2401516_월변교_L",
         "2401516_월변교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 130,
@@ -11501,7 +12146,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": true
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -11527,7 +12176,8 @@
         "2402530_영덕대교_L",
         "2402530_영덕대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 131,
@@ -11592,7 +12242,11 @@
         "cctvWired": false,
         "solar": true
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -11618,7 +12272,8 @@
         "2403520_문덕3교_L",
         "2403520_문덕3교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 132,
@@ -11690,7 +12345,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -11716,7 +12375,8 @@
         "3001505_운곡교_L",
         "3001505_운곡교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 133,
@@ -11788,7 +12448,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -11814,7 +12478,8 @@
         "3003580_취수장_L",
         "3003580_취수장_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 134,
@@ -11886,7 +12551,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -11912,7 +12581,8 @@
         "3004540_제원대교_L",
         "3004540_제원대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 135,
@@ -11984,7 +12654,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -12010,7 +12684,8 @@
         "3004585_초강교_L",
         "3004585_초강교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 136,
@@ -12082,7 +12757,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -12108,7 +12787,8 @@
         "3004590_양강교_L",
         "3004590_양강교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 137,
@@ -12180,7 +12860,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -12206,7 +12890,8 @@
         "3006590_구금강2교_L",
         "3006590_구금강2교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 138,
@@ -12249,7 +12934,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -12263,7 +12952,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 139,
@@ -12335,7 +13025,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -12361,7 +13055,8 @@
         "3008530_옥각교_L",
         "3008530_옥각교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 140,
@@ -12433,7 +13128,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -12459,7 +13158,8 @@
         "3008570_제원교_L",
         "3008570_제원교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 141,
@@ -12502,7 +13202,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -12516,7 +13220,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 142,
@@ -12588,7 +13293,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -12614,7 +13323,8 @@
         "3009530_복수교_L",
         "3009530_복수교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 143,
@@ -12657,7 +13367,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -12671,7 +13385,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 144,
@@ -12743,7 +13458,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -12769,7 +13488,8 @@
         "3009580_원촌교_L",
         "3009580_원촌교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 145,
@@ -12791,7 +13511,7 @@
     "gaugeType": "ADVM",
     "gaugeCategory": "ADVM",
     "isDualGauge": false,
-    "advmCount": "1",
+    "advmCount": "2",
     "ewsvCount": "-",
     "calib2026": false,
     "calibCount2026": "",
@@ -12841,7 +13561,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -12867,7 +13591,8 @@
         "3009593_신구교_L",
         "3009593_신구교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 146,
@@ -12932,7 +13657,11 @@
         "cctvWired": false,
         "solar": true
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -12958,7 +13687,8 @@
         "3010560_명학리_L",
         "3010560_명학리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 147,
@@ -13001,7 +13731,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -13015,7 +13749,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 148,
@@ -13058,7 +13793,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -13072,7 +13811,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 149,
@@ -13144,7 +13884,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -13170,7 +13914,8 @@
         "3011545_흥덕교_L",
         "3011545_흥덕교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 150,
@@ -13213,7 +13958,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -13227,7 +13976,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 151,
@@ -13299,7 +14049,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -13325,7 +14079,8 @@
         "3011565_청주시(미호강교)_L",
         "3011565_청주시(미호강교)_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 152,
@@ -13397,7 +14152,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -13423,7 +14182,8 @@
         "3011595_월산교_L",
         "3011595_월산교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 153,
@@ -13442,11 +14202,11 @@
     "drainage": true,
     "tide": false,
     "pollutionTotal": false,
-    "gaugeType": "ADVM",
-    "gaugeCategory": "ADVM",
-    "isDualGauge": false,
+    "gaugeType": "EWSV, ADVM",
+    "gaugeCategory": "DUAL",
+    "isDualGauge": true,
     "advmCount": "2",
-    "ewsvCount": "-",
+    "ewsvCount": "2",
     "calib2026": false,
     "calibCount2026": "",
     "solarInstall": true,
@@ -13488,7 +14248,11 @@
         "cctvWired": true,
         "solar": true
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": true,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -13514,7 +14278,8 @@
         "3012502_햇무리교_L",
         "3012502_햇무리교_S"
       ]
-    }
+    },
+    "ewsvWireless": true
   },
   {
     "id": 154,
@@ -13586,7 +14351,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -13612,7 +14381,8 @@
         "3012507_도암교_L",
         "3012507_도암교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 155,
@@ -13677,7 +14447,11 @@
         "cctvWired": true,
         "solar": true
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -13703,7 +14477,8 @@
         "3012520_금강교_L",
         "3012520_금강교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 156,
@@ -13775,7 +14550,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -13801,7 +14580,8 @@
         "3012525_오인교_L",
         "3012525_오인교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 157,
@@ -13844,7 +14624,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -13858,7 +14642,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 158,
@@ -13930,7 +14715,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -13956,7 +14745,8 @@
         "3012550_신흥리_L",
         "3012550_신흥리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 159,
@@ -14028,7 +14818,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -14054,7 +14848,8 @@
         "3012562_백제보 상_L",
         "3012562_백제보 상_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 160,
@@ -14097,7 +14892,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -14111,7 +14910,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 161,
@@ -14183,7 +14983,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -14209,7 +15013,8 @@
         "3012575_백제교_L",
         "3012575_백제교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 162,
@@ -14228,10 +15033,10 @@
     "drainage": true,
     "tide": false,
     "pollutionTotal": false,
-    "gaugeType": "EWSV",
-    "gaugeCategory": "EWSV",
-    "isDualGauge": false,
-    "advmCount": "-",
+    "gaugeType": "EWSV, ADVM",
+    "gaugeCategory": "DUAL",
+    "isDualGauge": true,
+    "advmCount": "1",
     "ewsvCount": "5",
     "calib2026": true,
     "calibCount2026": "5",
@@ -14281,7 +15086,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -14307,7 +15116,8 @@
         "3012580_석동교_L",
         "3012580_석동교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 163,
@@ -14379,7 +15189,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -14405,7 +15219,8 @@
         "3012590_동성교_L",
         "3012590_동성교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 164,
@@ -14448,7 +15263,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -14462,7 +15281,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 165,
@@ -14534,7 +15354,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -14560,7 +15384,8 @@
         "3013565_풋개다리_L",
         "3013565_풋개다리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 166,
@@ -14632,7 +15457,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -14658,7 +15487,8 @@
         "3013570_논산대교_L",
         "3013570_논산대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 167,
@@ -14723,7 +15553,11 @@
         "cctvWired": false,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -14749,7 +15583,8 @@
         "3014510_황산대교_L",
         "3014510_황산대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 168,
@@ -14792,7 +15627,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -14806,7 +15645,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 169,
@@ -14878,7 +15718,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -14904,7 +15748,8 @@
         "3101545_구만교_L",
         "3101545_구만교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 170,
@@ -14923,11 +15768,11 @@
     "drainage": true,
     "tide": false,
     "pollutionTotal": false,
-    "gaugeType": "ADVM",
-    "gaugeCategory": "ADVM",
-    "isDualGauge": false,
+    "gaugeType": "EWSV, ADVM",
+    "gaugeCategory": "DUAL",
+    "isDualGauge": true,
     "advmCount": "2",
-    "ewsvCount": "-",
+    "ewsvCount": "2",
     "calib2026": false,
     "calibCount2026": "",
     "solarInstall": false,
@@ -14969,7 +15814,11 @@
         "cctvWired": true,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -14995,7 +15844,8 @@
         "3101550_구양교_L",
         "3101550_구양교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 171,
@@ -15067,7 +15917,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -15093,7 +15947,8 @@
         "3101585_충무교_L",
         "3101585_충무교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 172,
@@ -15165,7 +16020,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -15191,7 +16050,8 @@
         "3201590_채운교_L",
         "3201590_채운교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 173,
@@ -15234,7 +16094,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -15248,7 +16112,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 174,
@@ -15256,7 +16121,7 @@
     "region": "영산강",
     "river": "만경강",
     "name": "완주군(어우교)",
-    "address": "전라북도 완주군 고산면 어우리 758-41",
+    "address": "전북특별자치도 완주군 고산면 어우리 758-41",
     "code": "3301527",
     "installYear": "2015",
     "obsStartYear": "2016",
@@ -15313,7 +16178,11 @@
         "cctvWired": false,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -15339,7 +16208,8 @@
         "3301527_어우교_L",
         "3301527_어우교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 175,
@@ -15347,7 +16217,7 @@
     "region": "영산강",
     "river": "만경강",
     "name": "완주군(용봉교)",
-    "address": "전라북도 완주군 봉동읍 장기리 111-6 용봉교",
+    "address": "전북특별자치도 완주군 봉동읍 장기리 111-6 용봉교",
     "code": "3301530",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -15411,7 +16281,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -15437,7 +16311,8 @@
         "3301530_용봉교_L",
         "3301530_용봉교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 176,
@@ -15509,7 +16384,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -15535,7 +16414,8 @@
         "3301540_제2소양교_L",
         "3301540_제2소양교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 177,
@@ -15543,7 +16423,7 @@
     "region": "영산강",
     "river": "삼천",
     "name": "전주시(세내교)",
-    "address": "전라북도 전주시 완산구 삼천동1가 323-3 세내교",
+    "address": "전북특별자치도 전주시 완산구 삼천동1가 323-3 세내교",
     "code": "3301554",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -15607,7 +16487,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -15633,7 +16517,8 @@
         "3301554_세내교_L",
         "3301554_세내교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 178,
@@ -15641,7 +16526,7 @@
     "region": "영산강",
     "river": "전주천",
     "name": "전주시(서천교)",
-    "address": "전라북도 전주시완산구 서완산동1가 231-1",
+    "address": "전북특별자치도 전주시완산구 서완산동1가 231-1",
     "code": "3301557",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -15705,7 +16590,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -15731,7 +16620,8 @@
         "3301557_서천교_L",
         "3301557_서천교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 179,
@@ -15803,7 +16693,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -15829,7 +16723,8 @@
         "3301565_미산교_L",
         "3301565_미산교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 180,
@@ -15837,7 +16732,7 @@
     "region": "영산강",
     "river": "만경강",
     "name": "완주군(삼례교)",
-    "address": "전라북도 완주군 삼례읍 후정리 820-2",
+    "address": "전북특별자치도 완주군 삼례읍 후정리 820-2",
     "code": "3301570",
     "installYear": "2010",
     "obsStartYear": "2011",
@@ -15901,7 +16796,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -15927,7 +16826,8 @@
         "3301570_삼례교_L",
         "3301570_삼례교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 181,
@@ -15999,7 +16899,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -16025,7 +16929,8 @@
         "3302520_거산교_L",
         "3302520_거산교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 182,
@@ -16033,7 +16938,7 @@
     "region": "영산강",
     "river": "동진강",
     "name": "정읍시(정우교)",
-    "address": "전라북도 정읍시 정우면 대사리 878-19 정우교",
+    "address": "전북특별자치도 정읍시 정우면 대사리 878-19 정우교",
     "code": "3302530",
     "installYear": "2010",
     "obsStartYear": "2010",
@@ -16044,11 +16949,11 @@
     "drainage": true,
     "tide": false,
     "pollutionTotal": false,
-    "gaugeType": "ADVM",
-    "gaugeCategory": "ADVM",
-    "isDualGauge": false,
+    "gaugeType": "EWSV, ADVM",
+    "gaugeCategory": "DUAL",
+    "isDualGauge": true,
     "advmCount": "1",
-    "ewsvCount": "-",
+    "ewsvCount": "2",
     "calib2026": false,
     "calibCount2026": "",
     "solarInstall": false,
@@ -16097,7 +17002,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -16123,7 +17032,8 @@
         "3302530_정우교_L",
         "3302530_정우교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 183,
@@ -16195,7 +17105,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -16221,7 +17135,8 @@
         "3302545_죽림교_L",
         "3302545_죽림교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 184,
@@ -16229,7 +17144,7 @@
     "region": "영산강",
     "river": "섬진강",
     "name": "진안군(좌포교)",
-    "address": "전라북도 진안군 성수면 도통리 521-5 좌포교 하류",
+    "address": "전북특별자치도 진안군 성수면 도통리 521-5 좌포교 하류",
     "code": "4001510",
     "installYear": "2026",
     "obsStartYear": "-",
@@ -16264,7 +17179,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -16278,7 +17197,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 185,
@@ -16286,7 +17206,7 @@
     "region": "영산강",
     "river": "갈담천",
     "name": "임실군(강동교)",
-    "address": "전라북도 임실군 강진면 갈담리 강동교",
+    "address": "전북특별자치도 임실군 강진면 갈담리 강동교",
     "code": "4002520",
     "installYear": "2026",
     "obsStartYear": "-",
@@ -16321,7 +17241,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -16335,7 +17259,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 186,
@@ -16343,7 +17268,7 @@
     "region": "영산강",
     "river": "섬진강",
     "name": "임실군(일중리)",
-    "address": "전라북도 임실군 덕치면 일중리 568",
+    "address": "전북특별자치도 임실군 덕치면 일중리 568",
     "code": "4002540",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -16407,7 +17332,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -16433,7 +17362,8 @@
         "4002540_일중리_L",
         "4002540_일중리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 187,
@@ -16441,7 +17371,7 @@
     "region": "영산강",
     "river": "오수천",
     "name": "임실군(신기교)",
-    "address": "전라북도 임실군 오수면 신기리 398-1 신기교",
+    "address": "전북특별자치도 임실군 오수면 신기리 398-1 신기교",
     "code": "4003550",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -16505,7 +17435,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -16531,7 +17465,8 @@
         "4003550_신기교_L",
         "4003550_신기교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 188,
@@ -16539,7 +17474,7 @@
     "region": "영산강",
     "river": "오수천",
     "name": "순창군(현포리)",
-    "address": "전라북도 순창군 동계면 현포리 820",
+    "address": "전북특별자치도 순창군 동계면 현포리 820",
     "code": "4003590",
     "installYear": "2026",
     "obsStartYear": "-",
@@ -16574,7 +17509,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -16588,7 +17527,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 189,
@@ -16596,7 +17536,7 @@
     "region": "영산강",
     "river": "섬진강",
     "name": "순창군(유적교)",
-    "address": "전라북도 순창군 적성면 고원리 928 유적교",
+    "address": "전북특별자치도 순창군 적성면 고원리 928 유적교",
     "code": "4004515",
     "installYear": "2026",
     "obsStartYear": "-",
@@ -16631,7 +17571,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -16645,7 +17589,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 190,
@@ -16653,7 +17598,7 @@
     "region": "영산강",
     "river": "경천",
     "name": "순창군(옥천교)",
-    "address": "전라북도 순창군 순창읍 순화리 913-4 옥천교",
+    "address": "전북특별자치도 순창군 순창읍 순화리 913-4 옥천교",
     "code": "4004530",
     "installYear": "2026",
     "obsStartYear": "-",
@@ -16688,7 +17633,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -16702,7 +17651,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 191,
@@ -16710,7 +17660,7 @@
     "region": "영산강",
     "river": "섬진강",
     "name": "곡성군(금곡교)",
-    "address": "전라북도 남원시 금지면 귀석리 718-4 금곡교",
+    "address": "전북특별자치도 남원시 금지면 귀석리 718-4 금곡교",
     "code": "4004590",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -16774,7 +17724,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -16800,7 +17754,8 @@
         "4004590_금곡교_L",
         "4004590_금곡교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 192,
@@ -16808,7 +17763,7 @@
     "region": "영산강",
     "river": "요천",
     "name": "남원시(월석교)",
-    "address": "전라북도 남원시 산동면 월석리 222 월석교 하류",
+    "address": "전북특별자치도 남원시 산동면 월석리 222 월석교 하류",
     "code": "4005545",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -16872,7 +17827,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -16898,7 +17857,8 @@
         "4005545_월석교_L",
         "4005545_월석교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 193,
@@ -16906,7 +17866,7 @@
     "region": "영산강",
     "river": "요천",
     "name": "남원시(동림교)",
-    "address": "전라북도 남원시 죽항동 240",
+    "address": "전북특별자치도 남원시 죽항동 240",
     "code": "4005570",
     "installYear": "2022",
     "obsStartYear": "2022",
@@ -16970,7 +17930,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -16996,7 +17960,8 @@
         "4005570_동림교_L",
         "4005570_동림교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 194,
@@ -17004,7 +17969,7 @@
     "region": "영산강",
     "river": "섬진강",
     "name": "곡성군(예성교)",
-    "address": "전라남도 구례군 구례읍 산 443-1",
+    "address": "전남광주통합특별시 구례군 구례읍 산 443-1",
     "code": "4006580",
     "installYear": "2015",
     "obsStartYear": "2015",
@@ -17068,7 +18033,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -17094,7 +18063,8 @@
         "4006580_예성교_L",
         "4006580_예성교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 195,
@@ -17102,7 +18072,7 @@
     "region": "영산강",
     "river": "보성강",
     "name": "곡성군(태안교)",
-    "address": "전라남도 곡성군 죽곡면 유봉리 549-24 태안교",
+    "address": "전남광주통합특별시 곡성군 죽곡면 유봉리 549-24 태안교",
     "code": "4008570",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -17166,7 +18136,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -17192,7 +18166,8 @@
         "4008570_태안교_L",
         "4008570_태안교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 196,
@@ -17200,7 +18175,7 @@
     "region": "영산강",
     "river": "섬진강",
     "name": "구례군(구례교)",
-    "address": "전라남도 구례군 구례읍 신월리 595-1 구례교",
+    "address": "전남광주통합특별시 구례군 구례읍 신월리 595-1 구례교",
     "code": "4009510",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -17264,7 +18239,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -17290,7 +18269,8 @@
         "4009510_구례교_L",
         "4009510_구례교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 197,
@@ -17298,7 +18278,7 @@
     "region": "영산강",
     "river": "섬진강",
     "name": "구례군(송정리)",
-    "address": "전라남도 구례군 토지면 송정리 639-1",
+    "address": "전남광주통합특별시 구례군 토지면 송정리 639-1",
     "code": "4009530",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -17362,7 +18342,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -17388,7 +18372,8 @@
         "4009530_송정리_L",
         "4009530_송정리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 198,
@@ -17431,7 +18416,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -17445,7 +18434,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 199,
@@ -17453,7 +18443,7 @@
     "region": "영산강",
     "river": "섬진강",
     "name": "광양시(고사리)",
-    "address": "전라남도 광양시 다압면 고사리 산 66-15",
+    "address": "전남광주통합특별시 광양시 다압면 고사리 산 66-15",
     "code": "4009550",
     "installYear": "2023",
     "obsStartYear": "2023",
@@ -17517,7 +18507,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": false,
+      "tide": true
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -17543,7 +18537,8 @@
         "4009550_고사리_L",
         "4009550_고사리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 200,
@@ -17551,7 +18546,7 @@
     "region": "영산강",
     "river": "섬진강",
     "name": "하동군(읍내리)",
-    "address": "전라남도 광양시 다압면 신원리 224-2",
+    "address": "전남광주통합특별시 광양시 다압면 신원리 224-2",
     "code": "4009565",
     "installYear": "2008",
     "obsStartYear": "2008",
@@ -17615,7 +18610,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": false,
+      "tide": true
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -17641,7 +18640,8 @@
         "4009565_읍내리_L",
         "4009565_읍내리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 201,
@@ -17713,7 +18713,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -17739,7 +18743,8 @@
         "4009570_대석교_L",
         "4009570_대석교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 202,
@@ -17747,7 +18752,7 @@
     "region": "영산강",
     "river": "광양서천",
     "name": "광양시(서산교)",
-    "address": "전라남도 광양시 광양읍 칠성리 881-2",
+    "address": "전남광주통합특별시 광양시 광양읍 칠성리 881-2",
     "code": "4105530",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -17811,7 +18816,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -17837,7 +18846,8 @@
         "4105530_서산교_L",
         "4105530_서산교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 203,
@@ -17845,7 +18855,7 @@
     "region": "영산강",
     "river": "광양동천",
     "name": "광양시(용강교)",
-    "address": "전라남도 광양시 광양읍 용강리 820 용강교",
+    "address": "전남광주통합특별시 광양시 광양읍 용강리 820 용강교",
     "code": "4105540",
     "installYear": "2026",
     "obsStartYear": "-",
@@ -17880,7 +18890,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -17894,7 +18908,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 204,
@@ -17902,7 +18917,7 @@
     "region": "영산강",
     "river": "증암천",
     "name": "담양군(양지교)",
-    "address": "전라남도 담양군 봉산면 양지리 754-1 양지교",
+    "address": "전남광주통합특별시 담양군 봉산면 양지리 754-1 양지교",
     "code": "5001527",
     "installYear": "2026",
     "obsStartYear": "-",
@@ -17937,7 +18952,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -17951,15 +18970,16 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 205,
     "seq": 205,
     "region": "영산강",
     "river": "영산강",
-    "name": "광주광역시(용산교)",
-    "address": "광주광역시 북구 지야동 777-7 지야대교",
+    "name": "광주특별시(용산교)",
+    "address": "전남광주통합특별시 북구 지야동 777-7 지야대교",
     "code": "5001540",
     "installYear": "2026",
     "obsStartYear": "-",
@@ -17994,7 +19014,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -18008,15 +19032,16 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 206,
     "seq": 206,
     "region": "영산강",
     "river": "광주천",
-    "name": "광주광역시(유촌교)",
-    "address": "광주광역시 서구 동천동 336",
+    "name": "광주특별시(유촌교)",
+    "address": "전남광주통합특별시 서구 유촌동 30 유촌교",
     "code": "5001550",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -18080,7 +19105,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -18106,15 +19135,16 @@
         "5001550_유촌교_L",
         "5001550_유촌교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 207,
     "seq": 207,
     "region": "영산강",
     "river": "풍영정천",
-    "name": "광주광역시(풍영정천2교)",
-    "address": "광주광역시 광산구 월곡동 321-73 풍영정천2교 하류",
+    "name": "광주특별시(풍영정천2교)",
+    "address": "전남광주통합특별시 광산구 월곡동 321-73 풍영정천2교 하류",
     "code": "5001555",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -18178,7 +19208,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -18204,15 +19238,16 @@
         "5001555_풍영정천2교_L",
         "5001555_풍영정천2교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 208,
     "seq": 208,
     "region": "영산강",
     "river": "영산강",
-    "name": "광주광역시(극락교)",
-    "address": "광주광역시 서구 벽진동 564-1",
+    "name": "광주특별시(극락교)",
+    "address": "전남광주통합특별시 서구 벽진동 564-1",
     "code": "5001580",
     "installYear": "2013",
     "obsStartYear": "2013",
@@ -18223,11 +19258,11 @@
     "drainage": true,
     "tide": false,
     "pollutionTotal": false,
-    "gaugeType": "ADVM",
-    "gaugeCategory": "ADVM",
-    "isDualGauge": false,
+    "gaugeType": "EWSV, ADVM",
+    "gaugeCategory": "DUAL",
+    "isDualGauge": true,
     "advmCount": "2",
-    "ewsvCount": "-",
+    "ewsvCount": "2",
     "calib2026": false,
     "calibCount2026": "",
     "solarInstall": false,
@@ -18276,7 +19311,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": true,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -18302,7 +19341,8 @@
         "5001580_극락교_L",
         "5001580_극락교_S"
       ]
-    }
+    },
+    "ewsvWireless": true
   },
   {
     "id": 209,
@@ -18310,7 +19350,7 @@
     "region": "영산강",
     "river": "황룡강",
     "name": "장성군(제2황룡교)",
-    "address": "전라남도 장성군 황룡면 월평리 163",
+    "address": "전남광주통합특별시 장성군 황룡면 월평리 163",
     "code": "5002550",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -18324,8 +19364,8 @@
     "gaugeType": "EWSV, ADVM",
     "gaugeCategory": "DUAL",
     "isDualGauge": true,
-    "advmCount": "1",
-    "ewsvCount": "3",
+    "advmCount": "-",
+    "ewsvCount": "2",
     "calib2026": false,
     "calibCount2026": "",
     "solarInstall": false,
@@ -18374,7 +19414,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -18400,15 +19444,16 @@
         "5002550_제2황룡교_L",
         "5002550_제2황룡교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 210,
     "seq": 210,
     "region": "영산강",
     "river": "황룡강",
-    "name": "광주광역시(용진교)",
-    "address": "광주광역시 광산구 임곡동 565-2 용진교",
+    "name": "광주특별시(용진교)",
+    "address": "전남광주통합특별시 광산구 임곡동 565-2 용진교",
     "code": "5002560",
     "installYear": "2026",
     "obsStartYear": "-",
@@ -18443,7 +19488,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -18457,15 +19506,16 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 211,
     "seq": 211,
     "region": "영산강",
     "river": "평림천",
-    "name": "광주광역시(평림교)",
-    "address": "광주광역시 광산구 오운동 349 평림교",
+    "name": "광주특별시(평림교)",
+    "address": "전남광주통합특별시 광산구 오운동 349 평림교",
     "code": "5002577",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -18529,7 +19579,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -18555,15 +19609,16 @@
         "5002577_평림교_L",
         "5002577_평림교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 212,
     "seq": 212,
     "region": "영산강",
     "river": "황룡강",
-    "name": "광주광역시(장록교)",
-    "address": "광주광역시 광산구 송촌동 59-3 평동교",
+    "name": "광주특별시(장록교)",
+    "address": "전남광주통합특별시 광산구 송촌동 59-3 평동교",
     "code": "5002590",
     "installYear": "2024",
     "obsStartYear": "2024",
@@ -18627,7 +19682,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "하류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -18653,7 +19712,8 @@
         "5002590_장록교_L",
         "5002590_장록교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 213,
@@ -18661,7 +19721,7 @@
     "region": "영산강",
     "river": "화순천",
     "name": "화순군(주도교)",
-    "address": "전라남도 화순군 화순읍 서태리 1022-10 주도교 상류",
+    "address": "전남광주통합특별시 화순군 화순읍 서태리 1022-10 주도교 상류",
     "code": "5003515",
     "installYear": "2026",
     "obsStartYear": "-",
@@ -18696,7 +19756,11 @@
       "waterLevelInstalled": "",
       "waterLevelPos": "",
       "taskCount": 0,
-      "tasks": {}
+      "tasks": {},
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": null,
     "rvBoxStatus": "미운영/대상외",
@@ -18710,7 +19774,8 @@
       "logger": null,
       "sender": null,
       "agents": []
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 214,
@@ -18718,7 +19783,7 @@
     "region": "영산강",
     "river": "지석천",
     "name": "나주시(남평교)",
-    "address": "전라남도 나주시 남평읍 남평리 208-3",
+    "address": "전남광주통합특별시 나주시 남평읍 남평리 208-3",
     "code": "5003580",
     "installYear": "2015",
     "obsStartYear": "2015",
@@ -18782,7 +19847,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -18808,15 +19877,16 @@
         "5003580_남평교_L",
         "5003580_남평교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 215,
     "seq": 215,
     "region": "영산강",
     "river": "영산강",
-    "name": "광주광역시(승용교)",
-    "address": "광주광역시 광산구 용봉동 250-1",
+    "name": "광주특별시(승용교)",
+    "address": "전남광주통합특별시 광산구 용봉동 250-1",
     "code": "5004520",
     "installYear": "2011",
     "obsStartYear": "2011",
@@ -18880,7 +19950,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -18906,7 +19980,8 @@
         "5004520_승용교_L",
         "5004520_승용교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 216,
@@ -18914,7 +19989,7 @@
     "region": "영산강",
     "river": "영산강",
     "name": "나주시(나주대교)",
-    "address": "전라남도 나주시 삼도동 913",
+    "address": "전남광주통합특별시 나주시 삼도동 913",
     "code": "5004550",
     "installYear": "2011",
     "obsStartYear": "2011",
@@ -18925,11 +20000,11 @@
     "drainage": true,
     "tide": false,
     "pollutionTotal": false,
-    "gaugeType": "ADVM",
-    "gaugeCategory": "ADVM",
-    "isDualGauge": false,
-    "advmCount": "-",
-    "ewsvCount": "-",
+    "gaugeType": "EWSV, ADVM",
+    "gaugeCategory": "DUAL",
+    "isDualGauge": true,
+    "advmCount": "2",
+    "ewsvCount": "2",
     "calib2026": false,
     "calibCount2026": "",
     "solarInstall": false,
@@ -18971,7 +20046,11 @@
         "cctvWired": true,
         "solar": false
       },
-      "completedTasks": {}
+      "completedTasks": {},
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": false,
     "rvBoxStatus": "미설치",
@@ -18997,7 +20076,8 @@
         "5004550_나주대교_L",
         "5004550_나주대교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 217,
@@ -19005,7 +20085,7 @@
     "region": "영산강",
     "river": "만봉천",
     "name": "나주시(동곡리)",
-    "address": "전라남도 나주시 세지면 동곡리 231-1",
+    "address": "전남광주통합특별시 나주시 세지면 동곡리 231-1",
     "code": "5004555",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -19069,7 +20149,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -19095,7 +20179,8 @@
         "5004555_동곡리_L",
         "5004555_동곡리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 218,
@@ -19103,7 +20188,7 @@
     "region": "영산강",
     "river": "영산강",
     "name": "나주시(회진리)",
-    "address": "전라남도 나주시 다시면 회진리 533",
+    "address": "전남광주통합특별시 나주시 다시면 회진리 533",
     "code": "5004590",
     "installYear": "2011",
     "obsStartYear": "2011",
@@ -19167,7 +20252,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -19193,7 +20282,8 @@
         "5004590_회진리_L",
         "5004590_회진리_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 219,
@@ -19201,7 +20291,7 @@
     "region": "영산강",
     "river": "고막원천",
     "name": "함평군(원고막교)",
-    "address": "전라남도 함평군 학교면 고막리 56-3",
+    "address": "전남광주통합특별시 함평군 학교면 고막리 56-3",
     "code": "5005580",
     "installYear": "2024",
     "obsStartYear": "2024",
@@ -19265,7 +20355,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -19291,7 +20385,8 @@
         "5005580_원고막교_L",
         "5005580_원고막교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 220,
@@ -19299,7 +20394,7 @@
     "region": "영산강",
     "river": "영산강",
     "name": "함평군(동강교)",
-    "address": "전라남도 함평군 학교면 곡창리 590-2",
+    "address": "전남광주통합특별시 함평군 학교면 곡창리 590-2",
     "code": "5006510",
     "installYear": "2011",
     "obsStartYear": "2012",
@@ -19363,7 +20458,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "구조물",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -19389,7 +20488,8 @@
         "5006510_동강교_L",
         "5006510_동강교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 221,
@@ -19397,7 +20497,7 @@
     "region": "영산강",
     "river": "함평천",
     "name": "함평군(학야교)",
-    "address": "전라남도 함평군 엄다면 학야리 36-3 학야교 하류",
+    "address": "전남광주통합특별시 함평군 엄다면 학야리 36-3 학야교 하류",
     "code": "5006530",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -19461,7 +20561,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": true,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -19487,7 +20591,8 @@
         "5006530_학야교_L",
         "5006530_학야교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 222,
@@ -19495,7 +20600,7 @@
     "region": "영산강",
     "river": "영산강",
     "name": "영암군(동암교)",
-    "address": "전라남도 영암군 삼호읍 산호리 1873",
+    "address": "전남광주통합특별시 영암군 삼호읍 산호리 1873",
     "code": "5008510",
     "installYear": "2016",
     "obsStartYear": "2016",
@@ -19559,7 +20664,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "교각",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -19585,7 +20694,8 @@
         "5008510_동암교_L",
         "5008510_동암교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   },
   {
     "id": 223,
@@ -19593,7 +20703,7 @@
     "region": "영산강",
     "river": "탐진강",
     "name": "장흥군(별천교)",
-    "address": "전라남도 장흥군 부산면 금자리 1118-16 별천교 하류",
+    "address": "전남광주통합특별시 장흥군 부산면 금자리 1118-16 별천교 하류",
     "code": "5101550",
     "installYear": "2025",
     "obsStartYear": "2025",
@@ -19657,7 +20767,11 @@
           "user": "관리자 (2026-08-28 현황)",
           "note": "로거PC 및 샌더PC 리모트뷰 박스 설치완료"
         }
-      }
+      },
+      "ewsvWireless": false,
+      "installDirection": "상류",
+      "drainage": false,
+      "tide": false
     },
     "rvBoxInstalled": true,
     "rvBoxStatus": "설치완료",
@@ -19683,6 +20797,7 @@
         "5101550_별천교_L",
         "5101550_별천교_S"
       ]
-    }
+    },
+    "ewsvWireless": false
   }
 ]

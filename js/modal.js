@@ -160,6 +160,12 @@ class ModalManager {
       this.renderDetailBody(st);
     }
 
+    const detailDeleteBtn = document.getElementById("detail-btn-delete");
+    if (detailDeleteBtn) {
+      const isAdmin = window.apiClient?.user?.role === "admin";
+      detailDeleteBtn.style.display = isAdmin ? "inline-flex" : "none";
+    }
+
     const modal = document.getElementById("detail-modal");
     if (modal) modal.classList.add("active");
 
@@ -348,13 +354,22 @@ class ModalManager {
           <th>설치년도 / 개시년도</th>
           <td>${st.installYear || "-"}년 / ${st.obsStartYear || "-"}년</td>
           <th>유속계 형식</th>
-          <td><b>${st.gaugeType || "-"}</b> (EWSV:${st.ewsvCount||"-"}, ADVM:${st.advmCount||"-"})</td>
+          <td>
+            <b>${st.gaugeType || "-"}</b> (EWSV:${st.ewsvCount||"-"}, ADVM:${st.advmCount||"-"})
+            ${(st.ewsvWireless || st.maintenance?.ewsvWireless) ? '<span class="badge badge-cyan" style="font-weight:700; margin-left:6px;">📶 EWSV 무선지점</span>' : ""}
+          </td>
         </tr>
         <tr>
           <th>설치방식</th>
           <td><b>${st.mountType || "-"}</b></td>
           <th>국사형태</th>
           <td><b>${st.shelterType || "-"}</b></td>
+        </tr>
+        <tr>
+          <th>태양광 발전 설비</th>
+          <td>${st.solarInstall ? '<span class="badge badge-amber" style="font-weight:700;">☀️ 태양광 설치 지점</span>' : '<span style="color:#64748b;">일반 상용전원 (미설치)</span>'}</td>
+          <th>수위계 설치 여부</th>
+          <td>${m.waterLevelInstalled ? "설치됨 (" + (m.waterLevelPos||"") + ")" : "미설치"} (${st.waterLevelType || "-"})</td>
         </tr>
         <tr>
           <th>RV박스 (리모트뷰)</th>
@@ -369,10 +384,6 @@ class ModalManager {
             </div>
             ${rvDetailsHtml}
           </td>
-        </tr>
-        <tr>
-          <th>수위계 설치 여부</th>
-          <td colspan="3">${m.waterLevelInstalled ? "설치됨 (" + (m.waterLevelPos||"") + ")" : "미설치"}</td>
         </tr>
         <tr>
           <th>특이사항 및 비고</th>
@@ -505,6 +516,8 @@ class ModalManager {
     document.getElementById("form-calib-2026").checked = !!st.calib2026;
     document.getElementById("form-calib-count").value = st.calibCount2026 || "";
     document.getElementById("form-solar-install").checked = !!st.solarInstall;
+    const wirelessChk = document.getElementById("form-ewsv-wireless");
+    if (wirelessChk) wirelessChk.checked = !!(st.ewsvWireless || st.maintenance?.ewsvWireless);
     document.getElementById("form-pollution-total").checked = !!st.pollutionTotal;
 
     // Auto calculate decimal if only DMS is provided or vice versa
@@ -662,6 +675,7 @@ class ModalManager {
       calib2026: document.getElementById("form-calib-2026").checked,
       calibCount2026: document.getElementById("form-calib-count").value.trim(),
       solarInstall: document.getElementById("form-solar-install").checked,
+      ewsvWireless: document.getElementById("form-ewsv-wireless") ? document.getElementById("form-ewsv-wireless").checked : false,
       pollutionTotal: document.getElementById("form-pollution-total").checked,
       rvBoxInstalled: rvInstalled,
       rvBoxStatus: rvStatus,
@@ -688,17 +702,25 @@ class ModalManager {
     window.app.refreshAll();
   }
 
-  deleteCurrentStation() {
+  async deleteCurrentStation() {
+    if (window.apiClient && window.apiClient.user?.role !== "admin") {
+      alert("관측소 정보 삭제는 최고 관리자(admin)만 가능합니다.");
+      return;
+    }
     if (!this.currentStationId) return;
     const st = window.dataManager.getById(this.currentStationId);
     if (!st) return;
 
-    if (confirm(`정말로 [${st.name}] 관측시설을 삭제하시겠습니까?`)) {
-      window.dataManager.delete(this.currentStationId);
-      this.closeDetail();
-      this.closeEdit();
-      window.app.refreshAll();
-      window.app.showToast("관측시설이 삭제되었습니다.", "info");
+    if (confirm(`정말로 [${st.name}] 관측시설을 삭제하시겠습니까?\n삭제된 지점 정보는 복구할 수 없습니다.`)) {
+      try {
+        await window.dataManager.delete(this.currentStationId);
+        this.closeDetail();
+        this.closeEdit();
+        window.app.refreshAll();
+        window.app.showToast("관측시설이 삭제되었습니다.", "info");
+      } catch (err) {
+        alert(err.message || "관측소 삭제에 실패했습니다.");
+      }
     }
   }
 }

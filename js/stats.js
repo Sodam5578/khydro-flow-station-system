@@ -48,13 +48,17 @@ class StatsManager {
     const gaugeKpiEl = document.getElementById("kpi-gauge-ewsv");
     if (gaugeKpiEl) {
       gaugeKpiEl.innerHTML = `
-        <div style="font-size:1.15rem; font-weight:800; color:#1e293b; line-height:1.2;">
-          EWSV <span style="color:#2563eb;">${ewsvSoloCount}</span> <span style="font-weight:400; color:#cbd5e1; margin:0 2px;">|</span> ADVM <span style="color:#0284c7;">${advmSoloCount}</span>
-        </div>
-        <div style="font-size:0.95rem; font-weight:700; color:#7c3aed; margin-top:4px;">
-          ⚡ 이중화 <span style="font-weight:800;">${dualCount}</span>개소
+        <div style="display:flex; flex-direction:column; gap:2px; line-height:1.2; white-space:nowrap;">
+          <div>ADVM <span style="color:#0284c7;">${advmSoloCount}개소</span></div>
+          <div>EWSV <span style="color:#2563eb;">${ewsvSoloCount}개소</span></div>
+          <div style="color:#7c3aed;">이중화 <span>${dualCount}개소</span></div>
         </div>
       `;
+    }
+
+    const gaugeSubEl = document.getElementById("kpi-gauge-sub");
+    if (gaugeSubEl) {
+      gaugeSubEl.textContent = `단독 ${ewsvSoloCount + advmSoloCount}개소 + 복합이중화 ${dualCount}개소`;
     }
 
     const calibEl = document.getElementById("kpi-calib-stations");
@@ -185,7 +189,7 @@ class StatsManager {
     const ctx = document.getElementById("chart-gauge");
     if (!ctx) return;
 
-    const rawLabels = ["EWSV (전자파 단독)", "ADVM (초음파 단독)", "⚡ EWSV+ADVM (이중화)"];
+    const rawLabels = ["EWSV (전자파 단독)", "ADVM (초음파 단독)", "EWSV+ADVM (이중화)"];
     const rawValues = [ewsvSolo, advmSolo, dualCount];
     const rawColors = ["#2563eb", "#0284c7", "#7c3aed"];
 

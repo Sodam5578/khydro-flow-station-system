@@ -88,6 +88,8 @@ class ApiClient {
     const masterPackEl = document.getElementById("setting-admin-masterpack");
     const userNoticeEl = document.getElementById("setting-user-excel-notice");
     const excelImportEl = document.getElementById("setting-admin-excel-import");
+    const stationsExcelImportBtn = document.getElementById("btn-stations-excel-import");
+    const detailDeleteBtn = document.getElementById("detail-btn-delete");
     const jsonRestoreEl = document.getElementById("setting-admin-json-restore");
     const factoryResetEl = document.getElementById("setting-admin-factory-reset");
     const memberNoticeEl = document.getElementById("setting-member-notice");
@@ -95,6 +97,8 @@ class ApiClient {
     if (masterPackEl) masterPackEl.style.display = isAdmin ? "flex" : "none";
     if (userNoticeEl) userNoticeEl.style.display = isAdmin ? "none" : "block";
     if (excelImportEl) excelImportEl.style.display = isAdmin ? "block" : "none";
+    if (stationsExcelImportBtn) stationsExcelImportBtn.style.display = isAdmin ? "inline-flex" : "none";
+    if (detailDeleteBtn) detailDeleteBtn.style.display = isAdmin ? "inline-flex" : "none";
     if (jsonRestoreEl) jsonRestoreEl.style.display = isAdmin ? "block" : "none";
     if (factoryResetEl) factoryResetEl.style.display = isAdmin ? "block" : "none";
     if (memberNoticeEl) memberNoticeEl.style.display = isAdmin ? "none" : "block";

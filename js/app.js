@@ -290,6 +290,7 @@ class App {
     bindCheck("gis-check-calib", "calibOnly");
     bindCheck("gis-check-solar", "solarOnly");
     bindCheck("gis-check-dual", "dualOnly");
+    bindCheck("gis-check-wireless", "wirelessOnly");
 
     const gisSearch = document.getElementById("gis-search-input");
     if (gisSearch) {

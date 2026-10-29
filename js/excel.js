@@ -152,7 +152,16 @@ class ExcelManager {
     const headerRowIdx = startRowIdx;
     aoa.push(headers);
 
-    for (const r of rows) {
+    const sanitizedRows = rows.map(r =>
+      r.map(cell => {
+        if (cell === null || cell === undefined) return "";
+        if (typeof cell === "number") return cell;
+        const s = String(cell).trim();
+        return s === "-" ? "" : cell;
+      })
+    );
+
+    for (const r of sanitizedRows) {
       aoa.push(r);
     }
 
@@ -174,13 +183,13 @@ class ExcelManager {
       rowHeights.push({ hpt: 8 });  // Gap
     }
     rowHeights.push({ hpt: 26 }); // Header
-    for (let i = 0; i < rows.length; i++) {
+    for (let i = 0; i < sanitizedRows.length; i++) {
       rowHeights.push({ hpt: 20 }); // Data rows
     }
     ws["!rows"] = rowHeights;
 
     // Set Column Widths
-    ws["!cols"] = this.calculateColWidths(headers, rows);
+    ws["!cols"] = this.calculateColWidths(headers, sanitizedRows);
 
     // Apply Cell Styles
     const totalCols = headers.length;
@@ -189,7 +198,13 @@ class ExcelManager {
     for (let r = 0; r < totalRows; r++) {
       for (let c = 0; c < totalCols; c++) {
         const cellRef = XLSX.utils.encode_cell({ r, c });
-        if (!ws[cellRef]) continue;
+        if (!ws[cellRef]) {
+          if (r >= headerRowIdx) {
+            ws[cellRef] = { t: "s", v: "" };
+          } else {
+            continue;
+          }
+        }
 
         if (title && r === 0) {
           ws[cellRef].s = styles.titleBanner;
@@ -210,17 +225,19 @@ class ExcelManager {
 
           // Check Status Column Highlights
           if (statusCols.includes(c)) {
-            if (["완료", "정상운영", "설치완료", "○", "O", "y", "Y", "적합"].includes(strVal)) {
+            if (["-", "", "단독", "대상외", "미운영/대상외"].includes(strVal)) {
+              appliedStyle = null;
+            } else if (["완료", "정상운영", "설치완료", "설치", "대상지점", "검정완료", "○", "O", "y", "Y", "적합"].includes(strVal)) {
               appliedStyle = styles.statusGreen;
-            } else if (["대기", "진행중", "미설치", "대기중", "시험·검정중", "추진중"].includes(strVal)) {
+            } else if (["대기", "진행중", "미설치", "대기중", "시험·검정중", "추진중", "검정대기", "대기·예정"].includes(strVal)) {
               appliedStyle = styles.statusAmber;
-            } else if (["미운영", "추가조치필요", "경계", "부적합", "장애"].includes(strVal)) {
+            } else if (["미운영", "추가조치필요", "경계", "부적합", "장애", "취소"].includes(strVal)) {
               appliedStyle = styles.statusRed;
-            } else if (strVal.includes("기술원")) {
+            } else if (strVal.includes("기술원") || strVal === "무선") {
               appliedStyle = styles.statusBlue;
             } else if (strVal.includes("리버앤씨") || strVal.includes("RNS")) {
               appliedStyle = styles.statusAmber;
-            } else if (["EWSV", "ADVM", "DUAL"].includes(strVal) || strVal.length > 0) {
+            } else if (["EWSV", "ADVM", "DUAL", "이중화"].includes(strVal)) {
               appliedStyle = styles.statusPurple;
             }
           }
@@ -244,6 +261,99 @@ class ExcelManager {
     return ws;
   }
 
+  // Shared Station Master Table Schema (Identical for Export & Admin Push Round-Trip)
+  buildStationMasterSheetData(dataList) {
+    const headers = [
+      "연번", "관할권역", "하천명", "관측소명(지점명)", "지점코드", "위치(주소)",
+      "경도(DMS)", "위도(DMS)", "경도(십진수)", "위도(십진수)",
+      "설치년도", "관측개시년도", "2026년 운영여부", "설치방향", "설치방식", "국사형태",
+      "홍수특보", "갈수예보", "배수영향", "조위영향", "오염총량",
+      "유속계 형식", "이중화 지점", "ADVM 수량(대)", "EWSV 수량(대)", "EWSV 무선지점",
+      "26년 검정대상", "26년 검정수량(대)", "태양광 설치 지점", "기준수위", "수위계 방식",
+      "RV박스 상태", "로거PC 에이전트", "샌더PC 에이전트", "특이사항 및 비고"
+    ];
+
+    const cleanStr = (v) => {
+      const s = String(v ?? "").trim();
+      return s === "-" ? "" : s;
+    };
+
+    const fmtCount = (v) => {
+      const s = String(v ?? "").trim();
+      if (!s || s === "-" || s === "0") return "";
+      const n = Number(s);
+      return !isNaN(n) && n > 0 ? n : s;
+    };
+
+    const rows = dataList.map(st => {
+      const isDual = !!st.isDualGauge || st.gaugeCategory === "DUAL" || (st.gaugeType && st.gaugeType.includes("EWSV") && st.gaugeType.includes("ADVM"));
+      const isWireless = !!(st.ewsvWireless || st.maintenance?.ewsvWireless);
+      const installDir = cleanStr(st.installDirection || st.maintenance?.installDirection);
+      const mountType = cleanStr(st.mountType || st.maintenance?.mountType);
+      const shelterType = cleanStr(st.shelterType || st.maintenance?.shelterType);
+      const isDrainage = !!(st.drainage || st.maintenance?.drainage);
+      const isTide = !!(st.tide || st.maintenance?.tide);
+
+      const rv = st.rvBox || {};
+      const agents = Array.isArray(st.rvBoxAgents) ? st.rvBoxAgents : (Array.isArray(rv.agents) ? rv.agents : []);
+      const rvStatus = cleanStr(st.rvBoxStatus || rv.status || (st.rvBoxInstalled === true ? "설치완료" : (st.rvBoxInstalled === false ? "미설치" : "")));
+      const loggerAgent = cleanStr(rv.logger?.agentName || agents.find(a => a.endsWith("_L") || a.includes("양수장")));
+      const senderAgent = cleanStr(rv.sender?.agentName || agents.find(a => a.endsWith("_S")));
+
+      return [
+        st.seq || st.id,
+        cleanStr(st.region),
+        cleanStr(st.river),
+        cleanStr(st.name),
+        cleanStr(st.code),
+        cleanStr(st.address),
+        cleanStr(st.coords?.lonDMS),
+        cleanStr(st.coords?.latDMS),
+        st.coords?.lon ?? "",
+        st.coords?.lat ?? "",
+        cleanStr(st.installYear),
+        cleanStr(st.obsStartYear),
+        st.isOperating2026 ? "정상운영" : "미운영",
+        installDir,
+        mountType,
+        shelterType,
+        st.floodAlert ? "○" : "",
+        st.droughtAlert ? "○" : "",
+        isDrainage ? "○" : "",
+        isTide ? "○" : "",
+        st.pollutionTotal ? "○" : "",
+        cleanStr(st.gaugeType),
+        isDual ? "○" : "",
+        fmtCount(st.advmCount),
+        fmtCount(st.ewsvCount),
+        isWireless ? "○" : "",
+        st.calib2026 ? "○" : "",
+        fmtCount(st.calibCount2026),
+        st.solarInstall ? "○" : "",
+        cleanStr(st.refWaterLevel),
+        cleanStr(st.waterLevelType),
+        rvStatus === "미운영/대상외" || rvStatus === "대상외" ? "" : rvStatus,
+        loggerAgent,
+        senderAgent,
+        cleanStr(st.memo)
+      ];
+    });
+
+    const aligns = [
+      "center", "center", "center", "left", "center", "left",
+      "center", "center", "right", "right",
+      "center", "center", "center", "center", "center", "center",
+      "center", "center", "center", "center", "center",
+      "center", "center", "center", "center", "center",
+      "center", "center", "center", "center", "center",
+      "center", "left", "left", "left"
+    ];
+
+    const statusCols = [12, 16, 17, 18, 19, 20, 22, 25, 26, 28, 31];
+
+    return { headers, rows, aligns, statusCols };
+  }
+
   // =========================================================================
   // 2. MASTER MULTI-SHEET EXCEL EXPORT (All 5 Core Datasets in One .xlsx)
   // =========================================================================
@@ -261,72 +371,12 @@ class ExcelManager {
     // SHEET 1: 전국 관측시설 종합 제원 및 현황 (223개소)
     // -------------------------------------------------------------
     const stations = window.dataManager.getAll();
-    const sheet1Headers = [
-      "연번", "관할권역", "하천명", "지점명(관측소)", "지점코드", "위치(주소)",
-      "경도(DMS)", "위도(DMS)", "경도(십진수)", "위도(십진수)",
-      "설치년도", "관측개시년도", "2026년 운영여부", "설치방향", "설치방식", "국사형태",
-      "홍수특보", "갈수예보", "배수영향", "조위영향", "오염총량",
-      "유속계 형식", "이중화여부", "ADVM 수량(대)", "EWSV 수량(대)",
-      "26년 검정대상", "26년 검정수량(대)", "태양광 설치", "기준수위(m)", "수위계 방식",
-      "RV박스 상태", "로거PC 에이전트", "샌더PC 에이전트", "특이사항 및 비고"
-    ];
-
-    const sheet1Rows = stations.map(st => {
-      const isDual = st.isDualGauge || st.gaugeCategory === "DUAL";
-      const rv = st.rvBox || {};
-      const rvStatus = st.rvBoxStatus || (st.rvBoxInstalled === true ? "설치완료" : (st.rvBoxInstalled === false ? "미설치" : "대상외"));
-      const loggerAgent = rv.logger?.agentName || (st.rvBoxAgents && st.rvBoxAgents.find(a => a.endsWith("_L"))) || "-";
-      const senderAgent = rv.sender?.agentName || (st.rvBoxAgents && st.rvBoxAgents.find(a => a.endsWith("_S"))) || "-";
-
-      return [
-        st.seq || st.id,
-        st.region || "",
-        st.river || "",
-        st.name || "",
-        st.code || "",
-        st.address || "",
-        st.coords?.lonDMS || "",
-        st.coords?.latDMS || "",
-        st.coords?.lon || "",
-        st.coords?.lat || "",
-        st.installYear || "",
-        st.obsStartYear || "",
-        st.isOperating2026 ? "정상운영" : "미운영",
-        st.installDirection || "",
-        st.mountType || "-",
-        st.shelterType || "-",
-        st.floodAlert ? "○" : "-",
-        st.droughtAlert ? "○" : "-",
-        st.drainage ? "○" : "-",
-        st.tide ? "○" : "-",
-        st.pollutionTotal ? "○" : "-",
-        st.gaugeType || "",
-        isDual ? "이중화" : "단독",
-        st.advmCount || "0",
-        st.ewsvCount || "0",
-        st.calib2026 ? "대상지점" : "-",
-        st.calibCount2026 || "0",
-        st.solarInstall ? "설치" : "-",
-        st.refWaterLevel || "-",
-        st.waterLevelType || "-",
-        rvStatus,
-        loggerAgent,
-        senderAgent,
-        st.memo || ""
-      ];
-    });
-
-    const sheet1Aligns = [
-      "center", "center", "center", "left", "center", "left",
-      "center", "center", "right", "right",
-      "center", "center", "center", "center", "center", "center",
-      "center", "center", "center", "center", "center",
-      "center", "center", "center", "center",
-      "center", "center", "center", "center", "center",
-      "center", "left", "left", "left"
-    ];
-
-    const sheet1StatusCols = [12, 16, 17, 18, 19, 20, 22, 25, 27, 30];
+    const {
+      headers: sheet1Headers,
+      rows: sheet1Rows,
+      aligns: sheet1Aligns,
+      statusCols: sheet1StatusCols
+    } = this.buildStationMasterSheetData(stations);
 
     const ws1 = this.buildStyledSheet(
       "🌊 한국수자원조사기술원 전국 자동유량관측시설 기본정보 대장",
@@ -457,9 +507,10 @@ class ExcelManager {
     XLSX.utils.book_append_sheet(wb, ws3, "3.누적_유지관리조치이력");
 
     // -------------------------------------------------------------
-    // SHEET 4: 2026년 유속계 정도검정 현황 (30개소, 176대)
+    // SHEET 4: 2026년 유속계 정도검정 현황
     // -------------------------------------------------------------
     const calibStations = stations.filter(s => s.calib2026 || parseInt(s.calibCount2026, 10) > 0);
+    const totalCalibUnits = calibStations.reduce((acc, s) => acc + (parseInt(s.calibCount2026, 10) || 0), 0);
     const sheet4Headers = [
       "순번", "권역", "하천명", "관측소명", "지점코드", "유속계 형식",
       "검정대상 대수(대)", "검정 진행상태", "검정완료일자", "검정 성적서 번호", "특이사항"
@@ -467,6 +518,7 @@ class ExcelManager {
 
     const sheet4Rows = calibStations.map((s, idx) => {
       const statusMap = { "completed": "검정완료", "ongoing": "시험·검정중", "pending": "검정대기" };
+      const curStatus = s.calibrationStatus || s.calibStatus || "pending";
       return [
         idx + 1,
         s.region || "",
@@ -475,9 +527,9 @@ class ExcelManager {
         s.code || "",
         s.gaugeType || "",
         parseInt(s.calibCount2026, 10) || 0,
-        statusMap[s.calibStatus] || s.calibStatus || "검정대기",
-        s.calibDate || "-",
-        s.calibCertNo || "-",
+        statusMap[curStatus] || curStatus || "검정대기",
+        s.calibrationDate || s.calibDate || "-",
+        s.calibrationCertNo || s.calibCertNo || "-",
         s.memo || ""
       ];
     });
@@ -487,7 +539,7 @@ class ExcelManager {
 
     const ws4 = this.buildStyledSheet(
       "🎯 2026년 유속계 정기 정도검정 추진 현황",
-      `법정 정도검정 대상 지점: ${calibStations.length}개소 | 총 검정 대상 유속계: 176대`,
+      `법정 정도검정 대상 지점: ${calibStations.length}개소 | 총 검정 대상 유속계: ${totalCalibUnits}대`,
       sheet4Headers,
       sheet4Rows,
       { headerBg: "6B21A8", aligns: sheet4Aligns, statusCols: sheet4StatusCols }
@@ -658,78 +710,12 @@ class ExcelManager {
 
     const today = new Date().toISOString().slice(0, 10);
     const todayFormatted = today.replace(/-/g, "");
-
-    const headers = [
-      "연번", "관할권역", "하천명", "관측소명(지점명)", "지점코드", "위치(주소)",
-      "경도(DMS)", "위도(DMS)", "경도(십진수)", "위도(십진수)",
-      "설치년도", "관측개시년도", "2026년 운영여부", "설치방향", "설치방식", "국사형태",
-      "홍수특보", "갈수예보", "배수영향", "조위영향", "오염총량",
-      "유속계 형식", "이중화여부", "ADVM 수량(대)", "EWSV 수량(대)",
-      "26년 검정대상", "26년 검정수량(대)", "태양광 설치", "기준수위(m)", "수위계 방식",
-      "RV박스 상태", "로거PC 에이전트", "샌더PC 에이전트", "특이사항 및 비고"
-    ];
-
-    const rows = dataList.map(st => {
-      const isDual = st.isDualGauge || st.gaugeCategory === "DUAL";
-      const rv = st.rvBox || {};
-      const rvStatus = st.rvBoxStatus || (st.rvBoxInstalled === true ? "설치완료" : (st.rvBoxInstalled === false ? "미설치" : "대상외"));
-      const loggerAgent = rv.logger?.agentName || (st.rvBoxAgents && st.rvBoxAgents.find(a => a.endsWith("_L"))) || "-";
-      const senderAgent = rv.sender?.agentName || (st.rvBoxAgents && st.rvBoxAgents.find(a => a.endsWith("_S"))) || "-";
-
-      return [
-        st.seq || st.id,
-        st.region || "",
-        st.river || "",
-        st.name || "",
-        st.code || "",
-        st.address || "",
-        st.coords?.lonDMS || "",
-        st.coords?.latDMS || "",
-        st.coords?.lon || "",
-        st.coords?.lat || "",
-        st.installYear || "",
-        st.obsStartYear || "",
-        st.isOperating2026 ? "정상운영" : "미운영",
-        st.installDirection || "",
-        st.mountType || "-",
-        st.shelterType || "-",
-        st.floodAlert ? "○" : "-",
-        st.droughtAlert ? "○" : "-",
-        st.drainage ? "○" : "-",
-        st.tide ? "○" : "-",
-        st.pollutionTotal ? "○" : "-",
-        st.gaugeType || "",
-        isDual ? "이중화" : "단독",
-        st.advmCount || "0",
-        st.ewsvCount || "0",
-        st.calib2026 ? "대상지점" : "-",
-        st.calibCount2026 || "0",
-        st.solarInstall ? "설치" : "-",
-        st.refWaterLevel || "-",
-        st.waterLevelType || "-",
-        rvStatus,
-        loggerAgent,
-        senderAgent,
-        st.memo || ""
-      ];
-    });
-
-    const aligns = [
-      "center", "center", "center", "left", "center", "left",
-      "center", "center", "right", "right",
-      "center", "center", "center", "center", "center", "center",
-      "center", "center", "center", "center", "center",
-      "center", "center", "center", "center",
-      "center", "center", "center", "center", "center",
-      "center", "left", "left", "left"
-    ];
-
-    const statusCols = [12, 16, 17, 18, 19, 20, 22, 25, 27, 30];
+    const { headers, rows, aligns, statusCols } = this.buildStationMasterSheetData(dataList);
 
     const wb = XLSX.utils.book_new();
     const ws = this.buildStyledSheet(
       "🌊 한국수자원조사기술원 전국 자동유량관측시설 기본정보 현황",
-      `${onlyFiltered ? `[필터 적용 조회결과: ${dataList.length}개소]` : `[전국 223개소 전체]`} | 기준일: ${today}`,
+      `${onlyFiltered ? `[필터 적용 조회결과: ${dataList.length}개소]` : `[전국 ${dataList.length}개소 전체]`} | 기준일: ${today}`,
       headers,
       rows,
       { headerBg: "1E3A8A", aligns, statusCols }
@@ -907,21 +893,25 @@ class ExcelManager {
       "검정대상 대수(대)", "검정 진행상태", "검정완료일자", "검정 성적서 번호", "특이사항"
     ];
 
+    const totalCalibUnits = calibStations.reduce((acc, s) => acc + (parseInt(s.calibCount2026, 10) || 0), 0);
     const statusMap = { "completed": "검정완료", "ongoing": "시험·검정중", "pending": "검정대기" };
 
-    const rows = calibStations.map((s, idx) => [
-      idx + 1,
-      s.region || "",
-      s.river || "",
-      s.name || "",
-      s.code || "",
-      s.gaugeType || "",
-      parseInt(s.calibCount2026, 10) || 0,
-      statusMap[s.calibStatus] || s.calibStatus || "검정대기",
-      s.calibDate || "-",
-      s.calibCertNo || "-",
-      s.memo || ""
-    ]);
+    const rows = calibStations.map((s, idx) => {
+      const curStatus = s.calibrationStatus || s.calibStatus || "pending";
+      return [
+        idx + 1,
+        s.region || "",
+        s.river || "",
+        s.name || "",
+        s.code || "",
+        s.gaugeType || "",
+        parseInt(s.calibCount2026, 10) || 0,
+        statusMap[curStatus] || curStatus || "검정대기",
+        s.calibrationDate || s.calibDate || "-",
+        s.calibrationCertNo || s.calibCertNo || "-",
+        s.memo || ""
+      ];
+    });
 
     const aligns = ["center", "center", "center", "left", "center", "center", "center", "center", "center", "center", "left"];
     const statusCols = [7];
@@ -929,7 +919,7 @@ class ExcelManager {
     const wb = XLSX.utils.book_new();
     const ws = this.buildStyledSheet(
       "🎯 2026년 유속계 정기 정도검정 추진 현황 대장",
-      `검정 대상 30개소 (총 176대 유속계) 시험·검정 및 교정 결과 | 기준일: ${today}`,
+      `검정 대상 ${calibStations.length}개소 (총 ${totalCalibUnits}대 유속계) 시험·검정 및 교정 결과 | 기준일: ${today}`,
       headers,
       rows,
       { headerBg: "6B21A8", aligns, statusCols }
@@ -1339,13 +1329,36 @@ class ExcelManager {
         const currentStations = window.dataManager.getAll();
         const stationMapByCode = new Map();
         const stationMapByName = new Map();
+        const stationMapBySeq = new Map();
         const stationMapById = new Map();
+        const touchedStationIds = new Set();
 
         currentStations.forEach(st => {
-          if (st.code) stationMapByCode.set(String(st.code).trim(), st);
+          const c = String(st.code || "").trim();
+          if (c && c !== "-") stationMapByCode.set(c, st);
           if (st.name) stationMapByName.set(String(st.name).trim(), st);
-          stationMapById.set(st.id, st);
+          if (st.seq) stationMapBySeq.set(Number(st.seq), st);
+          stationMapById.set(Number(st.id), st);
         });
+
+        const pickVal = (row, keys) => {
+          for (const k of keys) {
+            if (Object.prototype.hasOwnProperty.call(row, k) && row[k] !== undefined) {
+              return row[k];
+            }
+          }
+          return undefined;
+        };
+
+        const isChecked = (val) => {
+          const s = String(val ?? "").trim();
+          return ["○", "O", "o", "1", "Y", "y", "true", "TRUE", "운영", "정상운영", "운영중", "이중화", "무선", "설치", "설치완료", "대상", "대상지점", "지정", "해당"].includes(s);
+        };
+
+        const normCount = (val) => {
+          const s = String(val ?? "").trim();
+          return (s === "" || s === "-" || s === "0") ? "" : s;
+        };
 
         let updatedStationsCount = 0;
         let updatedTasksCount = 0;
@@ -1388,100 +1401,258 @@ class ExcelManager {
 
           const sampleKeys = Object.keys(rows[0] || {}).join(" ");
 
-          // 1. Check if Sheet represents Station Master Specs
-          if (sampleKeys.includes("위치") || sampleKeys.includes("지점코드") || sampleKeys.includes("유속계 형식") || sampleKeys.includes("국사형태")) {
-            rows.forEach((r, idx) => {
-              const code = String(r["지점코드"] || "").trim();
-              const name = String(r["지점명"] || r["지점명(관측소)"] || r["관측소명(지점명)"] || "").trim();
-              const seq = parseInt(r["연번"] || r["순번"], 10) || (idx + 1);
+          // 1. Check if Sheet represents Station Master Specs (System Export OR Status Excel)
+          if (
+            (sampleKeys.includes("위치") || sampleKeys.includes("유속계 형식") || sampleKeys.includes("형식(유속계)") || sampleKeys.includes("국사형태")) &&
+            !sampleKeys.includes("검정 진행상태") &&
+            !sampleKeys.includes("자동복구누전차단기")
+          ) {
+            const maxExistingId = currentStations.reduce((m, s) => Math.max(m, Number(s.id) || 0), 0);
+            let nextNewId = maxExistingId + 1;
 
-              let targetStation = stationMapByCode.get(code) || stationMapByName.get(name) || stationMapById.get(seq);
+            rows.forEach((r, idx) => {
+              const codeRaw = pickVal(r, ["지점코드"]);
+              const code = String(codeRaw ?? "").trim();
+              const nameRaw = pickVal(r, ["관측소명(지점명)", "지점명(관측소)", "지점명", "관측소명"]);
+              const name = String(nameRaw ?? "").trim();
+              const seqParsed = parseInt(pickVal(r, ["연번", "순번"]), 10);
+              const seq = !isNaN(seqParsed) ? seqParsed : (idx + 1);
+
+              // Skip empty summary/footer rows that lack station identity
+              if (!name && (!code || code === "-") && isNaN(seqParsed)) return;
+
+              let targetStation =
+                (code && code !== "-" ? stationMapByCode.get(code) : null) ||
+                (!isNaN(seqParsed) ? stationMapBySeq.get(seqParsed) : null) ||
+                (name ? stationMapByName.get(name) : null) ||
+                (!isNaN(seqParsed) ? stationMapById.get(seqParsed) : null);
+
               if (!targetStation) {
+                const newId = (!isNaN(seqParsed) && !stationMapById.has(seqParsed)) ? seqParsed : nextNewId++;
                 targetStation = {
-                  id: seq,
+                  id: newId,
                   seq: seq,
                   maintenance: { completedTasks: {}, tasks: {} }
                 };
                 currentStations.push(targetStation);
-                if (code) stationMapByCode.set(code, targetStation);
+                if (code && code !== "-") stationMapByCode.set(code, targetStation);
                 if (name) stationMapByName.set(name, targetStation);
-                stationMapById.set(seq, targetStation);
+                stationMapBySeq.set(seq, targetStation);
+                stationMapById.set(newId, targetStation);
               }
 
-              const lonDMS = String(r["경도"] || r["경도(DMS)"] || targetStation.coords?.lonDMS || "").trim();
-              const latDMS = String(r["위도"] || r["위도(DMS)"] || targetStation.coords?.latDMS || "").trim();
-              const gaugeType = String(r["형식(유속계)"] || r["유속계 형식"] || targetStation.gaugeType || "").trim();
-              const isDual = (gaugeType.includes("EWSV") && gaugeType.includes("ADVM")) || gaugeType.includes(",") || String(r["이중화여부"] || "").includes("이중화");
-
-              targetStation.region = String(r["관할명"] || r["관할권역"] || targetStation.region || "").trim();
-              targetStation.river = String(r["하천명"] || targetStation.river || "").trim();
-              targetStation.name = name || targetStation.name;
-              targetStation.code = code || targetStation.code;
-              targetStation.address = String(r["위치"] || r["위치(주소)"] || targetStation.address || "").trim();
-              targetStation.installYear = String(r["설치년도"] || targetStation.installYear || "").trim();
-              targetStation.obsStartYear = String(r["관측개시년도"] || targetStation.obsStartYear || "").trim();
-
-              if (r["2026년 운영"] !== undefined || r["2026년 운영여부"] !== undefined) {
-                const opStr = String(r["2026년 운영"] || r["2026년 운영여부"] || "").trim();
-                targetStation.isOperating2026 = ["○", "O", "o", "1", "Y", "y", "운영", "정상운영"].includes(opStr);
+              if (!targetStation.maintenance || typeof targetStation.maintenance !== "object") {
+                targetStation.maintenance = { completedTasks: {}, tasks: {} };
               }
 
-              if (r["설치방향"] !== undefined) targetStation.installDirection = String(r["설치방향"] || "").trim();
-              if (r["설치방식"] !== undefined) targetStation.mountType = String(r["설치방식"] || "-").trim();
-              if (r["국사형태"] !== undefined) targetStation.shelterType = String(r["국사형태"] || "-").trim();
+              if (!isNaN(seqParsed)) targetStation.seq = seqParsed;
 
-              if (r["홍수특보"] !== undefined) targetStation.floodAlert = ["○", "O", "o", "1", "Y", "y"].includes(String(r["홍수특보"]).trim());
-              if (r["갈수예보"] !== undefined) targetStation.droughtAlert = ["○", "O", "o", "1", "Y", "y"].includes(String(r["갈수예보"]).trim());
-              if (r["배수"] !== undefined || r["배수영향"] !== undefined) targetStation.drainage = ["○", "O", "o", "1", "Y", "y"].includes(String(r["배수"] || r["배수영향"]).trim());
-              if (r["조위"] !== undefined || r["조위영향"] !== undefined) targetStation.tide = ["○", "O", "o", "1", "Y", "y"].includes(String(r["조위"] || r["조위영향"]).trim());
-              if (r["오염총량"] !== undefined) targetStation.pollutionTotal = ["○", "O", "o", "1", "Y", "y"].includes(String(r["오염총량"]).trim());
+              const regionVal = pickVal(r, ["관할권역", "관할명", "권역"]);
+              if (regionVal !== undefined && String(regionVal).trim() !== "") {
+                targetStation.region = String(regionVal).trim();
+              }
+
+              const riverVal = pickVal(r, ["하천명"]);
+              if (riverVal !== undefined && String(riverVal).trim() !== "") {
+                targetStation.river = String(riverVal).trim();
+              }
+
+              if (name) targetStation.name = name;
+              if (code) targetStation.code = code;
+
+              const addrVal = pickVal(r, ["위치(주소)", "위치", "주소"]);
+              if (addrVal !== undefined && String(addrVal).trim() !== "") {
+                targetStation.address = String(addrVal).trim();
+              }
+
+              const instYearVal = pickVal(r, ["설치년도"]);
+              if (instYearVal !== undefined && String(instYearVal).trim() !== "") {
+                targetStation.installYear = String(instYearVal).trim();
+              }
+
+              const obsYearVal = pickVal(r, ["관측개시년도"]);
+              if (obsYearVal !== undefined) {
+                targetStation.obsStartYear = String(obsYearVal).trim() || "-";
+              }
+
+              const opVal = pickVal(r, ["2026년 운영여부", "2026년 운영"]);
+              if (opVal !== undefined) {
+                targetStation.isOperating2026 = isChecked(opVal);
+              }
+
+              const dirVal = pickVal(r, ["설치방향"]);
+              if (dirVal !== undefined) {
+                const cleanDir = String(dirVal).trim();
+                targetStation.installDirection = cleanDir === "-" ? "" : cleanDir;
+                targetStation.maintenance.installDirection = targetStation.installDirection;
+              }
+
+              const mountVal = pickVal(r, ["설치방식"]);
+              if (mountVal !== undefined) {
+                targetStation.mountType = String(mountVal).trim() || "-";
+                targetStation.maintenance.mountType = targetStation.mountType;
+              }
+
+              const shelterVal = pickVal(r, ["국사형태"]);
+              if (shelterVal !== undefined) {
+                targetStation.shelterType = String(shelterVal).trim() || "-";
+                targetStation.maintenance.shelterType = targetStation.shelterType;
+              }
+
+              const floodVal = pickVal(r, ["홍수특보"]);
+              if (floodVal !== undefined) targetStation.floodAlert = isChecked(floodVal);
+
+              const droughtVal = pickVal(r, ["갈수예보"]);
+              if (droughtVal !== undefined) targetStation.droughtAlert = isChecked(droughtVal);
+
+              const drainVal = pickVal(r, ["배수영향", "배수"]);
+              if (drainVal !== undefined) {
+                targetStation.drainage = isChecked(drainVal);
+                targetStation.maintenance.drainage = targetStation.drainage;
+              }
+
+              const tideVal = pickVal(r, ["조위영향", "조위"]);
+              if (tideVal !== undefined) {
+                targetStation.tide = isChecked(tideVal);
+                targetStation.maintenance.tide = targetStation.tide;
+              }
+
+              const pollVal = pickVal(r, ["오염총량"]);
+              if (pollVal !== undefined) targetStation.pollutionTotal = isChecked(pollVal);
+
+              // Velocity Gauge Type & Dual Gauge Status
+              const gaugeRaw = pickVal(r, ["유속계 형식", "형식(유속계)"]);
+              const gaugeType = gaugeRaw !== undefined && String(gaugeRaw).trim() !== ""
+                ? String(gaugeRaw).trim()
+                : String(targetStation.gaugeType || "").trim();
+
+              const dualRaw = pickVal(r, ["이중화 지점", "이중화여부"]);
+              let isDual = false;
+              if (dualRaw !== undefined) {
+                const dualStr = String(dualRaw).trim();
+                if (isChecked(dualStr)) {
+                  isDual = true;
+                } else if (dualStr === "단독" || dualStr === "미해당") {
+                  isDual = false;
+                } else {
+                  isDual = (gaugeType.includes("EWSV") && gaugeType.includes("ADVM")) || gaugeType.includes(",");
+                }
+              } else {
+                isDual = (gaugeType.includes("EWSV") && gaugeType.includes("ADVM")) || gaugeType.includes(",") || !!targetStation.isDualGauge;
+              }
 
               targetStation.gaugeType = gaugeType;
-              targetStation.gaugeCategory = isDual ? "DUAL" : (gaugeType.includes("EWSV") ? "EWSV" : "ADVM");
               targetStation.isDualGauge = isDual;
+              targetStation.gaugeCategory = isDual ? "DUAL" : (gaugeType.includes("EWSV") ? "EWSV" : "ADVM");
 
-              if (r["ADVM (대)"] !== undefined || r["ADVM 수량(대)"] !== undefined) {
-                targetStation.advmCount = String(r["ADVM (대)"] || r["ADVM 수량(대)"] || "").trim();
+              // ADVM / EWSV Counts
+              const advmRaw = pickVal(r, ["ADVM 수량(대)", "ADVM (대)"]);
+              if (advmRaw !== undefined) {
+                targetStation.advmCount = normCount(advmRaw);
               }
-              if (r["EWSV (대)"] !== undefined || r["EWSV 수량(대)"] !== undefined) {
-                targetStation.ewsvCount = String(r["EWSV (대)"] || r["EWSV 수량(대)"] || "").trim();
-              }
-
-              if (r["26년 유속계 검정지점"] !== undefined || r["26년 검정대상"] !== undefined) {
-                targetStation.calib2026 = ["○", "O", "o", "1", "Y", "y", "대상지점"].includes(String(r["26년 유속계 검정지점"] || r["26년 검정대상"]).trim());
-              }
-              if (r["26년 검정대상 유속계(대)"] !== undefined || r["26년 검정수량(대)"] !== undefined) {
-                targetStation.calibCount2026 = String(r["26년 검정대상 유속계(대)"] || r["26년 검정수량(대)"] || "").trim();
+              const ewsvRaw = pickVal(r, ["EWSV 수량(대)", "EWSV (대)"]);
+              if (ewsvRaw !== undefined) {
+                targetStation.ewsvCount = normCount(ewsvRaw);
               }
 
-              if (r["태양광 설치 지점"] !== undefined || r["태양광 설치"] !== undefined) {
-                targetStation.solarInstall = ["○", "O", "o", "1", "Y", "y", "설치"].includes(String(r["태양광 설치 지점"] || r["태양광 설치"]).trim());
+              // EWSV Wireless Station Flag
+              const wirelessRaw = pickVal(r, ["EWSV 무선지점", "무선지점"]);
+              if (wirelessRaw !== undefined) {
+                targetStation.ewsvWireless = isChecked(wirelessRaw);
+                targetStation.maintenance.ewsvWireless = targetStation.ewsvWireless;
               }
 
-              if (r["기준수위"] !== undefined || r["기준수위(m)"] !== undefined) {
-                targetStation.refWaterLevel = String(r["기준수위"] || r["기준수위(m)"] || "").trim();
+              // 2026 Calibration Target & Count
+              const calibRaw = pickVal(r, ["26년 검정대상", "26년 유속계 검정지점"]);
+              if (calibRaw !== undefined) {
+                targetStation.calib2026 = isChecked(calibRaw);
               }
-              if (r["수위계 방식"] !== undefined) {
-                targetStation.waterLevelType = String(r["수위계 방식"] || "").trim();
+              const calibCountRaw = pickVal(r, ["26년 검정수량(대)", "26년 검정대상 유속계(대)"]);
+              if (calibCountRaw !== undefined) {
+                targetStation.calibCount2026 = normCount(calibCountRaw);
               }
 
-              if (r["RV박스 상태"] !== undefined) {
-                const rvStr = String(r["RV박스 상태"]).trim();
+              // Solar Power Installation
+              const solarRaw = pickVal(r, ["태양광 설치 지점", "태양광 설치"]);
+              if (solarRaw !== undefined) {
+                targetStation.solarInstall = isChecked(solarRaw);
+              }
+
+              // Water Level Reference & Sensor Type
+              const refWlRaw = pickVal(r, ["기준수위", "기준수위(m)"]);
+              if (refWlRaw !== undefined) {
+                const s = String(refWlRaw).trim();
+                targetStation.refWaterLevel = s === "-" ? "" : s;
+              }
+              const wlTypeRaw = pickVal(r, ["수위계 방식"]);
+              if (wlTypeRaw !== undefined) {
+                targetStation.waterLevelType = String(wlTypeRaw).trim() || "-";
+              }
+
+              // RV Box Status & Logger/Sender Agents
+              const rvRaw = pickVal(r, ["RV박스 상태"]);
+              const loggerRaw = pickVal(r, ["로거PC 에이전트"]);
+              const senderRaw = pickVal(r, ["샌더PC 에이전트"]);
+              if (rvRaw !== undefined) {
+                const rvStr = String(rvRaw).trim();
                 targetStation.rvBoxStatus = rvStr || undefined;
-                targetStation.rvBoxInstalled = rvStr.includes("설치완료") || rvStr.includes("○") || rvStr === "O" ? true : (rvStr.includes("미설치") ? false : null);
+                targetStation.rvBoxInstalled = (rvStr.includes("설치완료") || rvStr === "○" || rvStr === "O")
+                  ? true
+                  : (rvStr.includes("미설치") ? false : null);
+              }
+              if (loggerRaw !== undefined || senderRaw !== undefined) {
+                const nextAgents = [];
+                const lStr = String(loggerRaw ?? "").trim();
+                const sStr = String(senderRaw ?? "").trim();
+                if (lStr && lStr !== "-") nextAgents.push(lStr);
+                if (sStr && sStr !== "-") nextAgents.push(sStr);
+                targetStation.rvBoxAgents = nextAgents;
               }
 
-              if (r["비고"] !== undefined || r["특이사항 및 비고"] !== undefined) {
-                targetStation.memo = String(r["비고"] || r["특이사항 및 비고"] || "").trim();
+              // Memo
+              const memoRaw = pickVal(r, ["특이사항 및 비고", "비고"]);
+              if (memoRaw !== undefined) {
+                const mStr = String(memoRaw).trim();
+                targetStation.memo = mStr === "-" ? "" : mStr;
               }
 
-              targetStation.coords = {
-                lonDMS: lonDMS,
-                latDMS: latDMS,
-                lon: this.parseDMSCoords(lonDMS) || targetStation.coords?.lon,
-                lat: this.parseDMSCoords(latDMS) || targetStation.coords?.lat
-              };
+              // Coordinates (Supports both DMS and Decimal Lat/Lon edits)
+              const prevLonDMS = targetStation.coords?.lonDMS || "";
+              const prevLatDMS = targetStation.coords?.latDMS || "";
+              const lonDMSRaw = pickVal(r, ["경도(DMS)", "경도"]);
+              const latDMSRaw = pickVal(r, ["위도(DMS)", "위도"]);
+              const lonDecRaw = pickVal(r, ["경도(십진수)"]);
+              const latDecRaw = pickVal(r, ["위도(십진수)"]);
 
+              const lonDMS = lonDMSRaw !== undefined && String(lonDMSRaw).trim() !== ""
+                ? String(lonDMSRaw).trim()
+                : prevLonDMS;
+              const latDMS = latDMSRaw !== undefined && String(latDMSRaw).trim() !== ""
+                ? String(latDMSRaw).trim()
+                : prevLatDMS;
+
+              let lon = targetStation.coords?.lon ?? null;
+              let lat = targetStation.coords?.lat ?? null;
+
+              if (lonDMS && lonDMS !== prevLonDMS) {
+                lon = this.parseDMSCoords(lonDMS) ?? lon;
+              } else if (lonDecRaw !== undefined && String(lonDecRaw).trim() !== "" && !isNaN(parseFloat(lonDecRaw))) {
+                lon = parseFloat(lonDecRaw);
+              } else if (!lon && lonDMS) {
+                lon = this.parseDMSCoords(lonDMS);
+              }
+
+              if (latDMS && latDMS !== prevLatDMS) {
+                lat = this.parseDMSCoords(latDMS) ?? lat;
+              } else if (latDecRaw !== undefined && String(latDecRaw).trim() !== "" && !isNaN(parseFloat(latDecRaw))) {
+                lat = parseFloat(latDecRaw);
+              } else if (!lat && latDMS) {
+                lat = this.parseDMSCoords(latDMS);
+              }
+
+              targetStation.coords = { lonDMS, latDMS, lon, lat };
+
+              touchedStationIds.add(targetStation.id);
               updatedStationsCount++;
             });
           }
@@ -1491,9 +1662,13 @@ class ExcelManager {
             rows.forEach((r, idx) => {
               const code = String(r["지점코드"] || "").trim();
               const name = String(r["관측소명"] || r["지점명"] || "").trim();
-              const seq = parseInt(r["연번"] || r["순번"], 10) || (idx + 1);
+              const seqParsed = parseInt(r["연번"] || r["순번"], 10);
 
-              const st = stationMapByCode.get(code) || stationMapByName.get(name) || stationMapById.get(seq);
+              const st =
+                (code && code !== "-" ? stationMapByCode.get(code) : null) ||
+                (!isNaN(seqParsed) ? stationMapBySeq.get(seqParsed) : null) ||
+                stationMapByName.get(name) ||
+                stationMapById.get(seqParsed || (idx + 1));
               if (!st) return;
 
               if (!st.maintenance) st.maintenance = {};
@@ -1523,6 +1698,7 @@ class ExcelManager {
               });
 
               st.maintenance.hasMaintData = true;
+              touchedStationIds.add(st.id);
               updatedTasksCount++;
             });
           }
@@ -1532,23 +1708,36 @@ class ExcelManager {
             rows.forEach((r, idx) => {
               const code = String(r["지점코드"] || "").trim();
               const name = String(r["관측소명"] || r["지점명"] || "").trim();
-              const seq = parseInt(r["순번"] || r["연번"], 10) || (idx + 1);
+              const seqParsed = parseInt(r["순번"] || r["연번"], 10);
 
-              const st = stationMapByCode.get(code) || stationMapByName.get(name) || stationMapById.get(seq);
+              const st =
+                (code && code !== "-" ? stationMapByCode.get(code) : null) ||
+                stationMapByName.get(name) ||
+                (!isNaN(seqParsed) ? stationMapBySeq.get(seqParsed) : null) ||
+                stationMapById.get(seqParsed || (idx + 1));
               if (!st) return;
 
               const statusStr = String(r["검정 진행상태"] || r["검정상태"] || "").trim();
               if (statusStr) {
-                if (statusStr.includes("완료")) st.calibStatus = "completed";
-                else if (statusStr.includes("시험") || statusStr.includes("검정중") || statusStr.includes("진행")) st.calibStatus = "ongoing";
-                else st.calibStatus = "pending";
+                const normStatus = statusStr.includes("완료")
+                  ? "completed"
+                  : ((statusStr.includes("시험") || statusStr.includes("검정중") || statusStr.includes("진행")) ? "ongoing" : "pending");
+                st.calibrationStatus = normStatus;
+                st.calibStatus = normStatus;
               }
 
-              if (r["검정완료일자"] !== undefined) st.calibDate = String(r["검정완료일자"] || "").trim();
+              if (r["검정완료일자"] !== undefined) {
+                const dVal = String(r["검정완료일자"] || "").trim();
+                st.calibrationDate = dVal === "-" ? "" : dVal;
+                st.calibDate = st.calibrationDate;
+              }
               if (r["검정 성적서 번호"] !== undefined || r["성적서번호"] !== undefined) {
-                st.calibCertNo = String(r["검정 성적서 번호"] || r["성적서번호"] || "").trim();
+                const cVal = String(r["검정 성적서 번호"] !== undefined ? r["검정 성적서 번호"] : r["성적서번호"]).trim();
+                st.calibrationCertNo = cVal === "-" ? "" : cVal;
+                st.calibCertNo = st.calibrationCertNo;
               }
 
+              touchedStationIds.add(st.id);
               updatedCalibCount++;
             });
           }
@@ -1602,10 +1791,17 @@ class ExcelManager {
         }
 
         if (confirm(summaryMsg)) {
-          // 1. Save all station updates
+          // 1. Save touched station updates to Local Cache & Server DB
           window.dataManager.importAll(currentStations);
-          if (window.apiClient) {
-            await window.apiClient.batchUpdateStations(currentStations);
+          const stationsToPush = touchedStationIds.size > 0
+            ? currentStations.filter(s => touchedStationIds.has(s.id))
+            : currentStations;
+
+          if (window.apiClient && stationsToPush.length > 0) {
+            const batchRes = await window.apiClient.batchUpdateStations(stationsToPush);
+            if (!batchRes || !batchRes.success) {
+              throw new Error(batchRes?.message || "서버 데이터베이스 일괄 저장에 실패했습니다.");
+            }
           }
 
           // 2. Save history records if any
@@ -1617,7 +1813,8 @@ class ExcelManager {
             }
           }
 
-          // 3. Refresh UI & Feedback
+          // 3. Reload canonical DB state & refresh UI
+          await window.dataManager.init();
           window.app.refreshAll();
           if (window.maintenanceHistoryManager) {
             await window.maintenanceHistoryManager.fetchHistory();
@@ -1626,7 +1823,7 @@ class ExcelManager {
             await window.logsManager.fetchLogs();
           }
 
-          window.app.showToast("✅ 엑셀 데이터가 시스템 데이터베이스에 성공적으로 일괄 반영(밀어넣기 완료)되었습니다.", "success");
+          window.app.showToast(`✅ 엑셀 데이터(${stationsToPush.length}개소)가 시스템 데이터베이스에 성공적으로 일괄 반영되었습니다.`, "success");
         }
       } catch (err) {
         console.error("Excel import error:", err);

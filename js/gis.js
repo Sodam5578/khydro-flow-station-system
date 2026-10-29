@@ -22,6 +22,7 @@ class GISManager {
       calibOnly: false,
       solarOnly: false,
       dualOnly: false,
+      wirelessOnly: false,
       searchKeyword: ""
     };
   }
@@ -235,13 +236,14 @@ class GISManager {
     }
 
     // 4. Designated Checkboxes Counts
-    let operatingCount = 0, floodCount = 0, droughtCount = 0, calibCount = 0, solarCount = 0;
+    let operatingCount = 0, floodCount = 0, droughtCount = 0, calibCount = 0, solarCount = 0, wirelessCount = 0;
     allStations.forEach(st => {
       if (st.isOperating2026) operatingCount++;
       if (st.floodAlert) floodCount++;
       if (st.droughtAlert) droughtCount++;
       if (st.calib2026) calibCount++;
       if (st.solarInstall) solarCount++;
+      if (st.ewsvWireless || st.maintenance?.ewsvWireless) wirelessCount++;
     });
 
     const setCheckLabel = (checkId, labelText) => {
@@ -252,7 +254,8 @@ class GISManager {
       }
     };
 
-    setCheckLabel("gis-check-dual", `⚡ 이중화(EWSV+ADVM) 지점 (${dualCount}개소)`);
+    setCheckLabel("gis-check-dual", `⚡ 이중화 지점 (${dualCount}개소)`);
+    setCheckLabel("gis-check-wireless", `📶 EWSV 무선지점 (${wirelessCount}개소)`);
     setCheckLabel("gis-check-operating", `2026년 정상 운영 지점 (${operatingCount}개소)`);
     setCheckLabel("gis-check-flood", `홍수특보 지정 지점 (${floodCount}개소)`);
     setCheckLabel("gis-check-drought", `갈수예보 지정 지점 (${droughtCount}개소)`);
@@ -347,6 +350,8 @@ class GISManager {
       if (this.filters.calibOnly && !st.calib2026) return;
       if (this.filters.solarOnly && !st.solarInstall) return;
       if (this.filters.dualOnly && !isDual) return;
+      const isWireless = !!(st.ewsvWireless || st.maintenance?.ewsvWireless);
+      if (this.filters.wirelessOnly && !isWireless) return;
 
       // Filter: Keyword search
       if (this.filters.searchKeyword) {
@@ -437,7 +442,7 @@ class GISManager {
             <div class="popup-row" style="margin-top:4px;"><span class="popup-row-label">위치(주소):</span> <span style="font-weight:500;">${st.address || "-"}</span></div>
             <div class="popup-row">
               <span class="popup-row-label">유속계 형식:</span> 
-              <span><b style="color:${isDual ? "#7c3aed" : "#1d4ed8"};">${st.gaugeType || "-"}</b> ${isDual ? "(EWSV+ADVM 복합)" : ""}</span>
+              <span><b style="color:${isDual ? "#7c3aed" : "#1d4ed8"};">${st.gaugeType || "-"}</b> ${isDual ? "(EWSV+ADVM 복합)" : ""} ${isWireless ? '<span class="badge badge-cyan" style="font-weight:700;">📶 무선</span>' : ""}</span>
             </div>
             <div class="popup-row">
               <span class="popup-row-label">장비 대수:</span> 
@@ -445,7 +450,7 @@ class GISManager {
             </div>
             <div class="popup-row"><span class="popup-row-label">설치/개시:</span> <span>${st.installYear || "-"}년 / ${st.obsStartYear || "-"}년</span></div>
             <div class="popup-row"><span class="popup-row-label">26년 운영여부:</span> <span>${st.isOperating2026 ? "<span class=\"badge badge-green\">운영중</span>" : "<span class=\"badge badge-gray\">미운영/대기</span>"}</span></div>
-            <div class="popup-row"><span class="popup-row-label">지정 구분:</span> <span>${st.floodAlert ? "<span class=\"badge badge-red\">홍수</span> " : ""}${st.droughtAlert ? "<span class=\"badge badge-amber\">갈수</span> " : ""}${st.calib2026 ? "<span class=\"badge badge-cyan\">검정</span>" : ""}${!st.floodAlert && !st.droughtAlert && !st.calib2026 ? "-" : ""}</span></div>
+            <div class="popup-row"><span class="popup-row-label">지정 구분:</span> <span>${st.solarInstall ? "<span class=\"badge badge-amber\">☀️ 태양광</span> " : ""}${st.floodAlert ? "<span class=\"badge badge-red\">홍수</span> " : ""}${st.droughtAlert ? "<span class=\"badge badge-amber\">갈수</span> " : ""}${st.calib2026 ? "<span class=\"badge badge-cyan\">검정</span>" : ""}${!st.solarInstall && !st.floodAlert && !st.droughtAlert && !st.calib2026 ? "-" : ""}</span></div>
           </div>
           
           <div class="popup-footer">
