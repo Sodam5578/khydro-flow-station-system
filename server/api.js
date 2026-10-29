@@ -974,15 +974,15 @@ router.post("/monitor/sync", async (req, res) => {
   }
 });
 
-// 14-1. Live Monitor: 24h Time Series for 7 Metrics
-router.get("/monitor/timeseries/:code", (req, res) => {
+// 14-1. Live Monitor: 24h Time Series for 7 Metrics (KST [now - 20m - 24h] ~ [now - 20m])
+router.get("/monitor/timeseries/:code", async (req, res) => {
   try {
     const code = req.params.code;
-    const monitorData = liveMonitor.getData();
-    const liveMetrics = monitorData.latestMetricsMap ? monitorData.latestMetricsMap[code] : null;
-    const data = timeseriesService.get24hTimeSeries(code, liveMetrics);
+    const forceRefresh = req.query.refresh === "1" || req.query.refresh === "true";
+    const data = await timeseriesService.get24hTimeSeries(code, { forceRefresh });
     res.json({ success: true, ...data });
   } catch (e) {
+    console.error("[API] /monitor/timeseries error:", e);
     res.status(500).json({ success: false, error: e.message });
   }
 });

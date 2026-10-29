@@ -4,13 +4,15 @@ const path = require("path");
 const { initDb } = require("./db");
 const apiRouter = require("./api");
 const monitorService = require("./monitor");
+const timeseriesService = require("./timeseries");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize Database & Live Monitoring Service
+// Initialize Database, Live Monitoring & Real-Time Time-Series Services
 initDb();
 monitorService.init();
+timeseriesService.init();
 
 // Middlewares
 app.use(cors());

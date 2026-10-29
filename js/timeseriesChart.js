@@ -16,6 +16,7 @@ class TimeSeriesChartManager {
     this.currentCode = null;
     this.activeTab = "waterLevel";
     this.cachedData = null;
+    this._loadSeq = 0;
     this.tabConfigs = {
       waterLevel: {
         title: "🌊 수위 추이",
@@ -98,6 +99,7 @@ class TimeSeriesChartManager {
    * Initializes or refreshes time-series chart inside station modal.
    */
   async loadAndRender(stationCode, defaultTab = "waterLevel") {
+    const reqSeq = ++this._loadSeq;
     this.currentCode = stationCode;
     this.activeTab = defaultTab;
 
@@ -108,22 +110,27 @@ class TimeSeriesChartManager {
     container.innerHTML = `
       <div style="text-align:center; padding:1.5rem; color:#64748b;">
         <div style="font-size:1.5rem; margin-bottom:6px;">⏳</div>
-        <div>최근 24시간 실시간 시계열 관측 자료를 불러오는 중입니다...</div>
+        <div>현 시각 20분 전 ~ 1일 전 (24시간) 원시 관측자료를 불러오는 중입니다...</div>
       </div>
     `;
 
     try {
       const res = await fetch(`/api/monitor/timeseries/${encodeURIComponent(stationCode)}`);
       const json = await res.json();
+      if (reqSeq !== this._loadSeq) return;
 
       if (!json.success || !json.hasData || !json.points || json.points.length === 0) {
+        const rangeInfo = (json.startTime && json.endTime)
+          ? `<div style="margin-top:0.6rem; font-size:0.78rem; color:#475569; font-family:monospace;">조회 기준 구간: ${json.startTime} ~ ${json.endTime}</div>`
+          : "";
         container.innerHTML = `
           <div style="text-align:center; padding:3rem 1.5rem; background:#f8fafc; border-radius:10px; border:1px dashed #cbd5e1; margin:1rem 0;">
             <div style="font-size:2.5rem; margin-bottom:0.8rem;">📡</div>
-            <h3 style="font-size:1.15rem; font-weight:700; color:#1e293b; margin-bottom:0.5rem;">실시간 관측자료 미수집 지점</h3>
+            <h3 style="font-size:1.15rem; font-weight:700; color:#1e293b; margin-bottom:0.5rem;">실시간 관측자료 미수집 · 미수신 지점</h3>
             <p style="color:#64748b; font-size:0.88rem; line-height:1.6; max-width:520px; margin:0 auto;">
-              ${json.message || `해당 관측소(<b>지점코드: ${stationCode}</b>)는 현재 실시간 관측자료 수집 대상에 포함되지 않았거나, 2026년 구축예정/미운영 상태로 수신된 관측자료가 없습니다.`}
+              ${json.message || `해당 관측소(<b>지점코드: ${stationCode}</b>)는 현재 수신된 원시 관측자료가 없습니다.`}
             </p>
+            ${rangeInfo}
           </div>
         `;
         return;
@@ -132,6 +139,7 @@ class TimeSeriesChartManager {
       this.cachedData = json;
       this.renderView();
     } catch (e) {
+      if (reqSeq !== this._loadSeq) return;
       console.error("[TimeSeriesChart] Error loading data:", e);
       container.innerHTML = `
         <div style="text-align:center; padding:1rem; color:#ef4444; background:#fef2f2; border-radius:8px;">
@@ -141,8 +149,12 @@ class TimeSeriesChartManager {
     }
   }
 
+  isValidNum(val) {
+    return val !== null && val !== undefined && val !== "" && Number.isFinite(Number(val));
+  }
+
   formatValue(field, val) {
-    if (val === null || val === undefined || val === "" || isNaN(val)) return "-";
+    if (!this.isValidNum(val)) return "-";
     const num = Number(val);
     if (field === "waterLevel" || field === "velocity") {
       return num.toFixed(2);
@@ -154,6 +166,14 @@ class TimeSeriesChartManager {
       return Math.round(num).toString();
     }
     return String(val);
+  }
+
+  getLatestValue(points, field) {
+    if (!Array.isArray(points) || points.length === 0) return null;
+    for (let i = points.length - 1; i >= 0; i--) {
+      if (this.isValidNum(points[i]?.[field])) return points[i][field];
+    }
+    return null;
   }
 
   /**
@@ -173,11 +193,23 @@ class TimeSeriesChartManager {
       { key: "dc", icon: "🔋", name: "DC전압" }
     ];
 
+    const points = this.cachedData.points || [];
+    const startTime = this.cachedData.startTime || points[0]?.time || "-";
+    const endTime = this.cachedData.endTime || points[points.length - 1]?.time || "-";
+    const pointCount = this.cachedData.pointCount || points.length;
+    const receivedCount = this.cachedData.receivedCount ?? points.filter(p => p.received !== false).length;
+
     const currentConf = this.tabConfigs[this.activeTab] || this.tabConfigs.waterLevel;
-    const rawVal = this.cachedData.points[this.cachedData.points.length - 1]?.[currentConf.field];
+    const rawVal = this.getLatestValue(points, currentConf.field);
     const latestVal = this.formatValue(currentConf.field, rawVal);
 
     container.innerHTML = `
+      <!-- Query Window Info Bar -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:8px; padding:6px 10px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; font-size:0.78rem; color:#1e3a8a;">
+        <span>🕒 조회 구간 (현 시각 20분 전 ~ 1일 전): <b>${startTime} ~ ${endTime}</b></span>
+        <span style="font-weight:700;">수신 ${receivedCount} / ${pointCount}건</span>
+      </div>
+
       <!-- 7 Tab Buttons Navigation -->
       <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; background:#f1f5f9; padding:6px; border-radius:8px;">
         ${tabs.map(t => {
@@ -199,7 +231,7 @@ class TimeSeriesChartManager {
           <span style="font-size:0.75rem; color:#64748b; margin-left:8px;">${currentConf.guideText}</span>
         </div>
         <div style="font-size:0.85rem; font-weight:800; color:${currentConf.color};">
-          현재 측정값: <span style="font-size:1.05rem;">${latestVal}</span> ${currentConf.unit}
+          최근 측정값: <span style="font-size:1.05rem;">${latestVal}</span> ${this.isValidNum(rawVal) ? currentConf.unit : ""}
         </div>
       </div>
 
@@ -236,23 +268,83 @@ class TimeSeriesChartManager {
     const conf = this.tabConfigs[this.activeTab];
     const dataValues = this.cachedData.series[conf.field] || [];
     const timeLabels = this.cachedData.timeLabels || [];
+    const isDual = Boolean(this.cachedData.isDual && this.cachedData.dualData);
 
-    const datasets = [
-      {
+    const datasets = [];
+    if (isDual && this.activeTab === "velocity") {
+      datasets.push(
+        {
+          label: "EWSV 평균 유속 (m/s)",
+          data: this.cachedData.dualData.ewsv.series.velocity || [],
+          borderColor: "#059669",
+          backgroundColor: "transparent",
+          borderWidth: 2,
+          pointRadius: 1.5,
+          pointHoverRadius: 4,
+          spanGaps: false,
+          fill: false,
+          tension: 0.25
+        },
+        {
+          label: "ADVM 평균 유속 (m/s)",
+          data: this.cachedData.dualData.advm.series.velocity || [],
+          borderColor: "#2563eb",
+          backgroundColor: "transparent",
+          borderWidth: 2,
+          pointRadius: 1.5,
+          pointHoverRadius: 4,
+          spanGaps: false,
+          fill: false,
+          tension: 0.25
+        }
+      );
+    } else if (isDual && this.activeTab === "snr") {
+      datasets.push(
+        {
+          label: "EWSV 대표 SNR",
+          data: this.cachedData.dualData.ewsv.series.snr || [],
+          borderColor: "#7c3aed",
+          backgroundColor: "transparent",
+          borderWidth: 2,
+          pointRadius: 1.5,
+          pointHoverRadius: 4,
+          spanGaps: false,
+          fill: false,
+          tension: 0.25
+        },
+        {
+          label: "ADVM 대표 SNR",
+          data: this.cachedData.dualData.advm.series.snr || [],
+          borderColor: "#0284c7",
+          backgroundColor: "transparent",
+          borderWidth: 2,
+          pointRadius: 1.5,
+          pointHoverRadius: 4,
+          spanGaps: false,
+          fill: false,
+          tension: 0.25
+        }
+      );
+    } else {
+      datasets.push({
         label: `${conf.label}`,
         data: dataValues,
         borderColor: conf.color,
         backgroundColor: conf.bgColor,
         borderWidth: 2,
-        pointRadius: 0,
+        pointRadius: 1.5,
         pointHoverRadius: 4,
+        spanGaps: false,
         fill: true,
         tension: 0.25
-      }
-    ];
+      });
+    }
 
-    // Optional Threshold lines (e.g., SNR 70, AC bands, DC warning)
-    if (conf.threshold) {
+    // Optional Threshold lines (SNR 70 applies to ADVM ultrasonic echo intensity per ADVM-R19)
+    const showSnrThreshold = conf.threshold && !(
+      this.activeTab === "snr" && this.cachedData.gaugeMode === "EWSV"
+    );
+    if (showSnrThreshold) {
       datasets.push({
         label: conf.thresholdLabel,
         data: Array(dataValues.length).fill(conf.threshold),
@@ -329,12 +421,17 @@ class TimeSeriesChartManager {
               },
               label: (item) => {
                 const raw = item.raw;
+                if (raw === null || raw === undefined || Number.isNaN(raw)) {
+                  return ` ${item.dataset.label}: 미수신/결측 (-)`;
+                }
                 let formatted = item.formattedValue;
                 if (typeof raw === "number") {
                   if (conf.field === "waterLevel" || conf.field === "velocity") {
                     formatted = raw.toFixed(2);
                   } else if (conf.field === "windSpeed" || conf.field === "dc" || conf.field === "ac") {
                     formatted = raw.toFixed(1);
+                  } else if (conf.field === "snr" || conf.field === "windDeg") {
+                    formatted = Math.round(raw).toString();
                   }
                 }
                 return ` ${item.dataset.label}: ${formatted} ${conf.unit}`;

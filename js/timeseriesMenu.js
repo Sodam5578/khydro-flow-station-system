@@ -14,6 +14,7 @@ class TimeSeriesMenuManager {
     this.isGridOpen = false;
     this.resizeObserver = null;
     this.dualDeviceMode = "ewsv"; // 'ewsv' | 'advm' | 'compare'
+    this._loadSeq = 0;
 
     this.tabConfigs = {
       waterLevel: {
@@ -100,6 +101,10 @@ class TimeSeriesMenuManager {
     };
   }
 
+  isValidNum(val) {
+    return val !== null && val !== undefined && val !== "" && Number.isFinite(Number(val));
+  }
+
   /**
    * Value formatting helper adhering strictly to decimal requirements:
    * - waterLevel, velocity: 0.00 (2 decimal places)
@@ -107,7 +112,7 @@ class TimeSeriesMenuManager {
    * - snr, windDeg: integer (0 decimal places)
    */
   formatValue(field, val) {
-    if (val === null || val === undefined || val === "" || isNaN(val)) return "-";
+    if (!this.isValidNum(val)) return "-";
     const num = Number(val);
     if (field === "waterLevel" || field === "velocity") {
       return num.toFixed(2);
@@ -119,6 +124,69 @@ class TimeSeriesMenuManager {
       return Math.round(num).toString();
     }
     return String(val);
+  }
+
+  formatCsvValue(field, val) {
+    if (!this.isValidNum(val)) return "";
+    return this.formatValue(field, val);
+  }
+
+  formatWithUnit(field, val, unit) {
+    if (!this.isValidNum(val)) return "-";
+    return `${this.formatValue(field, val)}${unit}`;
+  }
+
+  getLatestMetric(points, field) {
+    if (!Array.isArray(points) || points.length === 0) {
+      return { val: null, time: null, isLatestSlot: false };
+    }
+    const lastIdx = points.length - 1;
+    if (this.isValidNum(points[lastIdx]?.[field])) {
+      return { val: points[lastIdx][field], time: points[lastIdx].time, isLatestSlot: true };
+    }
+    for (let i = lastIdx - 1; i >= 0; i--) {
+      if (this.isValidNum(points[i]?.[field])) {
+        return { val: points[i][field], time: points[i].time, isLatestSlot: false };
+      }
+    }
+    return { val: null, time: null, isLatestSlot: false };
+  }
+
+  renderSnrBadge(val, small = false, isEwsv = false) {
+    if (!this.isValidNum(val)) {
+      return `<span style="color:#94a3b8; font-family:monospace;">-</span>`;
+    }
+    const num = Number(val);
+    const cls = isEwsv
+      ? (num !== 0 ? "badge-green" : "badge-amber")
+      : (num >= 70 ? "badge-green" : "badge-amber");
+    const style = small ? "font-size:0.78rem; padding:2px 6px;" : "font-size:0.8rem; padding:3px 8px;";
+    return `<span class="badge ${cls}" style="${style}">${this.formatValue("snr", val)}</span>`;
+  }
+
+  renderAcBadge(val) {
+    if (!this.isValidNum(val)) {
+      return `<span style="color:#94a3b8; font-family:monospace;">-</span>`;
+    }
+    const num = Number(val);
+    const cls = num >= 209 && num <= 231 ? "badge-gray" : "badge-amber";
+    return `<span class="badge ${cls}" style="font-size:0.8rem; padding:3px 8px;">${this.formatValue("ac", val)}V</span>`;
+  }
+
+  renderDcBadge(val) {
+    if (!this.isValidNum(val)) {
+      return `<span style="color:#94a3b8; font-family:monospace;">-</span>`;
+    }
+    const num = Number(val);
+    const cls = num >= 11.8 && num <= 14.8 ? "badge-gray" : "badge-red";
+    return `<span class="badge ${cls}" style="font-size:0.8rem; padding:3px 8px;">${this.formatValue("dc", val)}V</span>`;
+  }
+
+  renderWindDeg(val) {
+    if (!this.isValidNum(val)) {
+      return `<span style="color:#94a3b8; font-family:monospace;">-</span>`;
+    }
+    return `${this.formatValue("windDeg", val)}°`;
   }
 
   /**
@@ -370,7 +438,7 @@ class TimeSeriesMenuManager {
   reloadCurrentStation() {
     if (this.selectedStationCode) {
       this.cachedData = null;
-      this.loadStationData(this.selectedStationCode);
+      this.loadStationData(this.selectedStationCode, true);
     }
   }
 
@@ -383,11 +451,12 @@ class TimeSeriesMenuManager {
     }
 
     this.populateStationDropdown();
-    this.loadStationData(this.selectedStationCode);
+    this.loadStationData(this.selectedStationCode, false);
   }
 
-  async loadStationData(codeOrId) {
+  async loadStationData(codeOrId, forceRefresh = false) {
     if (!codeOrId) return;
+    const reqSeq = ++this._loadSeq;
     const st = this.findStation(codeOrId);
     const code = st ? (st.code || st.id) : codeOrId;
     const isOperating = st ? st.isOperating2026 !== false : true;
@@ -404,8 +473,8 @@ class TimeSeriesMenuManager {
       descEl.innerHTML = `지점코드: <b style="color:#ffffff;">${st?.code || "-"}</b> &nbsp;|&nbsp; 하천명: <b>${st?.river || "-"}</b> &nbsp;|&nbsp; 주소: ${st?.address || "-"} &nbsp;|&nbsp; 유속계: <b>${st?.gaugeType || "-"}</b>`;
     }
     if (statusBadge) {
-      statusBadge.innerHTML = isOperating ? "🟢 실시간 수집중 (정상)" : "⚪ 2026년 구축예정 (미수집)";
-      statusBadge.style.background = isOperating ? "rgba(16, 185, 129, 0.25)" : "rgba(148, 163, 184, 0.3)";
+      statusBadge.innerHTML = isOperating ? "⏳ 실시간 원시자료 조회 중..." : "⚪ 2026년 구축예정 (미수집)";
+      statusBadge.style.background = isOperating ? "rgba(255, 255, 255, 0.22)" : "rgba(148, 163, 184, 0.3)";
       statusBadge.style.color = "#ffffff";
     }
 
@@ -415,24 +484,36 @@ class TimeSeriesMenuManager {
     container.innerHTML = `
       <div style="text-align:center; padding:3.5rem; color:#64748b; background:#ffffff; border-radius:12px; border:1px solid #e2e8f0; margin-top:0.5rem;">
         <div style="font-size:2.2rem; margin-bottom:10px; animation:spin 1.5s infinite linear;">⏳</div>
-        <div style="font-size:1.05rem; font-weight:700; color:#1e293b;">[${st?.name || code}] 최근 24시간 실시간 시계열 관측자료를 조회 중입니다...</div>
-        <div style="font-size:0.84rem; color:#64748b; margin-top:4px;">원천 SFTP(211.114.42.234) 10분 주기 수집 데이터 분석 중</div>
+        <div style="font-size:1.05rem; font-weight:700; color:#1e293b;">[${st?.name || code}] 현 시각 20분 전 ~ 1일 전 (24시간) 원시 관측자료를 조회 중입니다...</div>
+        <div style="font-size:0.84rem; color:#64748b; margin-top:4px;">10분 주기 실제 수집 원시파일(.esv / .adv) 정밀 파싱 중 (대용량 ADVM 지점은 최초 조회 시 수 초가 소요될 수 있습니다)</div>
       </div>
     `;
 
     try {
-      const res = await fetch(`/api/monitor/timeseries/${encodeURIComponent(code)}`);
+      const qs = forceRefresh ? "?refresh=1" : "";
+      const res = await fetch(`/api/monitor/timeseries/${encodeURIComponent(code)}${qs}`);
       const json = await res.json();
+
+      if (reqSeq !== this._loadSeq) return;
 
       if (!json.success || !json.hasData || !json.points || json.points.length === 0) {
         this.cachedData = null;
+        if (statusBadge) {
+          const isSched = json.reason === "SCHEDULED_STATION" || !isOperating;
+          statusBadge.innerHTML = isSched ? "⚪ 2026년 구축예정 (미수집)" : "🔴 최근 24시간 미수신";
+          statusBadge.style.background = isSched ? "rgba(148, 163, 184, 0.3)" : "rgba(239, 68, 68, 0.35)";
+        }
+        const rangeInfoHtml = (json.startTime && json.endTime)
+          ? `<div style="margin-top:0.75rem; font-size:0.82rem; color:#475569; font-family:monospace; background:#e2e8f0; display:inline-block; padding:4px 12px; border-radius:6px;">조회 기준 구간: ${json.startTime} ~ ${json.endTime} (현 시각 20분 전 기준)</div>`
+          : "";
         container.innerHTML = `
           <div style="text-align:center; padding:3.5rem 1.5rem; background:#f8fafc; border-radius:12px; border:1px dashed #cbd5e1; margin-top:0.5rem;">
             <div style="font-size:3rem; margin-bottom:1rem;">📡</div>
-            <h3 style="font-size:1.2rem; font-weight:700; color:#1e293b; margin-bottom:0.5rem;">실시간 관측자료 미수집 지점</h3>
-            <p style="color:#64748b; font-size:0.92rem; line-height:1.6; max-width:580px; margin:0 auto;">
-              ${json.message || `해당 관측소(<b>지점코드: ${code}</b>)는 현재 실시간 관측자료 수집 대상에 포함되지 않았거나, 2026년 구축예정/미운영 상태로 수신된 관측자료가 없습니다.`}
+            <h3 style="font-size:1.2rem; font-weight:700; color:#1e293b; margin-bottom:0.5rem;">실시간 관측자료 미수집 · 미수신 지점</h3>
+            <p style="color:#64748b; font-size:0.92rem; line-height:1.6; max-width:620px; margin:0 auto;">
+              ${json.message || `해당 관측소(<b>지점코드: ${code}</b>)는 현재 수신된 원시 관측자료가 없습니다.`}
             </p>
+            ${rangeInfoHtml}
             <div style="margin-top:1.25rem;">
               <button class="btn btn-primary btn-sm" onclick="window.timeSeriesMenuManager.resetFilters()" style="padding:6px 14px;">
                 🟢 실시간 수집중인 다른 지점 탐색하기
@@ -443,9 +524,33 @@ class TimeSeriesMenuManager {
         return;
       }
 
+      if (statusBadge) {
+        const rec = json.receivedCount ?? json.points.length;
+        const tot = json.pointCount ?? json.points.length;
+        const isFull = rec >= tot;
+        statusBadge.innerHTML = isFull
+          ? `🟢 실시간 수집 정상 (${rec}/${tot}건)`
+          : `🟡 부분 수신 (${rec}/${tot}건 · 미수신 ${tot - rec}건)`;
+        statusBadge.style.background = isFull
+          ? "rgba(16, 185, 129, 0.3)"
+          : "rgba(245, 158, 11, 0.35)";
+      }
+
+      // If Dual station has only ADVM active (e.g. wireless EWSV not yet transmitting), auto-focus active stream
+      if (json.isDual && json.dualData) {
+        const eRec = json.dualData.ewsv?.receivedCount ?? 0;
+        const aRec = json.dualData.advm?.receivedCount ?? 0;
+        if (this.dualDeviceMode === "ewsv" && eRec === 0 && aRec > 0) {
+          this.dualDeviceMode = "advm";
+        } else if (this.dualDeviceMode === "advm" && aRec === 0 && eRec > 0) {
+          this.dualDeviceMode = "ewsv";
+        }
+      }
+
       this.cachedData = json;
       this.renderView();
     } catch (e) {
+      if (reqSeq !== this._loadSeq) return;
       console.error("[TimeSeriesMenu] Error loading:", e);
       container.innerHTML = `
         <div style="text-align:center; padding:2rem; color:#ef4444; background:#fef2f2; border-radius:8px; margin-top:0.5rem;">
@@ -459,7 +564,13 @@ class TimeSeriesMenuManager {
     const container = document.getElementById("ts-content-container");
     if (!container || !this.cachedData) return;
 
-    const lastPoint = this.cachedData.points[this.cachedData.points.length - 1] || {};
+    const points = this.cachedData.points || [];
+    const lastPoint = points[points.length - 1] || {};
+    const startTime = this.cachedData.startTime || points[0]?.time || "-";
+    const endTime = this.cachedData.endTime || lastPoint.time || "-";
+    const pointCount = this.cachedData.pointCount || points.length;
+    const receivedCount = this.cachedData.receivedCount ?? points.filter(p => p.received !== false).length;
+    const missingCount = Math.max(0, pointCount - receivedCount);
 
     const tabs = [
       { key: "waterLevel", icon: "🌊", name: "수위" },
@@ -477,30 +588,63 @@ class TimeSeriesMenuManager {
     const sensorLabels = this.cachedData.sensorLabels || [];
     const isMultiSensor = !isDual && sensorCount > 1;
 
+    const wlLatest = this.getLatestMetric(points, "waterLevel");
+    const vLatest = this.getLatestMetric(points, "velocity");
+    const ewsvVLatest = this.getLatestMetric(points, "ewsvVelocity");
+    const advmVLatest = this.getLatestMetric(points, "advmVelocity");
+    const snrLatest = this.getLatestMetric(points, "snr");
+    const ewsvSnrLatest = this.getLatestMetric(points, "ewsvSnr");
+    const advmSnrLatest = this.getLatestMetric(points, "advmSnr");
+    const acLatest = this.getLatestMetric(points, "ac");
+    const dcLatest = this.getLatestMetric(points, "dc");
+
     const currentConf = this.tabConfigs[this.activeTab] || this.tabConfigs.waterLevel;
-    let latestFormatted = this.formatValue(currentConf.field, lastPoint[currentConf.field]);
+    let activeMetric = this.getLatestMetric(points, currentConf.field);
     if (isDual && this.activeTab === "velocity") {
       if (this.dualDeviceMode === "ewsv") {
-        latestFormatted = this.formatValue("velocity", lastPoint.ewsvVelocity);
+        activeMetric = ewsvVLatest;
       } else if (this.dualDeviceMode === "advm") {
-        latestFormatted = this.formatValue("velocity", lastPoint.advmVelocity);
+        activeMetric = advmVLatest;
+      } else {
+        activeMetric = ewsvVLatest.val !== null ? ewsvVLatest : advmVLatest;
       }
     } else if (isDual && this.activeTab === "snr") {
       if (this.dualDeviceMode === "ewsv") {
-        latestFormatted = this.formatValue("snr", lastPoint.ewsvSnr);
+        activeMetric = ewsvSnrLatest;
       } else if (this.dualDeviceMode === "advm") {
-        latestFormatted = this.formatValue("snr", lastPoint.advmSnr);
+        activeMetric = advmSnrLatest;
+      } else {
+        activeMetric = ewsvSnrLatest.val !== null ? ewsvSnrLatest : advmSnrLatest;
       }
     }
+    const latestFormatted = this.formatValue(currentConf.field, activeMetric.val);
+    const latestTimeNote = activeMetric.time && !activeMetric.isLatestSlot
+      ? ` <span style="font-size:0.76rem; color:#64748b; font-weight:600;">(${activeMetric.time.slice(5)} 수신)</span>`
+      : "";
 
     container.innerHTML = `
+      <!-- 0. Exact KST 24h Query Window & Reception Status Banner -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding:10px 14px; margin-bottom:1rem; background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; font-size:0.84rem; color:#1e3a8a;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-weight:800;">🕒 조회 기준 구간 (현 시각 20분 전 ~ 1일 전):</span>
+          <code style="background:#ffffff; border:1px solid #93c5fd; padding:2px 8px; border-radius:6px; font-weight:800; color:#1d4ed8; font-size:0.86rem;">${startTime} ~ ${endTime}</code>
+          <span style="color:#475569; font-size:0.8rem;">(10분 주기 실제 원시자료)</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          <span class="badge ${missingCount === 0 ? 'badge-green' : 'badge-amber'}" style="font-size:0.78rem; padding:4px 10px; font-weight:700;">
+            수신 ${receivedCount} / ${pointCount}건${missingCount > 0 ? ` (미수신 ${missingCount}건)` : " (100%)"}
+          </span>
+          ${isDual ? `<span class="badge badge-blue" style="font-size:0.76rem; padding:4px 8px;">EWSV ${dualData?.ewsv?.receivedCount ?? 0}건 · ADVM ${dualData?.advm?.receivedCount ?? 0}건</span>` : ""}
+        </div>
+      </div>
+
       <!-- 1. Top 4 KPI Metric Summary Cards -->
       <div class="kpi-grid" style="margin-bottom:1.25rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
         <div class="kpi-card" style="border-left: 4px solid #2563eb;">
           <div class="kpi-icon blue">🌊</div>
           <div class="kpi-info">
-            <div class="kpi-value">${this.formatValue('waterLevel', lastPoint.waterLevel)} <span style="font-size:1rem; font-weight:500;">m</span></div>
-            <div class="kpi-label">현재 수위 (최근 측정)</div>
+            <div class="kpi-value">${this.formatValue('waterLevel', wlLatest.val)} <span style="font-size:1rem; font-weight:500;">${this.isValidNum(wlLatest.val) ? 'm' : ''}</span></div>
+            <div class="kpi-label">현재 수위 (${wlLatest.time ? wlLatest.time.slice(11) : '미수신'})</div>
           </div>
         </div>
         <div class="kpi-card" style="border-left: 4px solid #059669;">
@@ -508,15 +652,15 @@ class TimeSeriesMenuManager {
           <div class="kpi-info">
             ${isDual ? `
               <div class="kpi-value" style="font-size:1.15rem;">
-                <span style="color:#059669;">⚡ ${this.formatValue('velocity', lastPoint.ewsvVelocity)}</span> 
+                <span style="color:#059669;">⚡ ${this.formatValue('velocity', ewsvVLatest.val)}</span> 
                 <span style="font-size:0.8rem; color:#64748b;">/</span> 
-                <span style="color:#2563eb;">🌊 ${this.formatValue('velocity', lastPoint.advmVelocity)}</span> 
+                <span style="color:#2563eb;">🌊 ${this.formatValue('velocity', advmVLatest.val)}</span> 
                 <span style="font-size:0.85rem; font-weight:500;">m/s</span>
               </div>
               <div class="kpi-label">이중화 유속 (EWSV / ADVM)</div>
             ` : `
-              <div class="kpi-value">${this.formatValue('velocity', lastPoint.velocity)} <span style="font-size:1rem; font-weight:500;">m/s</span></div>
-              <div class="kpi-label">단면 평균 유속</div>
+              <div class="kpi-value">${this.formatValue('velocity', vLatest.val)} <span style="font-size:1rem; font-weight:500;">${this.isValidNum(vLatest.val) ? 'm/s' : ''}</span></div>
+              <div class="kpi-label">단면 평균 유속 (${vLatest.time ? vLatest.time.slice(11) : '미수신'})</div>
             `}
           </div>
         </div>
@@ -525,13 +669,13 @@ class TimeSeriesMenuManager {
           <div class="kpi-info">
             ${isDual ? `
               <div class="kpi-value" style="font-size:1.15rem;">
-                <span style="color:#7c3aed;">⚡ ${this.formatValue('snr', lastPoint.ewsvSnr)}</span> 
+                <span style="color:#7c3aed;">⚡ ${this.formatValue('snr', ewsvSnrLatest.val)}</span> 
                 <span style="font-size:0.8rem; color:#64748b;">/</span> 
-                <span style="color:#0284c7;">🌊 ${this.formatValue('snr', lastPoint.advmSnr)}</span>
+                <span style="color:#0284c7;">🌊 ${this.formatValue('snr', advmSnrLatest.val)}</span>
               </div>
               <div class="kpi-label">이중화 SNR (EWSV / ADVM)</div>
             ` : `
-              <div class="kpi-value">${this.formatValue('snr', lastPoint.snr)} <span style="font-size:1rem; font-weight:500;">Count</span></div>
+              <div class="kpi-value">${this.formatValue('snr', snrLatest.val)} <span style="font-size:1rem; font-weight:500;">${this.isValidNum(snrLatest.val) ? 'Count' : ''}</span></div>
               <div class="kpi-label">SNR (기준 ≥ 70)</div>
             `}
           </div>
@@ -539,7 +683,7 @@ class TimeSeriesMenuManager {
         <div class="kpi-card" style="border-left: 4px solid #b45309;">
           <div class="kpi-icon amber">⚡</div>
           <div class="kpi-info">
-            <div class="kpi-value" style="font-size:1.25rem;">${this.formatValue('ac', lastPoint.ac)}V <span style="font-size:0.85rem; color:#64748b;">/</span> ${this.formatValue('dc', lastPoint.dc)}V</div>
+            <div class="kpi-value" style="font-size:1.25rem;">${this.formatWithUnit('ac', acLatest.val, 'V')} <span style="font-size:0.85rem; color:#64748b;">/</span> ${this.formatWithUnit('dc', dcLatest.val, 'V')}</div>
             <div class="kpi-label">국사 전원 (AC / DC 배터리)</div>
           </div>
         </div>
@@ -567,7 +711,7 @@ class TimeSeriesMenuManager {
             <span style="font-size:0.85rem; font-weight:800; color:#1e293b;">⚡ 이중화 장비 분리 분석:</span>
             <button class="btn btn-sm" onclick="window.timeSeriesMenuManager.setDualDeviceMode('ewsv')"
                     style="font-size:0.82rem; padding:5px 14px; font-weight:700; border-radius:6px; cursor:pointer; transition:all 0.15s ease; ${this.dualDeviceMode === 'ewsv' ? 'background:#059669; color:#ffffff; border:1px solid #059669; box-shadow:0 2px 4px rgba(5,150,105,0.3);' : 'background:#ffffff; color:#334155; border:1px solid #cbd5e1;'}">
-              ⚡ EWSV 전자파유속계 (${dualData?.ewsv?.count || 2}대)
+              ⚡ EWSV 전자파유속계 (${dualData?.ewsv?.count || 1}대)
             </button>
             <button class="btn btn-sm" onclick="window.timeSeriesMenuManager.setDualDeviceMode('advm')"
                     style="font-size:0.82rem; padding:5px 14px; font-weight:700; border-radius:6px; cursor:pointer; transition:all 0.15s ease; ${this.dualDeviceMode === 'advm' ? 'background:#2563eb; color:#ffffff; border:1px solid #2563eb; box-shadow:0 2px 4px rgba(37,99,235,0.3);' : 'background:#ffffff; color:#334155; border:1px solid #cbd5e1;'}">
@@ -587,14 +731,14 @@ class TimeSeriesMenuManager {
               ${isDual && this.activeTab === "velocity" ? (this.dualDeviceMode === "ewsv" ? "⚡ EWSV 전자파 표면유속 추이" : this.dualDeviceMode === "advm" ? "🌊 ADVM 초음파 수중유속 추이" : "📊 EWSV vs ADVM 유속 대조 분석") : (isDual && this.activeTab === "snr" ? (this.dualDeviceMode === "ewsv" ? "📡 EWSV 전자파 신호품질(SNR)" : this.dualDeviceMode === "advm" ? "📡 ADVM 초음파 신호품질(SNR)" : "📊 EWSV vs ADVM SNR 대조 분석") : currentConf.title)}
             </span>
             ${isDual ? `
-              <span class="badge badge-purple" style="margin-left:8px; font-size:0.8rem; font-weight:700;">⚡ 이중화 관측소 (EWSV ${dualData?.ewsv?.count || 2}대 + ADVM ${dualData?.advm?.count || 1}대)</span>
+              <span class="badge badge-purple" style="margin-left:8px; font-size:0.8rem; font-weight:700;">⚡ 이중화 관측소 (EWSV ${dualData?.ewsv?.count || 1}대 + ADVM ${dualData?.advm?.count || 1}대)</span>
             ` : (isMultiSensor && (this.activeTab === "velocity" || this.activeTab === "snr") ? `
               <span class="badge badge-purple" style="margin-left:8px; font-size:0.8rem; font-weight:700;">🎯 유속계 총 ${sensorCount}대 설치 (유속계별 멀티라인)</span>
             ` : "")}
             <span style="font-size:0.82rem; color:#64748b; margin-left:10px;">💡 ${currentConf.guideText}</span>
           </div>
           <div style="font-size:0.95rem; font-weight:800; color:${currentConf.color};">
-            최근 측정값: <span style="font-size:1.25rem; font-family:monospace;">${latestFormatted}</span> ${currentConf.unit}
+            최근 측정값: <span style="font-size:1.25rem; font-family:monospace;">${latestFormatted}</span> ${this.isValidNum(activeMetric.val) ? currentConf.unit : ""}${latestTimeNote}
           </div>
         </div>
 
@@ -609,7 +753,7 @@ class TimeSeriesMenuManager {
         <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.1rem; flex-wrap:wrap; gap:0.75rem;">
           <div>
             <span style="font-size:1.05rem; font-weight:800; color:#1e293b;">📋 최근 24시간 10분 주기 원시 관측 로그</span>
-            <span style="font-size:0.82rem; color:#64748b; margin-left:8px; font-weight:600;">(총 ${this.cachedData.points.length}건 수집)</span>
+            <span style="font-size:0.82rem; color:#64748b; margin-left:8px; font-weight:600;">(${startTime} ~ ${endTime} · 수신 ${receivedCount} / ${pointCount}건)</span>
             ${isDual ? `<span class="badge badge-purple" style="margin-left:8px; font-size:0.78rem;">EWSV / ADVM 장비별 분리 표출</span>` : (isMultiSensor ? `<span class="badge badge-blue" style="margin-left:8px; font-size:0.78rem;">유속계 ${sensorCount}대 개별 계측치 포함</span>` : "")}
           </div>
           <div style="display:flex; gap:0.5rem; align-items:center;">
@@ -650,43 +794,47 @@ class TimeSeriesMenuManager {
               </tr>
             </thead>
             <tbody>
-              ${[...this.cachedData.points].reverse().map((p, idx) => {
+              ${[...points].reverse().map((p, idx) => {
                 const isEven = idx % 2 === 0;
+                const isMissing = p.received === false;
+                const baseBg = isMissing ? "#fff5f5" : (isEven ? "#ffffff" : "#f8fafc");
                 return `
-                  <tr style="background:${isEven ? '#ffffff' : '#f8fafc'}; border-bottom:1px solid #e2e8f0; transition:background 0.15s ease;" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='${isEven ? '#ffffff' : '#f8fafc'}'">
-                    <td style="padding:10px 14px; font-weight:600; color:#1e3a8a; font-family:monospace; font-size:0.88rem;">${p.time}</td>
+                  <tr style="background:${baseBg}; border-bottom:1px solid #e2e8f0; transition:background 0.15s ease;" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='${baseBg}'">
+                    <td style="padding:10px 14px; font-weight:600; color:${isMissing ? '#dc2626' : '#1e3a8a'}; font-family:monospace; font-size:0.88rem; white-space:nowrap;">
+                      ${p.time}${isMissing ? ' <span class="badge badge-red" style="font-size:0.68rem; padding:1px 5px; margin-left:4px;">미수신</span>' : ''}
+                    </td>
                     <td style="padding:10px 14px; font-weight:700; color:#2563eb; font-family:monospace; font-size:0.9rem;">${this.formatValue('waterLevel', p.waterLevel)}</td>
                     
                     ${isDual ? `
-                      <td style="padding:10px 10px; font-weight:800; color:#059669; font-family:monospace; background:${isEven ? '#f0fdf4' : '#ecfdf5'};">${this.formatValue('velocity', p.ewsvVelocity)}</td>
+                      <td style="padding:10px 10px; font-weight:800; color:#059669; font-family:monospace; background:${isMissing ? '#fff5f5' : (isEven ? '#f0fdf4' : '#ecfdf5')};">${this.formatValue('velocity', p.ewsvVelocity)}</td>
                       ${(dualData?.ewsv?.labels || []).map((_, k) => {
-                        const sv = p.ewsvSensorVelocities && p.ewsvSensorVelocities[k] !== undefined ? p.ewsvSensorVelocities[k] : p.ewsvVelocity;
-                        return `<td style="padding:10px 10px; font-weight:600; color:#0d9488; font-family:monospace; background:${isEven ? '#f0fdf4' : '#ecfdf5'};">${this.formatValue('velocity', sv)}</td>`;
+                        const sv = Array.isArray(p.ewsvSensorVelocities) ? p.ewsvSensorVelocities[k] : null;
+                        return `<td style="padding:10px 10px; font-weight:600; color:#0d9488; font-family:monospace; background:${isMissing ? '#fff5f5' : (isEven ? '#f0fdf4' : '#ecfdf5')};">${this.formatValue('velocity', sv)}</td>`;
                       }).join("")}
-                      <td style="padding:10px 10px; font-weight:800; color:#2563eb; font-family:monospace; background:${isEven ? '#eff6ff' : '#ebf5ff'};">${this.formatValue('velocity', p.advmVelocity)}</td>
+                      <td style="padding:10px 10px; font-weight:800; color:#2563eb; font-family:monospace; background:${isMissing ? '#fff5f5' : (isEven ? '#eff6ff' : '#ebf5ff')};">${this.formatValue('velocity', p.advmVelocity)}</td>
                       ${(dualData?.advm?.labels || []).map((_, k) => {
-                        const sv = p.advmSensorVelocities && p.advmSensorVelocities[k] !== undefined ? p.advmSensorVelocities[k] : p.advmVelocity;
-                        return `<td style="padding:10px 10px; font-weight:600; color:#3b82f6; font-family:monospace; background:${isEven ? '#eff6ff' : '#ebf5ff'};">${this.formatValue('velocity', sv)}</td>`;
+                        const sv = Array.isArray(p.advmSensorVelocities) ? p.advmSensorVelocities[k] : null;
+                        return `<td style="padding:10px 10px; font-weight:600; color:#3b82f6; font-family:monospace; background:${isMissing ? '#fff5f5' : (isEven ? '#eff6ff' : '#ebf5ff')};">${this.formatValue('velocity', sv)}</td>`;
                       }).join("")}
-                      <td style="padding:10px 10px; background:${isEven ? '#faf5ff' : '#f5f3ff'};"><span class="badge ${p.ewsvSnr >= 70 ? 'badge-green' : 'badge-amber'}" style="font-size:0.8rem; padding:3px 8px;">${this.formatValue('snr', p.ewsvSnr)}</span></td>
-                      <td style="padding:10px 10px; background:${isEven ? '#f0f9ff' : '#e0f2fe'};"><span class="badge ${p.advmSnr >= 70 ? 'badge-green' : 'badge-amber'}" style="font-size:0.8rem; padding:3px 8px;">${this.formatValue('snr', p.advmSnr)}</span></td>
+                      <td style="padding:10px 10px; background:${isMissing ? '#fff5f5' : (isEven ? '#faf5ff' : '#f5f3ff')};">${this.renderSnrBadge(p.ewsvSnr, false, true)}</td>
+                      <td style="padding:10px 10px; background:${isMissing ? '#fff5f5' : (isEven ? '#f0f9ff' : '#e0f2fe')};">${this.renderSnrBadge(p.advmSnr, false, false)}</td>
                     ` : `
                       <td style="padding:10px 14px; font-weight:700; color:#059669; font-family:monospace; font-size:0.9rem;">${this.formatValue('velocity', p.velocity)}</td>
                       ${isMultiSensor ? sensorLabels.map((_, k) => {
-                        const sv = p.sensorVelocities && p.sensorVelocities[k] !== undefined ? p.sensorVelocities[k] : p.velocity;
+                        const sv = Array.isArray(p.sensorVelocities) ? p.sensorVelocities[k] : null;
                         return `<td style="padding:10px 10px; font-weight:600; color:#0d9488; font-family:monospace;">${this.formatValue('velocity', sv)}</td>`;
                       }).join("") : ""}
-                      <td style="padding:10px 14px;"><span class="badge ${p.snr >= 70 ? 'badge-green' : 'badge-amber'}" style="font-size:0.8rem; padding:3px 8px;">${this.formatValue('snr', p.snr)}</span></td>
+                      <td style="padding:10px 14px;">${this.renderSnrBadge(p.snr, false, this.cachedData.gaugeMode === 'EWSV')}</td>
                       ${isMultiSensor ? sensorLabels.map((_, k) => {
-                        const ssnr = p.sensorSnrs && p.sensorSnrs[k] !== undefined ? p.sensorSnrs[k] : p.snr;
-                        return `<td style="padding:10px 10px;"><span class="badge ${ssnr >= 70 ? 'badge-green' : 'badge-amber'}" style="font-size:0.78rem; padding:2px 6px;">${this.formatValue('snr', ssnr)}</span></td>`;
+                        const ssnr = Array.isArray(p.sensorSnrs) ? p.sensorSnrs[k] : null;
+                        return `<td style="padding:10px 10px;">${this.renderSnrBadge(ssnr, true, this.cachedData.gaugeMode === 'EWSV')}</td>`;
                       }).join("") : ""}
                     `}
 
                     <td style="padding:10px 14px; color:#334155; font-family:monospace;">${this.formatValue('windSpeed', p.windSpeed)}</td>
-                    <td style="padding:10px 14px; color:#64748b;">${this.formatValue('windDeg', p.windDeg)}°</td>
-                    <td style="padding:10px 14px;"><span class="badge ${p.ac >= 209 && p.ac <= 231 ? 'badge-gray' : 'badge-amber'}" style="font-size:0.8rem; padding:3px 8px;">${this.formatValue('ac', p.ac)}V</span></td>
-                    <td style="padding:10px 14px;"><span class="badge ${p.dc >= 11.8 ? 'badge-gray' : 'badge-red'}" style="font-size:0.8rem; padding:3px 8px;">${this.formatValue('dc', p.dc)}V</span></td>
+                    <td style="padding:10px 14px; color:#64748b;">${this.renderWindDeg(p.windDeg)}</td>
+                    <td style="padding:10px 14px;">${this.renderAcBadge(p.ac)}</td>
+                    <td style="padding:10px 14px;">${this.renderDcBadge(p.dc)}</td>
                   </tr>
                 `;
               }).join("")}
@@ -1051,7 +1199,19 @@ class TimeSeriesMenuManager {
       });
     }
 
-    if (conf.threshold) {
+    // Ensure missing 10-min intervals render as honest gaps while single valid points remain visible
+    datasets.forEach((ds) => {
+      ds.spanGaps = false;
+      if (!ds.pointRadius || ds.pointRadius < 1.2) {
+        ds.pointRadius = 1.5;
+      }
+    });
+
+    const showSnrThreshold = conf.threshold && !(
+      this.activeTab === "snr" &&
+      (this.cachedData.gaugeMode === "EWSV" || (isDual && this.dualDeviceMode === "ewsv"))
+    );
+    if (showSnrThreshold) {
       const dataLen = timeLabels.length;
       datasets.push({
         label: conf.thresholdLabel,
@@ -1159,12 +1319,17 @@ class TimeSeriesMenuManager {
                 },
                 label: (item) => {
                   const raw = item.raw;
+                  if (raw === null || raw === undefined || Number.isNaN(raw)) {
+                    return ` ${item.dataset.label}: 미수신/결측 (-)`;
+                  }
                   let formatted = item.formattedValue;
                   if (typeof raw === "number") {
                     if (conf.field === "waterLevel" || conf.field === "velocity") {
                       formatted = raw.toFixed(2);
                     } else if (conf.field === "windSpeed" || conf.field === "dc" || conf.field === "ac") {
                       formatted = raw.toFixed(1);
+                    } else if (conf.field === "snr" || conf.field === "windDeg") {
+                      formatted = Math.round(raw).toString();
                     }
                   }
                   return ` ${item.dataset.label}: ${formatted} ${conf.unit}`;
@@ -1224,43 +1389,43 @@ class TimeSeriesMenuManager {
     const rows = this.cachedData.points.map(p => {
       const row = [
         p.time,
-        this.formatValue('waterLevel', p.waterLevel)
+        this.formatCsvValue('waterLevel', p.waterLevel)
       ];
 
       if (isDual) {
-        row.push(this.formatValue('velocity', p.ewsvVelocity));
+        row.push(this.formatCsvValue('velocity', p.ewsvVelocity));
         (dualData?.ewsv?.labels || []).forEach((_, k) => {
-          const sv = p.ewsvSensorVelocities && p.ewsvSensorVelocities[k] !== undefined ? p.ewsvSensorVelocities[k] : p.ewsvVelocity;
-          row.push(this.formatValue('velocity', sv));
+          const sv = Array.isArray(p.ewsvSensorVelocities) ? p.ewsvSensorVelocities[k] : null;
+          row.push(this.formatCsvValue('velocity', sv));
         });
-        row.push(this.formatValue('velocity', p.advmVelocity));
+        row.push(this.formatCsvValue('velocity', p.advmVelocity));
         (dualData?.advm?.labels || []).forEach((_, k) => {
-          const sv = p.advmSensorVelocities && p.advmSensorVelocities[k] !== undefined ? p.advmSensorVelocities[k] : p.advmVelocity;
-          row.push(this.formatValue('velocity', sv));
+          const sv = Array.isArray(p.advmSensorVelocities) ? p.advmSensorVelocities[k] : null;
+          row.push(this.formatCsvValue('velocity', sv));
         });
-        row.push(this.formatValue('snr', p.ewsvSnr), this.formatValue('snr', p.advmSnr));
+        row.push(this.formatCsvValue('snr', p.ewsvSnr), this.formatCsvValue('snr', p.advmSnr));
       } else {
-        row.push(this.formatValue('velocity', p.velocity));
+        row.push(this.formatCsvValue('velocity', p.velocity));
         if (isMultiSensor) {
           for (let k = 0; k < sensorCount; k++) {
-            const sv = p.sensorVelocities && p.sensorVelocities[k] !== undefined ? p.sensorVelocities[k] : p.velocity;
-            row.push(this.formatValue('velocity', sv));
+            const sv = Array.isArray(p.sensorVelocities) ? p.sensorVelocities[k] : null;
+            row.push(this.formatCsvValue('velocity', sv));
           }
         }
-        row.push(this.formatValue('snr', p.snr));
+        row.push(this.formatCsvValue('snr', p.snr));
         if (isMultiSensor) {
           for (let k = 0; k < sensorCount; k++) {
-            const ssnr = p.sensorSnrs && p.sensorSnrs[k] !== undefined ? p.sensorSnrs[k] : p.snr;
-            row.push(this.formatValue('snr', ssnr));
+            const ssnr = Array.isArray(p.sensorSnrs) ? p.sensorSnrs[k] : null;
+            row.push(this.formatCsvValue('snr', ssnr));
           }
         }
       }
 
       row.push(
-        this.formatValue('windSpeed', p.windSpeed),
-        this.formatValue('windDeg', p.windDeg),
-        this.formatValue('ac', p.ac),
-        this.formatValue('dc', p.dc)
+        this.formatCsvValue('windSpeed', p.windSpeed),
+        this.formatCsvValue('windDeg', p.windDeg),
+        this.formatCsvValue('ac', p.ac),
+        this.formatCsvValue('dc', p.dc)
       );
       return row;
     });
@@ -1269,8 +1434,9 @@ class TimeSeriesMenuManager {
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
+    const dateTag = (this.cachedData.endTime || "").slice(0, 10) || new Date().toISOString().slice(0, 10);
     link.setAttribute("href", url);
-    link.setAttribute("download", `실시간관측자료_${stationName}_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute("download", `실시간관측자료_${stationName}_${dateTag}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

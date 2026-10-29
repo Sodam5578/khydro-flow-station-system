@@ -17,21 +17,24 @@ class SftpCollector {
   }
 
   /**
-   * Calculates latest 10-minute floor targetDT in YYYYMMDDhhmm format.
-   * e.g. 2026-09-13 22:34:00 -> "202609132230"
+   * Calculates latest 10-minute floor targetDT in YYYYMMDDhhmm format (KST, UTC+9).
+   * Applies a 20-minute collection lag window by default (e.g. 15:44 KST -> "YYYYMMDD1520").
    */
   getLatestTargetDT(customDate = null) {
-    const d = customDate ? new Date(customDate) : new Date();
-    // 10-minute floor
-    const minutes = Math.floor(d.getMinutes() / 10) * 10;
-    d.setMinutes(minutes, 0, 0);
+    const TEN_MIN_MS = 10 * 60 * 1000;
+    const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+    const baseMs = customDate
+      ? new Date(customDate).getTime()
+      : Date.now() - 20 * 60 * 1000;
+    const slotMs = Math.floor(baseMs / TEN_MIN_MS) * TEN_MIN_MS;
+    const kst = new Date(slotMs + KST_OFFSET_MS);
 
     const pad = (n) => String(n).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    const mm = pad(d.getMonth() + 1);
-    const dd = pad(d.getDate());
-    const hh = pad(d.getHours());
-    const mi = pad(d.getMinutes());
+    const yyyy = kst.getUTCFullYear();
+    const mm = pad(kst.getUTCMonth() + 1);
+    const dd = pad(kst.getUTCDate());
+    const hh = pad(kst.getUTCHours());
+    const mi = pad(kst.getUTCMinutes());
 
     return `${yyyy}${mm}${dd}${hh}${mi}`;
   }
