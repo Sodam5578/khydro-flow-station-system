@@ -521,7 +521,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": false,
     "refWaterLevel": "수위관측소",
     "waterLevelType": "압력식",
-    "memo": "",
+    "memo": "ADVM 1대 점검중",
     "coords": {
       "lonDMS": "128-28-38",
       "latDMS": "37-10-56",
@@ -1668,7 +1668,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": true,
     "refWaterLevel": "유량관측소",
     "waterLevelType": "압력식",
-    "memo": "설치가능 수심 미확보, 배수영향 지점으로 접촉식 필요 지점",
+    "memo": "설치가능 수심 미확보, 배수영향 지점으로 접촉식 필요 지점, 무선지점",
     "coords": {
       "lonDMS": "127-44-49",
       "latDMS": "37-13-08",
@@ -1867,7 +1867,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": true,
     "refWaterLevel": "유량관측소",
     "waterLevelType": "압력식",
-    "memo": "설치가능 수심 미확보, 배수영향 지점으로 접촉식 필요 지점",
+    "memo": "설치가능 수심 미확보, 배수영향 지점으로 접촉식 필요 지점, ADVM 1대 점검중",
     "coords": {
       "lonDMS": "127-50-03",
       "latDMS": "37-21-20",
@@ -2475,7 +2475,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": false,
     "refWaterLevel": "수위관측소",
     "waterLevelType": "압력식",
-    "memo": "",
+    "memo": "ADVM 1대 점검중",
     "coords": {
       "lonDMS": "127-40-51",
       "latDMS": "37-15-17",
@@ -2770,7 +2770,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": true,
     "refWaterLevel": "유량관측소",
     "waterLevelType": "압력식",
-    "memo": "수위관측소와 이격, 배수영향 지점으로 접촉식 필요 지점",
+    "memo": "수위관측소와 이격, 배수영향 지점으로 접촉식 필요 지점, ADVM 1대 점검중",
     "coords": {
       "lonDMS": "127-35-04",
       "latDMS": "37-21-17",
@@ -2873,7 +2873,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": true,
     "refWaterLevel": "유량관측소",
     "waterLevelType": "압력식",
-    "memo": "수위관측소와 이격, 배수영향 지점으로 접촉식 필요 지점",
+    "memo": "수위관측소와 이격, 배수영향 지점으로 접촉식 필요 지점, ADVM 1대 점검중",
     "coords": {
       "lonDMS": "127-32-52",
       "latDMS": "37-23-05",
@@ -3711,7 +3711,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": false,
     "refWaterLevel": "수위관측소",
     "waterLevelType": "압력식",
-    "memo": "",
+    "memo": "ADVM 1대 점검중",
     "coords": {
       "lonDMS": "127-06-40",
       "latDMS": "37-32-43",
@@ -5586,7 +5586,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": true,
     "refWaterLevel": "수위관측소",
     "waterLevelType": "압력식",
-    "memo": "",
+    "memo": "ADVM 1대 점검중",
     "coords": {
       "lonDMS": "127-04-18",
       "latDMS": "36-59-21",
@@ -5785,7 +5785,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": true,
     "refWaterLevel": "수위관측소",
     "waterLevelType": "압력식",
-    "memo": "",
+    "memo": "ADVM 1대 점검중",
     "coords": {
       "lonDMS": "126-59-39",
       "latDMS": "37-02-34",
@@ -7118,7 +7118,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": false,
     "refWaterLevel": "수위관측소",
     "waterLevelType": "압력식",
-    "memo": "",
+    "memo": "ADVM 1대 점검중",
     "coords": {
       "lonDMS": "128-16-07",
       "latDMS": "36-29-55",
@@ -7214,7 +7214,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": false,
     "refWaterLevel": "수위관측소",
     "waterLevelType": "압력식",
-    "memo": "",
+    "memo": "교량공사로 인한 측정중단, ADVM 1대 점검중",
     "coords": {
       "lonDMS": "128-14-37",
       "latDMS": "36-24-32",
@@ -7578,7 +7578,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": true,
     "refWaterLevel": "수위관측소",
     "waterLevelType": "압력식",
-    "memo": "",
+    "memo": "ADVM 1대 점검중",
     "coords": {
       "lonDMS": "128-17-46",
       "latDMS": "36-21-29",
@@ -9061,7 +9061,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": false,
     "refWaterLevel": "유량관측소",
     "waterLevelType": "압력식",
-    "memo": "설치가능 수심 미확보, 배수영향 지점으로 접촉식 필요 지점",
+    "memo": "설치가능 수심 미확보, 배수영향 지점으로 접촉식 필요 지점, ADVM 1대 점검중",
     "coords": {
       "lonDMS": "128-20-16",
       "latDMS": "35-40-59",
@@ -9631,7 +9631,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": false,
     "refWaterLevel": "수위관측소",
     "waterLevelType": "압력식",
-    "memo": "",
+    "memo": "ADVM 1대 점검중",
     "coords": {
       "lonDMS": "128-21-33",
       "latDMS": "35-31-39",
@@ -9830,7 +9830,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": true,
     "refWaterLevel": "유량관측소",
     "waterLevelType": "압력식",
-    "memo": "설치가능 수심 미확보, 배수영향 지점으로 접촉식 필요 지점",
+    "memo": "설치가능 수심 미확보, 배수영향 지점으로 접촉식 필요 지점, ADVM 1대 점검중",
     "coords": {
       "lonDMS": "127-57-39",
       "latDMS": "35-17-22",
@@ -9933,7 +9933,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": false,
     "refWaterLevel": "수위관측소",
     "waterLevelType": "압력식",
-    "memo": "",
+    "memo": "ADVM 1대 점검중",
     "coords": {
       "lonDMS": "128-24-49",
       "latDMS": "35-21-41",
@@ -13518,7 +13518,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": false,
     "refWaterLevel": "수위관측소",
     "waterLevelType": "압력식",
-    "memo": "",
+    "memo": "ADVM 1대 점검중",
     "coords": {
       "lonDMS": "127-23-32",
       "latDMS": "36-26-10",
@@ -13621,7 +13621,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": true,
     "refWaterLevel": "유량관측소",
     "waterLevelType": "압력식",
-    "memo": "수위관측소 제방부착식으로 상류 구조물 활용",
+    "memo": "수위관측소 제방부착식으로 상류 구조물 활용, ADVM 1대 점검중",
     "coords": {
       "lonDMS": "127-21-17",
       "latDMS": "36-30-18",
@@ -14411,7 +14411,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": true,
     "refWaterLevel": "유량관측소",
     "waterLevelType": "압력식",
-    "memo": "설치가능 수심 미확보, 배수영향 지점으로 접촉식 필요 지점",
+    "memo": "설치가능 수심 미확보, 배수영향 지점으로 접촉식 필요 지점, ADVM 1대 점검중",
     "coords": {
       "lonDMS": "127-10-26",
       "latDMS": "36-27-01",
@@ -15778,7 +15778,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": false,
     "refWaterLevel": "수위관측소",
     "waterLevelType": "압력식",
-    "memo": "",
+    "memo": "ADVM 1대 점검중",
     "coords": {
       "lonDMS": "126-48-54",
       "latDMS": "36-46-30",
@@ -15874,7 +15874,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": false,
     "refWaterLevel": "유량관측소",
     "waterLevelType": "압력식",
-    "memo": "설치가능 수심 미확보, 배수영향 지점으로 접촉식 필요 지점",
+    "memo": "설치가능 수심 미확보, 배수영향 지점으로 접촉식 필요 지점, ADVM 1대 점검중",
     "coords": {
       "lonDMS": "127-00-25",
       "latDMS": "36-47-53",
@@ -17990,7 +17990,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": false,
     "refWaterLevel": "유량관측소",
     "waterLevelType": "압력식",
-    "memo": "설치가능 수심 미확보, 배수영향 지점으로 접촉식 필요 지점",
+    "memo": "설치가능 수심 미확보, 배수영향 지점으로 접촉식 필요 지점, ADVM 1대 점검중",
     "coords": {
       "lonDMS": "127-22-37",
       "latDMS": "35-11-51",
@@ -19804,7 +19804,7 @@ window.INITIAL_STATIONS_DATA = [
     "solarInstall": true,
     "refWaterLevel": "수위관측소",
     "waterLevelType": "압력식",
-    "memo": "",
+    "memo": "ADVM 1대 점검중",
     "coords": {
       "lonDMS": "126-50-25",
       "latDMS": "35-02-52",
