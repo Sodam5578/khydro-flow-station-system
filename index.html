@@ -1045,24 +1045,80 @@
                   </div>
                 </div>
 
-                <!-- Threshold & Recipients Row -->
-                <div class="form-grid" style="grid-template-columns: 240px 1fr; gap:1rem; margin-bottom:1rem;">
-                  <div class="form-group">
-                    <label class="form-label" style="font-weight:700; color:#ea580c;">⚠️ 주의알림 기준 (연속 결측 횟수) *</label>
-                    <select id="smtp-threshold" class="form-select" style="font-weight:700; border-color:#fed7aa;">
-                      <option value="2">연속 2회 결측 (20분 이상)</option>
-                      <option value="3" selected>연속 3회 결측 (30분 이상, 권장)</option>
-                      <option value="4">연속 4회 결측 (40분 이상)</option>
-                      <option value="5">연속 5회 결측 (50분 이상)</option>
-                      <option value="6">연속 6회 결측 (1시간 이상)</option>
-                    </select>
+                <!-- Email Digest Mode & Target Rules Configuration -->
+                <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:1.15rem; margin-bottom:1.15rem;">
+                  <!-- Mode & Duration Header Row -->
+                  <div class="form-grid" style="grid-template-columns: 1fr 220px; gap:1rem; margin-bottom:1rem;">
+                    <div class="form-group">
+                      <label class="form-label" style="font-weight:700; color:#1e3a8a;">⏱️ 메일링 발송 주기 및 모드 *</label>
+                      <select id="email-report-mode" class="form-select" style="font-weight:700; border-color:#93c5fd; background:#ffffff;">
+                        <option value="HOURLY_DIGEST" selected>📊 매 정각(00분) 전국 종합 리포트 1통 발송 (권장: 1통으로 취합 발송)</option>
+                        <option value="PER_STATION">🚨 지점별 개별 즉시 알림 발송 (비권장: 결측 다발 시 메일 폭증)</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" style="font-weight:700; color:#ea580c;">⏳ 리포트 포함 최소 지속시간 *</label>
+                      <select id="email-min-hours" class="form-select" style="font-weight:700; border-color:#fed7aa; background:#ffffff;">
+                        <option value="1" selected>1시간 이상 지속 (연속 6회 이상, 기본)</option>
+                        <option value="2">2시간 이상 지속 (연속 12회 이상)</option>
+                        <option value="3">3시간 이상 지속 (연속 18회 이상)</option>
+                      </select>
+                    </div>
                   </div>
-                  <div class="form-group">
+
+                  <!-- Error Category Custom Checklist (사용자 지정 오류 항목 선택) -->
+                  <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:0.9rem 1.1rem; margin-bottom:1rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+                      <label style="font-size:0.88rem; font-weight:800; color:#1e293b; margin:0; display:flex; align-items:center; gap:6px;">
+                        <span>📋 정각 리포트에 포함할 오류 항목 선택</span>
+                        <span style="font-size:0.75rem; background:#dbeafe; color:#1e40af; padding:2px 8px; border-radius:12px; font-weight:700;">사용자 지정 필터</span>
+                      </label>
+                      <span style="font-size:0.75rem; color:#64748b;">(원하는 오류 유형을 체크하여 정각 메일링에 포함)</span>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:0.6rem; font-size:0.82rem;">
+                      <label style="display:flex; align-items:center; gap:8px; padding:7px 10px; background:#fff7ed; border:1px solid #ffedd5; border-radius:6px; cursor:pointer; font-weight:700; color:#c2410c;">
+                        <input type="checkbox" id="email-rule-DATA_MISSING" value="DATA_MISSING" class="email-rule-checkbox" checked style="width:16px; height:16px; accent-color:#ea580c;">
+                        <span>📡 자료 미수신 (통신 단절)</span>
+                      </label>
+                      <label style="display:flex; align-items:center; gap:8px; padding:7px 10px; background:#fef2f2; border:1px solid #fee2e2; border-radius:6px; cursor:pointer; font-weight:700; color:#b91c1c;">
+                        <input type="checkbox" id="email-rule-BATTERY_VOLTAGE" value="BATTERY_VOLTAGE" class="email-rule-checkbox" checked style="width:16px; height:16px; accent-color:#dc2626;">
+                        <span>🔋 배터리 전압 이상 (저전압)</span>
+                      </label>
+                      <label style="display:flex; align-items:center; gap:8px; padding:7px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; font-weight:600; color:#334155;">
+                        <input type="checkbox" id="email-rule-AC_POWER" value="AC_POWER" class="email-rule-checkbox" style="width:16px; height:16px;">
+                        <span>⚡ 상용 AC 전원 이상</span>
+                      </label>
+                      <label style="display:flex; align-items:center; gap:8px; padding:7px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; font-weight:600; color:#334155;">
+                        <input type="checkbox" id="email-rule-DC_CHARGE" value="DC_CHARGE" class="email-rule-checkbox" style="width:16px; height:16px;">
+                        <span>🔌 DC 충전 전압 이상</span>
+                      </label>
+                      <label style="display:flex; align-items:center; gap:8px; padding:7px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; font-weight:600; color:#334155;">
+                        <input type="checkbox" id="email-rule-WATER_LEVEL" value="WATER_LEVEL" class="email-rule-checkbox" style="width:16px; height:16px;">
+                        <span>🌊 수위계 결측 / 이상</span>
+                      </label>
+                      <label style="display:flex; align-items:center; gap:8px; padding:7px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; font-weight:600; color:#334155;">
+                        <input type="checkbox" id="email-rule-VELOCITY_SENSOR" value="VELOCITY_SENSOR" class="email-rule-checkbox" style="width:16px; height:16px;">
+                        <span>💨 유속계 결측 / 난류</span>
+                      </label>
+                      <label style="display:flex; align-items:center; gap:8px; padding:7px 10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer; font-weight:600; color:#334155;">
+                        <input type="checkbox" id="email-rule-ENV_TEMP_HUMID" value="ENV_TEMP_HUMID" class="email-rule-checkbox" style="width:16px; height:16px;">
+                        <span>🌡️ 함체 온·습도 이상</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Recipients Row -->
+                  <div class="form-group" style="margin-bottom:0;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                      <label class="form-label" style="font-weight:700; margin-bottom:0;">알림 수신 대상자 (이메일 쉼표 구분) *</label>
+                      <label class="form-label" style="font-weight:700; margin-bottom:0; color:#1e293b;">📬 알림 수신 대상자 (이메일 쉼표 구분) *</label>
                       <span id="recipients-active-status" style="font-size:0.75rem; color:#16a34a; font-weight:700;">● 정상 수신 가동 중</span>
                     </div>
-                    <input type="text" id="smtp-recipients" class="form-input" placeholder="psn5578@kihs.re.kr, psn5578@naver.com" value="psn5578@kihs.re.kr, psn5578@naver.com">
+                    <input type="text" id="smtp-recipients" class="form-input" placeholder="psn5578@naver.com, psn5578@kihs.re.kr" value="psn5578@naver.com, psn5578@kihs.re.kr" style="background:#ffffff;">
+                    <!-- Hidden field to preserve threshold compatibility if needed -->
+                    <select id="smtp-threshold" style="display:none;">
+                      <option value="6" selected>6</option>
+                    </select>
                   </div>
                 </div>
 
@@ -1137,15 +1193,18 @@
                 </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; border-top:1px solid var(--border-color); padding-top:1rem;">
-                  <div style="display:flex; gap:0.5rem;">
+                  <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <button class="btn btn-primary btn-sm" id="smtp-btn-test-digest" onclick="window.app.sendTestDigestEmail()" style="font-weight:700; background:#1e3a8a; border-color:#1e3a8a;">
+                      <span>📋</span> <span>정각 종합 리포트 테스트 발송</span>
+                    </button>
                     <button class="btn btn-outline btn-sm" id="smtp-btn-test" onclick="window.app.sendTestEmail()">
-                      <span>🧪</span> <span>테스트 메일 즉시 발송</span>
+                      <span>🧪</span> <span>단일 테스트 메일</span>
                     </button>
                     <button class="btn btn-outline btn-sm" onclick="window.app.showNotificationLogsModal()">
                       <span>📜</span> <span>발송 이력 로그 보기</span>
                     </button>
                   </div>
-                  <button class="btn btn-primary btn-sm" id="smtp-btn-save" onclick="window.app.saveSmtpConfig()">
+                  <button class="btn btn-success btn-sm" id="smtp-btn-save" onclick="window.app.saveSmtpConfig()" style="font-weight:700;">
                     <span>💾</span> <span>알림 설정 저장</span>
                   </button>
                 </div>

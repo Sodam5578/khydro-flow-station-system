@@ -1027,9 +1027,32 @@ router.post("/notifications/test", verifyToken, async (req, res) => {
     if (req.user.role !== "admin") {
       return res.status(403).json({ success: false, message: "테스트 메일 발송은 최고 관리자(admin) 계정으로만 실행할 수 있습니다." });
     }
+    const { targetEmail, mode } = req.body;
+    let result;
+    if (mode === "digest" || req.body.digest) {
+      const issues = (liveMonitor.cache && liveMonitor.cache.issues) || [];
+      result = await notifier.sendTestDigestEmail(targetEmail, issues);
+      logActivity(req.user, "알림테스트", "정각통합리포트", `정각 종합 리포트 테스트 발송 (${targetEmail || "기본수신자"})`, req.ip);
+    } else {
+      result = await notifier.sendTestEmail(targetEmail);
+      logActivity(req.user, "알림테스트", "SMTP테스트", `테스트 메일 발송 (${targetEmail || "기본수신자"})`, req.ip);
+    }
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 18-1. Notifications: Send Test Digest Email (Admin Only)
+router.post("/notifications/test-digest", verifyToken, async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "테스트 메일 발송은 최고 관리자(admin) 계정으로만 실행할 수 있습니다." });
+    }
     const { targetEmail } = req.body;
-    const result = await notifier.sendTestEmail(targetEmail);
-    logActivity(req.user, "알림테스트", "SMTP테스트", `테스트 메일 발송 (${targetEmail || "기본수신자"})`, req.ip);
+    const issues = (liveMonitor.cache && liveMonitor.cache.issues) || [];
+    const result = await notifier.sendTestDigestEmail(targetEmail, issues);
+    logActivity(req.user, "알림테스트", "정각통합리포트", `정각 종합 리포트 테스트 발송 (${targetEmail || "기본수신자"})`, req.ip);
     res.json(result);
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });

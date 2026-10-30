@@ -1,5 +1,8 @@
 {
-  "thresholdCount": 3,
+  "thresholdCount": 6,
+  "provider": "BREVO",
+  "apiKey": "",
+  "apiSender": "seyoo123456789@gmail.com",
   "host": "smtp.naver.com",
   "port": 465,
   "user": "psn5578@naver.com",
@@ -10,5 +13,11 @@
     "psn5578@kihs.re.kr"
   ],
   "enabled": true,
-  "savedAt": "2026-09-06T13:00:00.000Z"
+  "reportMode": "HOURLY_DIGEST",
+  "minContinuousHours": 1,
+  "selectedRules": [
+    "DATA_MISSING",
+    "BATTERY_VOLTAGE"
+  ],
+  "savedAt": "2026-10-30T07:18:03.240Z"
 }

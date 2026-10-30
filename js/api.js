@@ -348,6 +348,15 @@ class ApiClient {
     return await res.json();
   }
 
+  async sendTestDigestNotification(targetEmail) {
+    const res = await fetch(`${this.baseUrl}/notifications/test-digest`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify({ targetEmail })
+    });
+    return await res.json();
+  }
+
   // REST API: Real-time Water Level Comparison
   async getWaterLevelComparison(stCodeOrId, period = "24h") {
     const res = await fetch(`${this.baseUrl}/waterlevel/compare/${encodeURIComponent(stCodeOrId)}?period=${period}`, { headers: this.getHeaders() });

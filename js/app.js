@@ -536,6 +536,8 @@ class App {
       const isAdmin = window.apiClient.user?.role === "admin";
 
       const threshEl = document.getElementById("smtp-threshold");
+      const reportModeEl = document.getElementById("email-report-mode");
+      const minHoursEl = document.getElementById("email-min-hours");
       const hostEl = document.getElementById("smtp-host");
       const portEl = document.getElementById("smtp-port");
       const userEl = document.getElementById("smtp-user");
@@ -548,25 +550,31 @@ class App {
       const noticeEl = document.getElementById("smtp-member-readonly-notice");
       const saveBtn = document.getElementById("smtp-btn-save");
       const testBtn = document.getElementById("smtp-btn-test");
+      const testDigestBtn = document.getElementById("smtp-btn-test-digest");
       const engineHttpRadio = document.getElementById("engine-type-http");
       const engineSmtpRadio = document.getElementById("engine-type-smtp");
       const btnOn = document.getElementById("btn-email-status-on");
       const btnOff = document.getElementById("btn-email-status-off");
+      const ruleCheckboxes = document.querySelectorAll(".email-rule-checkbox");
 
       // UI Admin Enforcement
       if (noticeEl) noticeEl.style.display = isAdmin ? "none" : "block";
       if (saveBtn) saveBtn.style.display = isAdmin ? "inline-flex" : "none";
       if (testBtn) testBtn.style.display = isAdmin ? "inline-flex" : "none";
+      if (testDigestBtn) testDigestBtn.style.display = isAdmin ? "inline-flex" : "none";
       if (btnOn) btnOn.disabled = !isAdmin;
       if (btnOff) btnOff.disabled = !isAdmin;
 
-      [threshEl, hostEl, portEl, userEl, passEl, recipEl, apiKeyEl, apiSenderEl, providerEl, engineHttpRadio, engineSmtpRadio].forEach(el => {
+      [threshEl, reportModeEl, minHoursEl, hostEl, portEl, userEl, passEl, recipEl, apiKeyEl, apiSenderEl, providerEl, engineHttpRadio, engineSmtpRadio].forEach(el => {
         if (el) el.disabled = !isAdmin;
       });
+      ruleCheckboxes.forEach(cb => { cb.disabled = !isAdmin; });
 
       if (res.success && res.config) {
         const c = res.config;
         if (threshEl && c.thresholdCount) threshEl.value = String(c.thresholdCount);
+        if (reportModeEl && c.reportMode) reportModeEl.value = c.reportMode;
+        if (minHoursEl && c.minContinuousHours) minHoursEl.value = String(c.minContinuousHours);
         if (hostEl) hostEl.value = c.host || "smtp.naver.com";
         if (portEl) portEl.value = c.port || 465;
         if (userEl) userEl.value = c.user || "";
@@ -575,6 +583,14 @@ class App {
         if (apiKeyEl) apiKeyEl.value = c.rawApiKey || "";
         if (apiSenderEl) apiSenderEl.value = c.apiSender || "seyoo123456789@gmail.com";
         if (providerEl && c.provider && c.provider !== "AUTO") providerEl.value = c.provider;
+
+        // Populate rule checkboxes
+        const selectedRules = Array.isArray(c.selectedRules) && c.selectedRules.length > 0 
+          ? c.selectedRules 
+          : ["DATA_MISSING", "BATTERY_VOLTAGE"];
+        ruleCheckboxes.forEach(cb => {
+          cb.checked = selectedRules.includes(cb.value);
+        });
 
         // Toggle UI mode based on provider
         if (c.effectiveProvider === "SMTP" && !c.rawApiKey) {
@@ -614,7 +630,9 @@ class App {
   async saveSmtpConfig(fromToggle = false) {
     if (!window.apiClient) return;
     const threshEl = document.getElementById("smtp-threshold");
-    const thresholdCount = threshEl ? parseInt(threshEl.value, 10) : 3;
+    const thresholdCount = threshEl ? parseInt(threshEl.value, 10) : 6;
+    const reportMode = document.getElementById("email-report-mode")?.value || "HOURLY_DIGEST";
+    const minContinuousHours = parseInt(document.getElementById("email-min-hours")?.value, 10) || 1;
     const isHttp = document.getElementById("engine-type-http")?.checked;
     const provider = isHttp ? (document.getElementById("email-api-provider")?.value || "BREVO") : "SMTP";
     const apiKey = document.getElementById("email-api-key")?.value.trim() || "";
@@ -626,15 +644,36 @@ class App {
     const recipients = document.getElementById("smtp-recipients")?.value.trim() || "";
     const enabled = this.emailAlertEnabled !== false;
 
+    // Selected Rules Checklist
+    const selectedRules = Array.from(document.querySelectorAll(".email-rule-checkbox:checked")).map(cb => cb.value);
+    if (selectedRules.length === 0) {
+      alert("⚠️ 정각 리포트에 포함할 오류 항목을 최소 1개 이상 선택해야 합니다.");
+      return;
+    }
+
     try {
-      const payload = { thresholdCount, provider, apiKey, apiSender, host, port, user, pass, recipients, enabled };
+      const payload = {
+        thresholdCount,
+        reportMode,
+        minContinuousHours,
+        selectedRules,
+        provider,
+        apiKey,
+        apiSender,
+        host,
+        port,
+        user,
+        pass,
+        recipients,
+        enabled
+      };
 
       const res = await window.apiClient.updateNotificationConfig(payload);
       if (res.success) {
         if (fromToggle) {
           this.showToast(enabled ? "🔔 결측 이메일 알림이 [발송 활성화 (ON)]되었습니다." : "🔕 결측 이메일 알림이 [발송 일시중지 (OFF)]되었습니다.", enabled ? "success" : "info");
         } else {
-          this.showToast(`알림 설정(기준: 연속 ${thresholdCount}회, 상태: ${enabled ? "ON" : "OFF"})이 저장되었습니다.`, "success");
+          this.showToast(`알림 설정(모드: ${reportMode === "HOURLY_DIGEST" ? "정각 종합리포트" : "개별발송"}, 지속: ${minContinuousHours}시간 이상, 상태: ${enabled ? "ON" : "OFF"})이 저장되었습니다.`, "success");
         }
         this.loadSmtpConfig();
       } else {
@@ -642,6 +681,30 @@ class App {
       }
     } catch (e) {
       alert("설정 저장 중 오류가 발생했습니다.");
+    }
+  }
+
+  async sendTestDigestEmail() {
+    if (!window.apiClient) return;
+    if (window.apiClient.user?.role !== "admin") {
+      alert("⚠️ 정각 종합 리포트 테스트 발송은 최고 관리자(admin) 계정으로만 실행할 수 있습니다.");
+      return;
+    }
+    const defaultRecip = (document.getElementById("smtp-recipients")?.value.split(",")[0] || "psn5578@naver.com").trim();
+    const targetEmail = prompt("전국 관측소 정각 종합 리포트를 테스트 발송할 수신 이메일을 입력하세요:\n(현재 1시간 이상 지속된 이상 관측소 목록이 1통의 HTML 종합표로 전송됩니다)", defaultRecip);
+    if (!targetEmail) return;
+
+    try {
+      this.showToast("📊 정각 종합 리포트(1시간 이상 지속 지점 취합)를 생성하여 전송 중입니다...", "info");
+      const res = await window.apiClient.sendTestDigestNotification(targetEmail);
+      if (res.success) {
+        alert(`✓ 정각 종합 리포트 테스트 발송 성공!\n수신처: ${targetEmail}\n발송 모드: ${res.status || "SUCCESS"}`);
+        this.showToast("정각 리포트 발송 완료", "success");
+      } else {
+        alert(`⚠️ 발송 실패: ${res.message || res.error || "알 수 없는 오류"}`);
+      }
+    } catch (e) {
+      alert("정각 종합 리포트 발송 중 오류가 발생했습니다: " + e.message);
     }
   }
 

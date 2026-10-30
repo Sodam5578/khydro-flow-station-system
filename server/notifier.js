@@ -30,6 +30,12 @@ class SmartNotifierService {
     this.enabled = process.env.ENABLE_EMAIL_ALERTS === "true" || true;
     this.transporter = null;
 
+    // NEW: 매 정각 1회 전국 종합 리포트 발송 설정
+    this.reportMode = process.env.EMAIL_REPORT_MODE || "HOURLY_DIGEST"; // "HOURLY_DIGEST" (정각 1통 통합 리포트) | "PER_STATION"
+    this.minContinuousHours = parseInt(process.env.MIN_CONTINUOUS_HOURS, 10) || 1; // 1시간(60분, 6회 이상)
+    this.selectedRules = (process.env.EMAIL_SELECTED_RULES || "DATA_MISSING,BATTERY_VOLTAGE").split(",").map(r => r.trim()).filter(Boolean);
+    this.lastReportedHourKey = ""; // "YYYY-MM-DD-HH" 중복 발송 방지용 키
+
     // Load persisted configuration from storage
     this.loadPersistedConfig();
     this.initTransporter();
@@ -51,7 +57,20 @@ class SmartNotifierService {
         if (saved.from) this.smtpConfig.from = saved.from;
         if (saved.recipients && Array.isArray(saved.recipients)) this.recipients = saved.recipients;
         if (saved.enabled !== undefined) this.enabled = saved.enabled;
-        console.log(`📁 [SmartNotifier] Loaded persisted config from disk (threshold: ${this.thresholdCount}회, provider: ${this.getEffectiveProvider()})`);
+        if (saved.reportMode) this.reportMode = saved.reportMode;
+        if (saved.minContinuousHours) this.minContinuousHours = saved.minContinuousHours;
+        if (saved.selectedRules && Array.isArray(saved.selectedRules)) this.selectedRules = saved.selectedRules;
+        console.log(`📁 [SmartNotifier] Loaded persisted config from disk (mode: ${this.reportMode}, minHours: ${this.minContinuousHours}h, rules: ${this.selectedRules.join(",")}, provider: ${this.getEffectiveProvider()})`);
+      }
+
+      // Check .env if apiKey is not yet set
+      if (!this.apiKey) {
+        const envPath = path.join(__dirname, "../.env");
+        if (fs.existsSync(envPath)) {
+          const envContent = fs.readFileSync(envPath, "utf-8");
+          const m = envContent.match(/BREVO_API_KEY\s*=\s*([^\r\n]+)/);
+          if (m) this.apiKey = m[1].trim().replace(/^["']|["']$/g, "");
+        }
       }
     } catch (e) {
       console.warn("⚠️ Failed to load persisted notification config:", e.message);
@@ -67,7 +86,7 @@ class SmartNotifierService {
       const dataToSave = {
         thresholdCount: this.thresholdCount,
         provider: this.provider,
-        apiKey: this.apiKey,
+        apiKey: (process.env.BREVO_API_KEY || fs.existsSync(path.join(__dirname, "../.env"))) ? "" : this.apiKey,
         apiSender: this.apiSender,
         host: this.smtpConfig.host,
         port: this.smtpConfig.port,
@@ -76,6 +95,9 @@ class SmartNotifierService {
         from: this.smtpConfig.from,
         recipients: this.recipients,
         enabled: this.enabled,
+        reportMode: this.reportMode,
+        minContinuousHours: this.minContinuousHours,
+        selectedRules: this.selectedRules,
         savedAt: new Date().toISOString()
       };
       fs.writeFileSync(this.configFilePath, JSON.stringify(dataToSave, null, 2), "utf-8");
@@ -145,6 +167,9 @@ class SmartNotifierService {
       }
     }
     if (config.enabled !== undefined) this.enabled = !!config.enabled;
+    if (config.reportMode !== undefined) this.reportMode = config.reportMode;
+    if (config.minContinuousHours !== undefined) this.minContinuousHours = parseInt(config.minContinuousHours, 10) || 1;
+    if (config.selectedRules !== undefined && Array.isArray(config.selectedRules)) this.selectedRules = config.selectedRules;
 
     this.persistConfig();
     this.initTransporter();
@@ -166,6 +191,9 @@ class SmartNotifierService {
       from: this.smtpConfig.from,
       recipients: this.recipients.join(", "),
       enabled: this.enabled,
+      reportMode: this.reportMode,
+      minContinuousHours: this.minContinuousHours,
+      selectedRules: this.selectedRules,
       isConfigured: eff !== "SIMULATION"
     };
   }
@@ -181,17 +209,50 @@ class SmartNotifierService {
     return this.smtpConfig.from || "자동유량관측 이상알림 <psn5578@naver.com>";
   }
 
+  getRuleCategory(ruleId, problem = "") {
+    const p = (problem || "").toLowerCase();
+    const r = (ruleId || "").toUpperCase();
+    if (r === "ADVM-R01" || r === "EWSV-R01" || p.includes("자료 미수신") || p.includes("데이터 미수신") || p.includes("미수신")) {
+      return "DATA_MISSING";
+    }
+    if (r === "ADVM-R10" || r === "EWSV-R10" || p.includes("배터리") || p.includes("battery")) {
+      return "BATTERY_VOLTAGE";
+    }
+    if (r === "ADVM-R08" || r === "EWSV-R08" || p.includes("ac")) {
+      return "AC_POWER";
+    }
+    if (r === "ADVM-R09" || r === "EWSV-R09" || p.includes("충전")) {
+      return "DC_CHARGE";
+    }
+    if (r === "ADVM-R03" || r === "ADVM-R14" || r === "EWSV-R03" || p.includes("수위")) {
+      return "WATER_LEVEL";
+    }
+    if (r === "ADVM-R04" || r === "EWSV-R05" || r === "EWSV-R06" || p.includes("유속계")) {
+      return "VELOCITY_SENSOR";
+    }
+    if (r === "ADVM-R11" || r === "EWSV-R11" || r === "ADVM-R12" || r === "EWSV-R12" || p.includes("온도") || p.includes("습도")) {
+      return "ENV_TEMP_HUMID";
+    }
+    return "OTHER";
+  }
+
   /**
    * Main Check & Notify Loop - Runs automatically in background every 5 minutes
    */
   async checkAndNotify(currentIssues, targetTime) {
     if (!this.enabled) return;
 
+    // 1. 기본 모드: 매 정각(00분 경) 1회만 단일 통합 리포트 발송 (지점별 개별 발송 중단)
+    if (this.reportMode === "HOURLY_DIGEST") {
+      await this.checkAndSendHourlyDigest(currentIssues, targetTime);
+      return;
+    }
+
+    // 2. [선택적 모드] 지점별 개별 발송 모드 (PER_STATION)
     const activeKeys = new Set();
     const now = new Date();
     const timeStr = targetTime || now.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
 
-    // 1. Evaluate Active Issues against user-defined threshold
     for (const issue of currentIssues) {
       const key = `${issue.stCode || issue.stationName}_${issue.ruleId}_${issue.sensorNo || 0}`;
       activeKeys.add(key);
@@ -214,17 +275,15 @@ class SmartNotifierService {
       state.detail = issue.detail;
       state.problem = issue.problem;
 
-      // Determine current alert level
       let currentLevel = "NORMAL";
       if (count >= this.thresholdCount * 2) {
-        currentLevel = "CRITICAL"; // 2x threshold (e.g. 6 counts / 1hr)
+        currentLevel = "CRITICAL";
       } else if (count >= this.thresholdCount) {
-        currentLevel = "WARNING"; // threshold counts (e.g. 3 counts / 30m)
+        currentLevel = "WARNING";
       }
 
       state.level = currentLevel;
 
-      // Check if we need to dispatch email (level transitioned or first threshold hit)
       if (currentLevel !== "NORMAL" && state.lastNotifiedLevel !== currentLevel) {
         state.lastNotifiedLevel = currentLevel;
         state.lastNotifiedTime = timeStr;
@@ -236,7 +295,6 @@ class SmartNotifierService {
       }
     }
 
-    // 2. Check for Resolved Issues
     for (const [key, state] of this.alertStates.entries()) {
       if (!activeKeys.has(key)) {
         if (state.lastNotifiedLevel === "WARNING" || state.lastNotifiedLevel === "CRITICAL") {
@@ -245,6 +303,272 @@ class SmartNotifierService {
         this.alertStates.delete(key);
       }
     }
+  }
+
+  /**
+   * Hourly Digest: Evaluates top-of-hour timing and triggers a single consolidated report
+   */
+  async checkAndSendHourlyDigest(currentIssues, targetTime, isManualForce = false, customTargetEmail = null) {
+    if (!this.enabled && !isManualForce) return;
+
+    const now = new Date();
+    let hourKey = "";
+    let isNearTopOfTheHour = false;
+    let displayTime = targetTime;
+
+    if (targetTime && typeof targetTime === "string") {
+      const parts = targetTime.match(/(\d{4}-\d{2}-\d{2})\s+(\d{2}):(\d{2})/);
+      if (parts) {
+        const minute = parseInt(parts[3], 10);
+        // 정각 기준 00분~15분 사이 자료 수집 시 정각 리포트 발송 대상
+        isNearTopOfTheHour = (minute >= 0 && minute <= 15);
+        hourKey = `${parts[1]}-${parts[2]}`;
+      }
+    }
+
+    if (!hourKey) {
+      const kstDate = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+      const min = kstDate.getMinutes();
+      isNearTopOfTheHour = (min >= 0 && min <= 15);
+      hourKey = `${kstDate.getFullYear()}-${String(kstDate.getMonth()+1).padStart(2, "0")}-${String(kstDate.getDate()).padStart(2, "0")}-${String(kstDate.getHours()).padStart(2, "0")}`;
+      if (!displayTime) {
+        displayTime = `${kstDate.getFullYear()}-${String(kstDate.getMonth()+1).padStart(2, "0")}-${String(kstDate.getDate()).padStart(2, "0")} ${String(kstDate.getHours()).padStart(2, "0")}:00`;
+      }
+    }
+
+    // 수동 테스트 발송이 아닌 경우 정각 부근인지 확인 및 중복 발송 방지
+    if (!isManualForce) {
+      if (!isNearTopOfTheHour) {
+        return; // 정각이 아니면 건너뜀
+      }
+      if (this.lastReportedHourKey === hourKey) {
+        return; // 이번 시간에 이미 발송 완료됨
+      }
+    }
+
+    if (!isManualForce) {
+      this.lastReportedHourKey = hourKey;
+    }
+
+    return await this.sendHourlyDigestReport(currentIssues, displayTime, isManualForce, customTargetEmail);
+  }
+
+  /**
+   * Builds and dispatches the single consolidated Hourly Quality Digest Email
+   */
+  async sendHourlyDigestReport(currentIssues = [], displayTime = "", isManual = false, customTargetEmail = null) {
+    const minThresholdCount = (this.minContinuousHours || 1) * 6; // 1시간 = 연속 6회
+    const selected = new Set(this.selectedRules || ["DATA_MISSING", "BATTERY_VOLTAGE"]);
+
+    // 1. Filter: 1시간 이상 지속된 오류 & 사용자가 선택한 오류 항목만 추출
+    const filteredIssues = [];
+    const stationMap = new Map(); // stCode -> consolidated issue object
+
+    for (const iss of currentIssues) {
+      const count = iss.continuousCount || 1;
+      if (count < minThresholdCount) continue; // 1시간 미만 건너뜀
+
+      const category = this.getRuleCategory(iss.ruleId, iss.problem);
+      if (!selected.has(category)) continue; // 선택되지 않은 룰 건너뜀
+
+      const key = `${iss.stCode || iss.stationName}_${category}`;
+      if (!stationMap.has(key) || stationMap.get(key).continuousCount < count) {
+        stationMap.set(key, { ...iss, category });
+      }
+    }
+
+    const reportIssues = Array.from(stationMap.values());
+
+    // 2. Group by Category
+    const missingStations = reportIssues.filter(i => i.category === "DATA_MISSING");
+    const batteryStations = reportIssues.filter(i => i.category === "BATTERY_VOLTAGE");
+    const otherStations = reportIssues.filter(i => i.category !== "DATA_MISSING" && i.category !== "BATTERY_VOLTAGE");
+
+    const totalAbnormalCount = reportIssues.length;
+    const timeLabel = displayTime || new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+
+    // 3. Email Subject
+    let subject = "";
+    if (isManual) {
+      subject = `[테스트] [한국수자원조사기술원] 전국 관측소 품질감시 정기 리포트 (${timeLabel} 기준)`;
+    } else if (totalAbnormalCount > 0) {
+      subject = `[전국 관측소 품질감시 정기 리포트] 1시간 이상 이상지점 총 ${totalAbnormalCount}건 요약 (${timeLabel} 기준)`;
+    } else {
+      subject = `[전국 관측소 품질감시 정기 리포트] 전국 관측소 1시간 이상 이상 없음 (정상 가동) (${timeLabel} 기준)`;
+    }
+
+    // 4. Build Table Rows
+    const renderTableRows = (list, isBattery = false) => {
+      if (list.length === 0) {
+        return `<tr><td colspan="5" style="text-align:center; padding:16px; color:#94a3b8; font-size:13px;">해당되는 1시간 이상 이상 지점이 없습니다.</td></tr>`;
+      }
+      return list.map((item, idx) => {
+        const count = item.continuousCount || 6;
+        const durationHours = (count / 6).toFixed(1);
+        const durationText = `${durationHours}시간 (${count * 10}분, ${count}회)`;
+        const regionBadge = `<span style="background:#e0f2fe; color:#0369a1; padding:2px 6px; border-radius:4px; font-weight:700; font-size:11px;">${item.region || "전국"}</span>`;
+        const gaugeBadge = `<span style="background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:4px; font-size:11px;">${item.gaugeType || "ADVM/EWSV"}</span>`;
+
+        let detailText = item.detail || item.problem || "-";
+        if (isBattery) {
+          detailText = `<b style="color:#b91c1c;">${item.detail || "배터리 전압 기준치 미달"}</b>`;
+        }
+
+        return `
+          <tr style="border-bottom:1px solid #f1f5f9; font-size:13px;">
+            <td style="padding:10px 8px; text-align:center; color:#64748b;">${idx + 1}</td>
+            <td style="padding:10px 8px; font-weight:700; color:#1e293b;">
+              ${item.stationName} ${gaugeBadge}
+            </td>
+            <td style="padding:10px 8px; text-align:center;">${regionBadge}</td>
+            <td style="padding:10px 8px; text-align:center; color:#ea580c; font-weight:700;">${durationText}</td>
+            <td style="padding:10px 8px; color:#334155;">${detailText}</td>
+          </tr>
+        `;
+      }).join("");
+    };
+
+    // 5. Build Full HTML Template
+    const html = `
+      <div style="font-family:'Pretendard',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif; max-width:680px; margin:0 auto; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; background:#ffffff; box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+        <!-- Top Brand Header -->
+        <div style="background:#1e3a8a; padding:22px 24px; color:#ffffff;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:12px; font-weight:700; letter-spacing:0.8px; opacity:0.85; text-transform:uppercase;">KIHS 한국수자원조사기술원</span>
+            <span style="font-size:11px; background:rgba(255,255,255,0.2); padding:3px 8px; border-radius:12px;">매 정각 종합 리포트</span>
+          </div>
+          <h2 style="margin:10px 0 4px 0; font-size:20px; font-weight:800; line-height:1.3;">
+            📊 전국 자동유량관측소 품질감시 정기 리포트
+          </h2>
+          <div style="font-size:13px; opacity:0.9; margin-top:4px;">
+            • 기준 시각: <strong>${timeLabel}</strong> | 감시 대상: <strong>전국 223개 관측소</strong>
+          </div>
+        </div>
+
+        <!-- Summary KPI Cards -->
+        <div style="padding:20px 24px; background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+          <div style="font-size:12px; font-weight:700; color:#64748b; margin-bottom:10px;">📌 1시간(6회) 이상 중대 이상 현황 요약</div>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px;">
+            <div style="background:#ffffff; border:1px solid #fed7aa; border-radius:8px; padding:12px 14px; text-align:center;">
+              <div style="font-size:12px; color:#ea580c; font-weight:700;">📡 자료 미수신</div>
+              <div style="font-size:22px; font-weight:900; color:#ea580c; margin-top:2px;">${missingStations.length}개소</div>
+              <div style="font-size:11px; color:#94a3b8;">1시간 이상 통신두절</div>
+            </div>
+            <div style="background:#ffffff; border:1px solid #fecaca; border-radius:8px; padding:12px 14px; text-align:center;">
+              <div style="font-size:12px; color:#dc2626; font-weight:700;">🔋 배터리 전압 이상</div>
+              <div style="font-size:22px; font-weight:900; color:#dc2626; margin-top:2px;">${batteryStations.length}개소</div>
+              <div style="font-size:11px; color:#94a3b8;">1시간 이상 전압저하</div>
+            </div>
+            <div style="background:#ffffff; border:1px solid #bbf7d0; border-radius:8px; padding:12px 14px; text-align:center;">
+              <div style="font-size:12px; color:#16a34a; font-weight:700;">🟢 정상 운영 관측소</div>
+              <div style="font-size:22px; font-weight:900; color:#16a34a; margin-top:2px;">${Math.max(0, 223 - totalAbnormalCount)}개소</div>
+              <div style="font-size:11px; color:#94a3b8;">중대 결측 없음</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Body Tables -->
+        <div style="padding:24px;">
+          <!-- Section 1: 자료 미수신 (1시간 이상) -->
+          <div style="margin-bottom:28px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:2px solid #ea580c; padding-bottom:6px;">
+              <h3 style="margin:0; font-size:15px; font-weight:800; color:#1e293b;">
+                📡 1. 자료 미수신 지점 (1시간 이상 지속)
+              </h3>
+              <span style="font-size:12px; font-weight:700; color:#ea580c;">총 ${missingStations.length}개소</span>
+            </div>
+            <table style="width:100%; border-collapse:collapse; text-align:left;">
+              <thead>
+                <tr style="background:#f1f5f9; font-size:12px; color:#475569;">
+                  <th style="padding:8px; text-align:center; width:36px;">No</th>
+                  <th style="padding:8px;">관측소명</th>
+                  <th style="padding:8px; text-align:center; width:65px;">권역</th>
+                  <th style="padding:8px; text-align:center; width:130px;">지속시간</th>
+                  <th style="padding:8px;">상태 및 점검메모</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${renderTableRows(missingStations)}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Section 2: 배터리 전압 이상 (1시간 이상) -->
+          <div style="margin-bottom:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:2px solid #dc2626; padding-bottom:6px;">
+              <h3 style="margin:0; font-size:15px; font-weight:800; color:#1e293b;">
+                🔋 2. 배터리 전압 이상 지점 (1시간 이상 지속)
+              </h3>
+              <span style="font-size:12px; font-weight:700; color:#dc2626;">총 ${batteryStations.length}개소</span>
+            </div>
+            <table style="width:100%; border-collapse:collapse; text-align:left;">
+              <thead>
+                <tr style="background:#f1f5f9; font-size:12px; color:#475569;">
+                  <th style="padding:8px; text-align:center; width:36px;">No</th>
+                  <th style="padding:8px;">관측소명</th>
+                  <th style="padding:8px; text-align:center; width:65px;">권역</th>
+                  <th style="padding:8px; text-align:center; width:130px;">지속시간</th>
+                  <th style="padding:8px;">배터리 전압 상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${renderTableRows(batteryStations, true)}
+              </tbody>
+            </table>
+          </div>
+
+          ${otherStations.length > 0 ? `
+            <!-- Section 3: 기타 품질 이상 -->
+            <div style="margin-bottom:24px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:2px solid #6366f1; padding-bottom:6px;">
+                <h3 style="margin:0; font-size:15px; font-weight:800; color:#1e293b;">
+                  ⚠️ 3. 기타 선택된 품질 이상 지점 (1시간 이상 지속)
+                </h3>
+                <span style="font-size:12px; font-weight:700; color:#6366f1;">총 ${otherStations.length}개소</span>
+              </div>
+              <table style="width:100%; border-collapse:collapse; text-align:left;">
+                <thead>
+                  <tr style="background:#f1f5f9; font-size:12px; color:#475569;">
+                    <th style="padding:8px; text-align:center; width:36px;">No</th>
+                    <th style="padding:8px;">관측소명</th>
+                    <th style="padding:8px; text-align:center; width:65px;">권역</th>
+                    <th style="padding:8px; text-align:center; width:130px;">지속시간</th>
+                    <th style="padding:8px;">세부 문제내용</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${renderTableRows(otherStations)}
+                </tbody>
+              </table>
+            </div>
+          ` : ""}
+
+          <!-- Link CTA -->
+          <div style="text-align:center; margin-top:28px; padding-top:20px; border-top:1px dashed #e2e8f0;">
+            <a href="https://khydro-flow-station-system.onrender.com" target="_blank" style="display:inline-block; background:#1e3a8a; color:#ffffff; padding:12px 28px; border-radius:8px; font-weight:700; text-decoration:none; font-size:14px; box-shadow:0 2px 6px rgba(30,58,138,0.25);">
+              📊 통합 관리시스템 실시간 분석 바로가기 ➔
+            </a>
+            <div style="font-size:11px; color:#94a3b8; margin-top:8px;">
+              * 본 리포트는 매 정각(00분) 1시간 이상 지속된 오류만 1통으로 취합하여 자동 발송됩니다.
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="background:#f8fafc; padding:14px 24px; font-size:11px; color:#94a3b8; border-top:1px solid #e2e8f0; text-align:center;">
+          한국수자원조사기술원 자동유량관측시설 및 유지관리 총괄 시스템 | 24시간 품질감시 엔진
+        </div>
+      </div>
+    `;
+
+    return await this.deliverEmail(subject, html, "전국 관측소 정기 종합 리포트", totalAbnormalCount > 0 ? "CRITICAL" : "NORMAL", totalAbnormalCount, customTargetEmail);
+  }
+
+  async sendTestDigestEmail(targetEmail, currentIssues = []) {
+    const testRecipient = targetEmail || this.recipients[0] || "psn5578@naver.com";
+    const nowTime = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+    const res = await this.sendHourlyDigestReport(currentIssues, `${nowTime} (테스트)`, true, testRecipient);
+    return res;
   }
 
   async sendAlertEmail(issue, level, count, timeStr) {
@@ -337,8 +661,9 @@ class SmartNotifierService {
     return this.deliverEmail(subject, html, issue.stationName, "RESOLVED", 0);
   }
 
-  async deliverEmail(subject, html, stationName, level, count) {
+  async deliverEmail(subject, html, stationName, level, count, customRecipients = null) {
     const eff = this.getEffectiveProvider();
+    const actualRecipients = customRecipients ? (Array.isArray(customRecipients) ? customRecipients : [customRecipients]) : this.recipients;
     const logItem = {
       id: Date.now() + Math.random().toString(36).substr(2, 4),
       timestamp: new Date().toISOString(),
@@ -346,17 +671,17 @@ class SmartNotifierService {
       level,
       count,
       subject,
-      recipients: this.recipients.join(", "),
+      recipients: actualRecipients.join(", "),
       status: "SENT",
       mode: eff === "RESEND" ? "HTTP_API (Resend)" : (eff === "BREVO" ? "HTTP_API (Brevo)" : (eff === "SMTP" ? "REAL_SMTP" : "SIMULATED"))
     };
 
     if (eff === "RESEND") {
       try {
-        const res = await this.sendViaResend(this.recipients, subject, html);
+        const res = await this.sendViaResend(actualRecipients, subject, html);
         if (res.success) {
           logItem.status = "SUCCESS";
-          console.log(`📧 [SmartNotifier (Resend)] Sent to ${this.recipients.join(", ")} - ${subject}`);
+          console.log(`📧 [SmartNotifier (Resend)] Sent to ${actualRecipients.join(", ")} - ${subject}`);
         } else {
           logItem.status = "FAILED";
           logItem.error = res.error;
@@ -368,10 +693,10 @@ class SmartNotifierService {
       }
     } else if (eff === "BREVO") {
       try {
-        const res = await this.sendViaBrevo(this.recipients, subject, html);
+        const res = await this.sendViaBrevo(actualRecipients, subject, html);
         if (res.success) {
           logItem.status = "SUCCESS";
-          console.log(`📧 [SmartNotifier (Brevo)] Sent to ${this.recipients.join(", ")} - ${subject}`);
+          console.log(`📧 [SmartNotifier (Brevo)] Sent to ${actualRecipients.join(", ")} - ${subject}`);
         } else {
           logItem.status = "FAILED";
           logItem.error = res.error;
@@ -386,12 +711,12 @@ class SmartNotifierService {
         const fromAddr = this.getFromAddress();
         await this.transporter.sendMail({
           from: fromAddr,
-          to: this.recipients,
+          to: actualRecipients,
           subject,
           html
         });
         logItem.status = "SUCCESS";
-        console.log(`📧 [SmartNotifier (SMTP)] Sent REAL email to ${this.recipients.join(", ")} - ${subject}`);
+        console.log(`📧 [SmartNotifier (SMTP)] Sent REAL email to ${actualRecipients.join(", ")} - ${subject}`);
       } catch (e) {
         logItem.status = "FAILED";
         logItem.error = e.message;
