@@ -174,6 +174,155 @@ class ModalManager {
     }
   }
 
+  renderChecklistHtml(st) {
+    if (!st) return "";
+    const m = st.maintenance || {};
+    const tasks = m.tasks || {};
+    const completedTasks = m.completedTasks || {};
+
+    const standardTaskDefs = [
+      { key: "breaker", legacyKeys: ["circuitBreaker"], name: "자동복구 누전차단기", owner: "공통", cat: "전원·안전", icon: "⚡" },
+      { key: "battery", legacyKeys: [], name: "노후 배터리 교체", owner: "공통", cat: "전원·안전", icon: "🔋" },
+      { key: "solar", legacyKeys: ["solarPanel"], name: "태양광 설비 정비", owner: "공통", cat: "전원·안전", icon: "☀️" },
+      { key: "extinguisherRNS", legacyKeys: ["extinguisherRns"], name: "소화기 비치 (RNS)", owner: "용역사 (RNS)", cat: "전원·안전", icon: "🧯" },
+      { key: "extinguisherKIHS", legacyKeys: ["extinguisherKihs"], name: "소화기 비치 (기술원)", owner: "기술원 (자체)", cat: "전원·안전", icon: "🏢" },
+      { key: "dpConverter", legacyKeys: [], name: "DP 컨버터(단자대)", owner: "공통", cat: "통신·데이터", icon: "🔌" },
+      { key: "osUpgrade", legacyKeys: [], name: "Windows 11 OS 업그레이드", owner: "공통", cat: "통신·데이터", icon: "💻" },
+      { key: "logger", legacyKeys: [], name: "자료수집장치(Logger) 정비", owner: "공통", cat: "통신·데이터", icon: "📟" },
+      { key: "sender", legacyKeys: [], name: "자료전송장치(Sender) 정비", owner: "공통", cat: "통신·데이터", icon: "📡" },
+      { key: "rvBox", legacyKeys: [], name: "리모트뷰(RV) 박스 정비/설치", owner: "공통", cat: "통신·데이터", icon: "📦" },
+      { key: "dualGaugeUpdate", legacyKeys: ["dualGaugeSync"], name: "유속계(2대) 현행화", owner: "공통", cat: "센서·계측", icon: "🌊" },
+      { key: "waterLevelGauge", legacyKeys: ["waterLevel"], name: "수위계 점검/현행화", owner: "공통", cat: "센서·계측", icon: "📏" },
+      { key: "anemometer", legacyKeys: [], name: "풍향풍속계 정비", owner: "공통", cat: "센서·계측", icon: "💨" },
+      { key: "infoBoard", legacyKeys: ["statusBoard"], name: "관측시설 현황판 정비", owner: "공통", cat: "현장표지", icon: "📋" },
+      { key: "signNakdong", legacyKeys: [], name: "하천점용표지판 (낙동강)", owner: "낙동강", cat: "현장표지", icon: "🚩" },
+      { key: "signYeongsan", legacyKeys: [], name: "하천점용표지판 (영산강)", owner: "영산강", cat: "현장표지", icon: "🚩" },
+      { key: "cctvWired", legacyKeys: [], name: "CCTV 유선연결 정비", owner: "공통", cat: "영상·감시", icon: "📹" },
+      { key: "cctvNew", legacyKeys: [], name: "CCTV 신규 설치", owner: "공통", cat: "영상·감시", icon: "🎥" },
+      { key: "nvr", legacyKeys: [], name: "NVR(녹화기) 설치", owner: "공통", cat: "영상·감시", icon: "📼" }
+    ];
+
+    const taskItems = [];
+    standardTaskDefs.forEach(t => {
+      let val = tasks[t.key];
+      if (val === undefined && t.legacyKeys && t.legacyKeys.length > 0) {
+        for (const lk of t.legacyKeys) {
+          if (tasks[lk] !== undefined) {
+            val = tasks[lk];
+            break;
+          }
+        }
+      }
+
+      const isNeeded = (typeof val === "boolean" && val) || (typeof val === "string" && val !== "");
+      if (isNeeded) {
+        let comp = completedTasks[t.key];
+        if (!comp && t.legacyKeys && t.legacyKeys.length > 0) {
+          for (const lk of t.legacyKeys) {
+            if (completedTasks[lk]) {
+              comp = completedTasks[lk];
+              break;
+            }
+          }
+        }
+
+        const isDone = !!(comp && comp.completed);
+        const doneDate = isDone ? (comp.completedDate || "") : "";
+        const detailStr = (typeof val === "string" && val !== "O" && val !== "true") ? ` (${val})` : "";
+
+        taskItems.push({
+          key: t.key,
+          name: t.name + detailStr,
+          rawName: t.name,
+          owner: (comp && comp.user) || t.owner,
+          cat: t.cat,
+          icon: t.icon,
+          isDone,
+          doneDate
+        });
+      }
+    });
+
+    // Custom tasks
+    if (Array.isArray(m.customTasks)) {
+      m.customTasks.forEach(ct => {
+        if (ct.name) {
+          const isDone = ct.status === "completed";
+          taskItems.push({
+            key: `custom_${ct.id || ct.name}`,
+            name: ct.name,
+            rawName: ct.name,
+            owner: ct.owner || "기타",
+            cat: "사용자정의",
+            icon: "📌",
+            isDone,
+            doneDate: ct.completedDate || "",
+            isCustom: true
+          });
+        }
+      });
+    }
+
+    const totalTasks = taskItems.length;
+    const completedCount = taskItems.filter(t => t.isDone).length;
+    const progressPct = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 100;
+
+    if (totalTasks === 0) {
+      return `
+        <div style="padding:0.75rem 1rem; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:6px; color:#64748b; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
+          <span>현재 등록된 유지관리 조치 필요사항이 없습니다.</span>
+          <button class="btn btn-primary btn-sm" onclick="window.maintenanceManager.openMaintEditModal(${st.id})" style="font-size:0.75rem; padding:2px 8px;">+ 과업 신규 지정</button>
+        </div>
+      `;
+    }
+
+    return `
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.85rem; margin-bottom:1rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; flex-wrap:wrap; gap:4px;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:0.85rem; font-weight:700; color:#1e293b;">🛠️ 2026년 유지관리 과업 조치 현황</span>
+            <span style="font-size:0.75rem; color:#64748b;">(총 ${totalTasks}건 중 <b>${completedCount}건 완료</b>)</span>
+            <button class="btn btn-outline btn-sm" onclick="window.maintenanceManager.openMaintEditModal(${st.id})" style="font-size:0.72rem; padding:1px 7px; margin-left:4px;">✏️ 과업 편집</button>
+          </div>
+          <span class="badge ${progressPct === 100 ? "badge-green" : "badge-amber"}" style="font-size:0.8rem; font-weight:700;">추진율 ${progressPct}%</span>
+        </div>
+
+        <div class="maint-progress-bar-bg" style="margin-bottom:0.85rem;">
+          <div class="maint-progress-bar-fill" style="width:${progressPct}%;"></div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:0.35rem; max-height:240px; overflow-y:auto; padding-right:4px;">
+          ${taskItems.map(t => {
+            const ownerBadge = t.owner.includes("RNS") || t.owner.includes("용역사")
+              ? `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.7rem; font-weight:700;">용역사 (RNS)</span>`
+              : (t.owner.includes("기술원") 
+                ? `<span class="badge" style="background:#eff6ff; color:#1e40af; font-size:0.7rem; font-weight:700;">기술원 (자체)</span>`
+                : `<span class="badge badge-gray" style="font-size:0.7rem;">${t.owner}</span>`);
+
+            const safeName = (t.rawName || t.name).replace(/'/g, "\\'");
+
+            return `
+              <div class="task-item-row ${t.isDone ? "done" : ""}">
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <input type="checkbox" id="chk-${st.id}-${t.key}" ${t.isDone ? "checked" : ""} 
+                         onchange="window.modalManager.toggleTask(${st.id}, '${t.key}', this.checked, '${safeName}')" 
+                         style="width:16px; height:16px; cursor:pointer; accent-color:#059669;">
+                  <label for="chk-${st.id}-${t.key}" class="task-name" style="font-size:0.85rem; font-weight:600; cursor:pointer; user-select:none;">
+                    <span>${t.icon}</span> <span>${t.name}</span>
+                  </label>
+                  ${ownerBadge}
+                </div>
+                <div>
+                  ${t.isDone ? `<span class="badge badge-green" style="font-size:0.7rem;">완료 (${t.doneDate})</span>` : `<span class="badge badge-amber" style="font-size:0.7rem;">조치대기</span>`}
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    `;
+  }
+
   renderDetailBody(st) {
     const modalBody = document.getElementById("detail-modal-body");
     if (!modalBody) return;
@@ -184,107 +333,7 @@ class ModalManager {
       : `<span class="badge badge-gray">미운영 / 구축예정</span>`;
 
     const m = st.maintenance || {};
-    const tasks = m.tasks || {};
-    const completedTasks = m.completedTasks || {};
-
-    const taskItems = [];
-    const addTask = (key, name, owner, cat, icon) => {
-      const val = tasks[key];
-      const isNeeded = (typeof val === "boolean" && val) || (typeof val === "string" && val !== "");
-      if (isNeeded) {
-        const isDone = !!(completedTasks[key] && completedTasks[key].completed);
-        const doneDate = isDone ? completedTasks[key].completedDate : "";
-        const detailStr = (typeof val === "string" && val !== "O" && val !== "true") ? ` (${val})` : "";
-
-        taskItems.push({
-          key,
-          name: name + detailStr,
-          owner,
-          cat,
-          icon,
-          isDone,
-          doneDate
-        });
-      }
-    };
-
-    addTask("circuitBreaker", "자동복구 누전차단기", "공통", "전원·보안", "⚡");
-    addTask("battery", "배터리 교체", "공통", "전원·보안", "🔋");
-    addTask("solarPanel", "태양광 판넬 세척/보수", "공통", "전원·보안", "☀️");
-    addTask("extinguisherRns", "소화기 비치 (RNS)", "용역사 (RNS)", "전원·보안", "🧯");
-    addTask("extinguisherKihs", "소화기 비치 (기술원)", "한국수자원조사기술원", "전원·보안", "🏢");
-    addTask("dpConverter", "DP 컨버터(단자대)", "공통", "신호·통신", "🔌");
-    addTask("osUpgrade", "Windows 11 OS 업그레이드", "공통", "신호·통신", "💻");
-    addTask("logger", "자료수집장치(Logger) 정비", "공통", "신호·통신", "📟");
-    addTask("sender", "자료전송장치(Sender) 정비", "공통", "신호·통신", "📡");
-    addTask("rvBox", "리모트뷰(RV) 박스 설치", "공통", "신호·통신", "🎛️");
-    addTask("dualGaugeSync", "유속계 2대 현행화", "공통", "관측기기", "⚡");
-    addTask("waterLevel", "수위계 점검/현행화", "공통", "관측기기", "📏");
-    addTask("anemometer", "풍향풍속계 정비", "공통", "관측기기", "💨");
-    addTask("statusBoard", "관측시설 현황판 정비", "공통", "시설·부대", "📋");
-    addTask("signNakdong", "하천점용표지판 (낙동강)", "낙동강", "시설·부대", "🪧");
-    addTask("signYeongsan", "하천점용표지판 (영산강)", "영산강", "시설·부대", "🪧");
-    addTask("cctvWired", "CCTV 유선연결 정비", "공통", "영상·감시", "📹");
-    addTask("cctvNew", "CCTV 신규 설치", "공통", "영상·감시", "🎥");
-    addTask("nvr", "NVR(녹화기) 설치", "공통", "영상·감시", "📼");
-
-    const totalTasks = taskItems.length;
-    const completedCount = taskItems.filter(t => t.isDone).length;
-    const progressPct = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 100;
-
-    let checklistHtml = "";
-    if (totalTasks === 0) {
-      checklistHtml = `
-        <div style="padding:0.75rem 1rem; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:6px; color:#64748b; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center;">
-          <span>현재 등록된 유지관리 조치 필요사항이 없습니다.</span>
-          <button class="btn btn-primary btn-sm" onclick="window.maintenanceManager.openMaintEditModal(${st.id})" style="font-size:0.75rem; padding:2px 8px;">+ 과업 신규 지정</button>
-        </div>
-      `;
-    } else {
-      checklistHtml = `
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.85rem; margin-bottom:1rem;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; flex-wrap:wrap; gap:4px;">
-            <div style="display:flex; align-items:center; gap:6px;">
-              <span style="font-size:0.85rem; font-weight:700; color:#1e293b;">🛠️ 2026년 유지관리 과업 조치 현황</span>
-              <span style="font-size:0.75rem; color:#64748b;">(총 ${totalTasks}건 중 <b>${completedCount}건 완료</b>)</span>
-              <button class="btn btn-outline btn-sm" onclick="window.maintenanceManager.openMaintEditModal(${st.id})" style="font-size:0.72rem; padding:1px 7px; margin-left:4px;">✏️ 과업 편집</button>
-            </div>
-            <span class="badge ${progressPct === 100 ? "badge-green" : "badge-amber"}" style="font-size:0.8rem; font-weight:700;">추진율 ${progressPct}%</span>
-          </div>
-
-          <div class="maint-progress-bar-bg" style="margin-bottom:0.85rem;">
-            <div class="maint-progress-bar-fill" style="width:${progressPct}%;"></div>
-          </div>
-
-          <div style="display:flex; flex-direction:column; gap:0.35rem; max-height:240px; overflow-y:auto; padding-right:4px;">
-            ${taskItems.map(t => {
-              const ownerBadge = t.owner.includes("RNS") 
-                ? `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.7rem; font-weight:700;">용역사 (RNS)</span>`
-                : (t.owner.includes("기술원") 
-                  ? `<span class="badge" style="background:#eff6ff; color:#1e40af; font-size:0.7rem; font-weight:700;">기술원 (자체)</span>`
-                  : `<span class="badge badge-gray" style="font-size:0.7rem;">${t.owner}</span>`);
-
-              return `
-                <div class="task-item-row ${t.isDone ? "done" : ""}">
-                  <div style="display:flex; align-items:center; gap:0.5rem;">
-                    <input type="checkbox" id="chk-${st.id}-${t.key}" ${t.isDone ? "checked" : ""} 
-                           onchange="window.modalManager.toggleTask(${st.id}, '${t.key}', this.checked)" 
-                           style="width:16px; height:16px; cursor:pointer; accent-color:#059669;">
-                    <label for="chk-${st.id}-${t.key}" class="task-name" style="font-size:0.85rem; font-weight:600; cursor:pointer; user-select:none;">
-                      <span>${t.icon}</span> <span>${t.name}</span>
-                    </label>
-                    ${ownerBadge}
-                  </div>
-                  <div>
-                    ${t.isDone ? `<span class="badge badge-green" style="font-size:0.7rem;">완료 (${t.doneDate})</span>` : `<span class="badge badge-amber" style="font-size:0.7rem;">조치대기</span>`}
-                  </div>
-                </div>
-              `;
-            }).join("")}
-          </div>
-        </div>
-      `;
-    }
+    const checklistHtml = this.renderChecklistHtml(st);
 
     const rv = st.rvBox || {};
     let rvStatusBadge = "";
@@ -376,7 +425,7 @@ class ModalManager {
           <td colspan="3">
             <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
               <div style="display:flex; align-items:center; gap:0.5rem;">
-                <b>전체 현황:</b> ${rvStatusBadge}
+                <b>전체 현황:</b> <span id="station-rv-badge-${st.id}">${rvStatusBadge}</span>
               </div>
               <a href="https://www.rview.com/ko/" target="_blank" class="btn btn-outline btn-sm" style="font-size:0.72rem; padding:2px 8px; text-decoration:none; background:#f8fafc;">
                 🌐 RemoteView 원격접속 바로가기
@@ -392,7 +441,9 @@ class ModalManager {
       </table>
 
       <div class="detail-section-title" style="margin-top:1.25rem;">🛠️ 2026년 유지관리 과업 체크리스트 (관리자 상태 변경)</div>
-      ${checklistHtml}
+      <div id="station-checklist-container-${st.id}">
+        ${checklistHtml}
+      </div>
 
       <div class="detail-section-title" style="display:flex; justify-content:space-between; align-items:center; margin-top:1.25rem;">
         <span>📜 시설 유지관리 조치 이력 (누적 로그)</span>
@@ -432,9 +483,13 @@ class ModalManager {
     }
   }
 
-  toggleTask(stationId, taskKey, isChecked) {
-    const updated = window.dataManager.toggleTaskCompletion(stationId, taskKey, isChecked);
-    if (updated) {
+  async toggleTask(stationId, taskKey, isChecked, taskLabel = "") {
+    try {
+      // 1. DataManager handles local and server sync asynchronously
+      const updated = await window.dataManager.toggleTaskCompletion(stationId, taskKey, isChecked, "", taskLabel);
+      if (!updated) return;
+
+      // 2. If rvBox task, sync RV box installed status
       if (taskKey === "rvBox") {
         updated.rvBoxInstalled = isChecked ? true : false;
         updated.rvBoxStatus = isChecked ? "설치완료" : "미설치";
@@ -444,11 +499,50 @@ class ModalManager {
           if (updated.rvBox.logger) updated.rvBox.logger.installed = isChecked;
           if (updated.rvBox.sender) updated.rvBox.sender.installed = isChecked;
         }
-        window.dataManager.update(stationId, updated);
+        await window.dataManager.update(stationId, updated);
       }
-      this.renderDetailBody(updated);
-      window.app.refreshAll();
-      window.app.showToast(isChecked ? "유지관리 과업이 [조치완료]로 기록되었습니다." : "과업 상태가 [조치대기]로 변경되었습니다.", isChecked ? "success" : "info");
+
+      // 3. Update Checklist section in-place without touching history logs or causing scroll jump
+      const chkContainer = document.getElementById(`station-checklist-container-${stationId}`);
+      if (chkContainer) {
+        chkContainer.innerHTML = this.renderChecklistHtml(updated);
+      } else {
+        // Fallback: full render and re-load history
+        this.renderDetailBody(updated);
+        if (window.maintenanceHistoryManager) {
+          window.maintenanceHistoryManager.loadStationHistory(stationId);
+        }
+      }
+
+      // 4. Update RV Box status badge in detail modal if rvBox changed
+      if (taskKey === "rvBox") {
+        const rvBadge = document.getElementById(`station-rv-badge-${stationId}`);
+        if (rvBadge) {
+          rvBadge.innerHTML = isChecked 
+            ? `<span class="badge badge-green" style="font-weight:700;">✅ 설치완료</span>` 
+            : `<span class="badge badge-amber" style="font-weight:700;">⏳ 미설치 (과업대상)</span>`;
+        }
+      }
+
+      // 5. Refresh background tables & overview cards
+      if (window.app && typeof window.app.refreshAll === "function") {
+        window.app.refreshAll();
+      }
+      if (window.maintenanceManager) {
+        if (typeof window.maintenanceManager.renderTaskOverview === "function") {
+          window.maintenanceManager.renderTaskOverview();
+        }
+        if (typeof window.maintenanceManager.renderMaintenanceTable === "function") {
+          window.maintenanceManager.renderMaintenanceTable();
+        }
+      }
+
+      // 6. User feedback toast
+      const labelText = taskLabel ? `[${taskLabel}] ` : "";
+      window.app.showToast(isChecked ? `${labelText}과업이 [조치완료]로 기록되었습니다.` : `${labelText}과업 상태가 [조치대기]로 변경되었습니다.`, isChecked ? "success" : "info");
+    } catch (e) {
+      console.error("toggleTask error:", e);
+      window.app.showToast("유지관리 상태 변경 중 오류가 발생했습니다.", "error");
     }
   }
 

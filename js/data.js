@@ -149,10 +149,13 @@ class DataManager {
     return null;
   }
 
-  async toggleTaskCompletion(stationId, taskKey, isDone, note = "") {
+  async toggleTaskCompletion(stationId, taskKey, isDone, note = "", taskLabel = "") {
     const st = this.getById(stationId);
-    if (!st || !st.maintenance) return;
+    if (!st) return null;
 
+    if (!st.maintenance) {
+      st.maintenance = { hasMaintData: true, tasks: {}, completedTasks: {} };
+    }
     if (!st.maintenance.completedTasks) {
       st.maintenance.completedTasks = {};
     }
@@ -169,10 +172,20 @@ class DataManager {
       delete st.maintenance.completedTasks[taskKey];
     }
 
+    // Support custom tasks toggle if applicable
+    if (taskKey && taskKey.startsWith("custom_") && Array.isArray(st.maintenance.customTasks)) {
+      const customId = taskKey.replace("custom_", "");
+      const ct = st.maintenance.customTasks.find(c => String(c.id || c.name) === String(customId));
+      if (ct) {
+        ct.status = isDone ? "completed" : "pending";
+        ct.completedDate = isDone ? today : "";
+      }
+    }
+
     // Sync with Server SQLite DB
     if (this.isServerConnected && window.apiClient) {
       try {
-        await window.apiClient.toggleMaintenanceTask(stationId, taskKey, isDone, note);
+        await window.apiClient.toggleMaintenanceTask(stationId, taskKey, isDone, note, taskLabel);
       } catch(e) {
         console.error("Server toggle maintenance task failed:", e);
       }

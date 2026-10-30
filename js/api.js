@@ -151,11 +151,11 @@ class ApiClient {
   }
 
   // REST API: Maintenance Task Toggle
-  async toggleMaintenanceTask(stationId, taskKey, isDone, note = "") {
+  async toggleMaintenanceTask(stationId, taskKey, isDone, note = "", taskLabel = "") {
     const res = await fetch(`${this.baseUrl}/stations/${stationId}/maintenance/toggle`, {
       method: "POST",
       headers: this.getHeaders(),
-      body: JSON.stringify({ taskKey, isDone, note })
+      body: JSON.stringify({ taskKey, isDone, note, taskLabel })
     });
     return await res.json();
   }
