@@ -1019,6 +1019,32 @@
                   웹 시스템에 접속하지 않아도 <b>24시간 백그라운드 품질감시 엔진</b>이 원본 관측자료를 실시간 감시하여, 사용자가 설정한 횟수 이상 연속 결측 시 자동으로 담당자 이메일 알림을 발송합니다.
                 </p>
 
+                <!-- Real-time Email Alert Master On/Off Switch -->
+                <div id="email-master-switch-box" style="margin-bottom:1.15rem; padding:0.9rem 1.15rem; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; transition:all 0.2s ease;">
+                  <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <div id="email-switch-icon" style="font-size:1.6rem; line-height:1;">🔔</div>
+                    <div>
+                      <div style="font-size:0.95rem; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:8px;">
+                        <span>실시간 결측 이메일 알림 발송 제어</span>
+                        <span id="email-switch-state-badge" class="badge badge-green" style="font-size:0.75rem; font-weight:700;">🟢 발송 활성화 (ON)</span>
+                      </div>
+                      <div id="email-switch-desc" style="font-size:0.78rem; color:#475569; margin-top:2px;">
+                        관측소 결측 발생 시 담당자 수신 이메일로 알림을 자동 전송합니다.
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Master Toggle Buttons -->
+                  <div style="display:flex; align-items:center; gap:6px;">
+                    <button type="button" id="btn-email-status-on" class="btn btn-sm" onclick="window.app.setEmailActiveState(true, true)" style="font-size:0.82rem; font-weight:700; padding:6px 14px; background:#16a34a; border:1px solid #16a34a; color:#ffffff; border-radius:6px; cursor:pointer;">
+                      🟢 발송 활성화 (ON)
+                    </button>
+                    <button type="button" id="btn-email-status-off" class="btn btn-sm" onclick="window.app.setEmailActiveState(false, true)" style="font-size:0.82rem; font-weight:700; padding:6px 14px; background:#ffffff; border:1px solid #cbd5e1; color:#64748b; border-radius:6px; cursor:pointer;">
+                      🔴 발송 일시중지 (OFF)
+                    </button>
+                  </div>
+                </div>
+
                 <!-- Threshold & Recipients Row -->
                 <div class="form-grid" style="grid-template-columns: 240px 1fr; gap:1rem; margin-bottom:1rem;">
                   <div class="form-group">
@@ -1032,7 +1058,10 @@
                     </select>
                   </div>
                   <div class="form-group">
-                    <label class="form-label" style="font-weight:700;">알림 수신 대상자 (이메일 쉼표 구분) *</label>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                      <label class="form-label" style="font-weight:700; margin-bottom:0;">알림 수신 대상자 (이메일 쉼표 구분) *</label>
+                      <span id="recipients-active-status" style="font-size:0.75rem; color:#16a34a; font-weight:700;">● 정상 수신 가동 중</span>
+                    </div>
                     <input type="text" id="smtp-recipients" class="form-input" placeholder="psn5578@kihs.re.kr, psn5578@naver.com" value="psn5578@kihs.re.kr, psn5578@naver.com">
                   </div>
                 </div>

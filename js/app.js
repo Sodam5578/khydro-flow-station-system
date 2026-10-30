@@ -5,6 +5,7 @@
 class App {
   constructor() {
     this.activeTab = "dashboard";
+    this.emailAlertEnabled = true;
   }
 
   async init() {
@@ -443,6 +444,91 @@ class App {
     if (smtpBox) smtpBox.style.display = isHttp ? "none" : "block";
   }
 
+  setEmailActiveState(isActive, saveImmediately = false) {
+    this.emailAlertEnabled = !!isActive;
+
+    const boxEl = document.getElementById("email-master-switch-box");
+    const iconEl = document.getElementById("email-switch-icon");
+    const badgeEl = document.getElementById("email-switch-state-badge");
+    const descEl = document.getElementById("email-switch-desc");
+    const btnOn = document.getElementById("btn-email-status-on");
+    const btnOff = document.getElementById("btn-email-status-off");
+    const recipStatusEl = document.getElementById("recipients-active-status");
+    const mainBadgeEl = document.getElementById("smtp-status-badge");
+
+    if (boxEl) {
+      boxEl.style.background = this.emailAlertEnabled ? "#f0fdf4" : "#fef2f2";
+      boxEl.style.borderColor = this.emailAlertEnabled ? "#bbf7d0" : "#fecaca";
+    }
+
+    if (iconEl) {
+      iconEl.textContent = this.emailAlertEnabled ? "🔔" : "🔕";
+    }
+
+    if (badgeEl) {
+      badgeEl.className = this.emailAlertEnabled ? "badge badge-green" : "badge";
+      if (!this.emailAlertEnabled) {
+        badgeEl.style.background = "#fee2e2";
+        badgeEl.style.color = "#b91c1c";
+      } else {
+        badgeEl.style.background = "";
+        badgeEl.style.color = "";
+      }
+      badgeEl.textContent = this.emailAlertEnabled ? "🟢 발송 활성화 (ON)" : "🔴 발송 일시중지 (OFF)";
+    }
+
+    if (descEl) {
+      descEl.textContent = this.emailAlertEnabled 
+        ? "관측소 결측 발생 시 담당자 수신 이메일로 알림을 자동 전송합니다." 
+        : "⚠️ 알림 발송이 일시 중지되어 있어 결측이 발생해도 담당자에게 메일이 전송되지 않습니다.";
+    }
+
+    if (btnOn) {
+      if (this.emailAlertEnabled) {
+        btnOn.style.background = "#16a34a";
+        btnOn.style.borderColor = "#16a34a";
+        btnOn.style.color = "#ffffff";
+        btnOn.style.boxShadow = "0 2px 4px rgba(22,163,74,0.3)";
+      } else {
+        btnOn.style.background = "#ffffff";
+        btnOn.style.borderColor = "#cbd5e1";
+        btnOn.style.color = "#64748b";
+        btnOn.style.boxShadow = "none";
+      }
+    }
+
+    if (btnOff) {
+      if (!this.emailAlertEnabled) {
+        btnOff.style.background = "#dc2626";
+        btnOff.style.borderColor = "#dc2626";
+        btnOff.style.color = "#ffffff";
+        btnOff.style.boxShadow = "0 2px 4px rgba(220,38,38,0.3)";
+      } else {
+        btnOff.style.background = "#ffffff";
+        btnOff.style.borderColor = "#cbd5e1";
+        btnOff.style.color = "#64748b";
+        btnOff.style.boxShadow = "none";
+      }
+    }
+
+    if (recipStatusEl) {
+      recipStatusEl.innerHTML = this.emailAlertEnabled
+        ? `<span style="color:#16a34a; font-weight:700;">● 정상 수신 가동 중</span>`
+        : `<span style="color:#dc2626; font-weight:700;">● 발송 일시중지됨 (메일 미발송)</span>`;
+    }
+
+    if (mainBadgeEl && !this.emailAlertEnabled) {
+      mainBadgeEl.className = "badge";
+      mainBadgeEl.style.background = "#fee2e2";
+      mainBadgeEl.style.color = "#b91c1c";
+      mainBadgeEl.textContent = "⏸️ 이메일 알림 일시중지 (OFF)";
+    }
+
+    if (saveImmediately) {
+      this.saveSmtpConfig(true);
+    }
+  }
+
   async loadSmtpConfig() {
     if (!window.apiClient) return;
     try {
@@ -464,11 +550,15 @@ class App {
       const testBtn = document.getElementById("smtp-btn-test");
       const engineHttpRadio = document.getElementById("engine-type-http");
       const engineSmtpRadio = document.getElementById("engine-type-smtp");
+      const btnOn = document.getElementById("btn-email-status-on");
+      const btnOff = document.getElementById("btn-email-status-off");
 
       // UI Admin Enforcement
       if (noticeEl) noticeEl.style.display = isAdmin ? "none" : "block";
       if (saveBtn) saveBtn.style.display = isAdmin ? "inline-flex" : "none";
       if (testBtn) testBtn.style.display = isAdmin ? "inline-flex" : "none";
+      if (btnOn) btnOn.disabled = !isAdmin;
+      if (btnOff) btnOff.disabled = !isAdmin;
 
       [threshEl, hostEl, portEl, userEl, passEl, recipEl, apiKeyEl, apiSenderEl, providerEl, engineHttpRadio, engineSmtpRadio].forEach(el => {
         if (el) el.disabled = !isAdmin;
@@ -494,7 +584,13 @@ class App {
         }
         this.toggleEmailEngineUI();
         
-        if (badgeEl) {
+        // Sync Enabled State
+        const isEnabled = c.enabled !== false;
+        this.setEmailActiveState(isEnabled, false);
+
+        if (badgeEl && isEnabled) {
+          badgeEl.style.background = "";
+          badgeEl.style.color = "";
           if (c.effectiveProvider === "RESEND") {
             badgeEl.className = "badge badge-green";
             badgeEl.textContent = "✅ Resend HTTP API 발송 모드";
@@ -515,7 +611,7 @@ class App {
     }
   }
 
-  async saveSmtpConfig() {
+  async saveSmtpConfig(fromToggle = false) {
     if (!window.apiClient) return;
     const threshEl = document.getElementById("smtp-threshold");
     const thresholdCount = threshEl ? parseInt(threshEl.value, 10) : 3;
@@ -528,13 +624,18 @@ class App {
     const user = document.getElementById("smtp-user")?.value.trim() || "";
     const pass = document.getElementById("smtp-pass")?.value.trim() || "";
     const recipients = document.getElementById("smtp-recipients")?.value.trim() || "";
+    const enabled = this.emailAlertEnabled !== false;
 
     try {
-      const payload = { thresholdCount, provider, apiKey, apiSender, host, port, user, pass, recipients, enabled: true };
+      const payload = { thresholdCount, provider, apiKey, apiSender, host, port, user, pass, recipients, enabled };
 
       const res = await window.apiClient.updateNotificationConfig(payload);
       if (res.success) {
-        this.showToast(`알림 설정(기준: 연속 ${thresholdCount}회, 방식: ${provider})이 저장되었습니다.`, "success");
+        if (fromToggle) {
+          this.showToast(enabled ? "🔔 결측 이메일 알림이 [발송 활성화 (ON)]되었습니다." : "🔕 결측 이메일 알림이 [발송 일시중지 (OFF)]되었습니다.", enabled ? "success" : "info");
+        } else {
+          this.showToast(`알림 설정(기준: 연속 ${thresholdCount}회, 상태: ${enabled ? "ON" : "OFF"})이 저장되었습니다.`, "success");
+        }
         this.loadSmtpConfig();
       } else {
         alert(res.message || "설정 저장 실패");
