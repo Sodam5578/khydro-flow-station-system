@@ -13,7 +13,7 @@ class SmartNotifierService {
 
     // Default values
     this.thresholdCount = parseInt(process.env.ALERT_THRESHOLD_COUNT, 10) || 3;
-    this.provider = process.env.EMAIL_PROVIDER || "AUTO"; // "RESEND" | "BREVO" | "SMTP" | "AUTO"
+    this.provider = process.env.EMAIL_PROVIDER || "BREVO"; // "RESEND" | "BREVO" | "SMTP" | "AUTO"
     this.apiKey = process.env.EMAIL_API_KEY || process.env.RESEND_API_KEY || process.env.BREVO_API_KEY || "";
     this.apiSender = process.env.EMAIL_API_SENDER || "seyoo123456789@gmail.com";
     this.smtpConfig = {
@@ -429,7 +429,11 @@ class SmartNotifierService {
 
       const data = await response.json();
       if (!response.ok) {
-        return { success: false, error: data.message || JSON.stringify(data) };
+        let errMsg = data.message || JSON.stringify(data);
+        if (errMsg.includes("unrecognised IP address") || data.code === "unauthorized") {
+          errMsg += " -> Brevo 대시보드(Security > Authorised IPs: https://app.brevo.com/security/authorised_ips )에서 [Deactivate blocking]을 클릭하여 차단을 해제해야 합니다.";
+        }
+        return { success: false, error: errMsg };
       }
       return { success: true, id: data.id };
     } catch (e) {
@@ -459,7 +463,11 @@ class SmartNotifierService {
 
       const data = await response.json();
       if (!response.ok) {
-        return { success: false, error: data.message || JSON.stringify(data) };
+        let errMsg = data.message || JSON.stringify(data);
+        if (errMsg.includes("unrecognised IP address") || data.code === "unauthorized") {
+          errMsg += " -> Brevo 대시보드(Security > Authorised IPs: https://app.brevo.com/security/authorised_ips )에서 [Deactivate blocking]을 클릭하여 차단을 해제해야 합니다.";
+        }
+        return { success: false, error: errMsg };
       }
       return { success: true, id: data.messageId };
     } catch (e) {

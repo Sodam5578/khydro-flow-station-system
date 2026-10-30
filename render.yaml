@@ -14,4 +14,8 @@ services:
         value: https://yillotmxhrchjvslgvym.supabase.co
       - key: SUPABASE_KEY
         value: sb_publishable_xydgPFAE_mWsyDJYnawu1g_yzJDOCR_
+      - key: EMAIL_PROVIDER
+        value: BREVO
+      - key: EMAIL_API_SENDER
+        value: seyoo123456789@gmail.com
 
