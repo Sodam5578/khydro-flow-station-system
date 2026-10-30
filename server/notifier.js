@@ -158,11 +158,11 @@ class SmartNotifierService {
     if (config.port) this.smtpConfig.port = parseInt(config.port, 10);
     if (config.user !== undefined) this.smtpConfig.auth.user = config.user.trim();
     if (config.pass !== undefined) this.smtpConfig.auth.pass = config.pass.trim();
-    if (config.from) this.smtpConfig.from = config.from;
-    if (config.recipients) {
+    if (config.from !== undefined) this.smtpConfig.from = (config.from || "").trim();
+    if (config.recipients !== undefined) {
       if (Array.isArray(config.recipients)) {
-        this.recipients = config.recipients;
-      } else {
+        this.recipients = config.recipients.map(e => (e || "").trim()).filter(Boolean);
+      } else if (typeof config.recipients === "string") {
         this.recipients = config.recipients.split(",").map(e => e.trim()).filter(Boolean);
       }
     }
