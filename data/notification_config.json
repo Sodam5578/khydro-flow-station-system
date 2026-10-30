@@ -5,13 +5,10 @@
   "apiSender": "seyoo123456789@gmail.com",
   "host": "smtp.naver.com",
   "port": 465,
-  "user": "psn5578@naver.com",
+  "user": "",
   "pass": "",
-  "from": "자동유량관측 이상알림 <psn5578@naver.com>",
-  "recipients": [
-    "psn5578@naver.com",
-    "psn5578@kihs.re.kr"
-  ],
+  "from": "",
+  "recipients": [],
   "enabled": true,
   "reportMode": "HOURLY_DIGEST",
   "minContinuousHours": 1,
@@ -19,5 +16,5 @@
     "DATA_MISSING",
     "BATTERY_VOLTAGE"
   ],
-  "savedAt": "2026-10-30T07:18:03.240Z"
+  "savedAt": "2026-10-30T07:29:58.087Z"
 }

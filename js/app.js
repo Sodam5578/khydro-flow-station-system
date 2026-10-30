@@ -579,7 +579,18 @@ class App {
         if (portEl) portEl.value = c.port || 465;
         if (userEl) userEl.value = c.user || "";
         if (passEl) passEl.value = c.pass || "";
-        if (recipEl) recipEl.value = c.recipients || "psn5578@naver.com, psn5578@kihs.re.kr";
+        if (recipEl) recipEl.value = c.recipients || "";
+        const recipStatusEl = document.getElementById("recipients-active-status");
+        if (recipStatusEl) {
+          const recipCount = (c.recipients || "").split(",").map(r => r.trim()).filter(Boolean).length;
+          if (recipCount > 0) {
+            recipStatusEl.textContent = `● 정상 수신 가동 중 (${recipCount}명 등록)`;
+            recipStatusEl.style.color = "#16a34a";
+          } else {
+            recipStatusEl.textContent = "⚠️ 수신 대상자 미설정 (이메일을 등록하세요)";
+            recipStatusEl.style.color = "#dc2626";
+          }
+        }
         if (apiKeyEl) apiKeyEl.value = c.rawApiKey || "";
         if (apiSenderEl) apiSenderEl.value = c.apiSender || "seyoo123456789@gmail.com";
         if (providerEl && c.provider && c.provider !== "AUTO") providerEl.value = c.provider;
@@ -690,7 +701,7 @@ class App {
       alert("⚠️ 정각 종합 리포트 테스트 발송은 최고 관리자(admin) 계정으로만 실행할 수 있습니다.");
       return;
     }
-    const defaultRecip = (document.getElementById("smtp-recipients")?.value.split(",")[0] || "psn5578@naver.com").trim();
+    const defaultRecip = (document.getElementById("smtp-recipients")?.value.split(",")[0] || "").trim();
     const targetEmail = prompt("전국 관측소 정각 종합 리포트를 테스트 발송할 수신 이메일을 입력하세요:\n(현재 1시간 이상 지속된 이상 관측소 목록이 1통의 HTML 종합표로 전송됩니다)", defaultRecip);
     if (!targetEmail) return;
 
@@ -714,7 +725,8 @@ class App {
       alert("⚠️ 테스트 메일 발송은 최고 관리자(admin) 계정으로만 실행할 수 있습니다.");
       return;
     }
-    const targetEmail = prompt("테스트 메일을 발송할 수신 이메일 주소를 입력하세요:", "sechan@kihs.re.kr");
+    const defaultRecip = (document.getElementById("smtp-recipients")?.value.split(",")[0] || "").trim();
+    const targetEmail = prompt("테스트 메일을 발송할 수신 이메일 주소를 입력하세요:", defaultRecip);
     if (!targetEmail) return;
 
     try {

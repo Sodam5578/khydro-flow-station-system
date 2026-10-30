@@ -24,9 +24,9 @@ class SmartNotifierService {
         user: process.env.SMTP_USER || "",
         pass: process.env.SMTP_PASS || ""
       },
-      from: process.env.SMTP_FROM || "자동유량관측 이상알림 <psn5578@naver.com>"
+      from: process.env.SMTP_FROM || ""
     };
-    this.recipients = (process.env.ALERT_RECIPIENTS || "psn5578@naver.com, psn5578@kihs.re.kr").split(",").map(e => e.trim());
+    this.recipients = (process.env.ALERT_RECIPIENTS || "").split(",").map(e => e.trim()).filter(Boolean);
     this.enabled = process.env.ENABLE_EMAIL_ALERTS === "true" || true;
     this.transporter = null;
 
@@ -206,7 +206,10 @@ class SmartNotifierService {
     if (this.smtpConfig.auth && this.smtpConfig.auth.user) {
       return `자동유량관측 이상알림 <${this.smtpConfig.auth.user}>`;
     }
-    return this.smtpConfig.from || "자동유량관측 이상알림 <psn5578@naver.com>";
+    if (this.apiSender) {
+      return `자동유량관측 이상알림 <${this.apiSender}>`;
+    }
+    return this.smtpConfig.from || "자동유량관측 이상알림";
   }
 
   getRuleCategory(ruleId, problem = "") {
@@ -565,7 +568,10 @@ class SmartNotifierService {
   }
 
   async sendTestDigestEmail(targetEmail, currentIssues = []) {
-    const testRecipient = targetEmail || this.recipients[0] || "psn5578@naver.com";
+    const testRecipient = targetEmail || this.recipients[0];
+    if (!testRecipient) {
+      return { success: false, message: "수신 대상자 이메일이 설정되지 않았습니다. 수신자 이메일을 입력하세요." };
+    }
     const nowTime = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
     const res = await this.sendHourlyDigestReport(currentIssues, `${nowTime} (테스트)`, true, testRecipient);
     return res;
@@ -663,7 +669,15 @@ class SmartNotifierService {
 
   async deliverEmail(subject, html, stationName, level, count, customRecipients = null) {
     const eff = this.getEffectiveProvider();
-    const actualRecipients = customRecipients ? (Array.isArray(customRecipients) ? customRecipients : [customRecipients]) : this.recipients;
+    const actualRecipients = (customRecipients 
+      ? (Array.isArray(customRecipients) ? customRecipients : [customRecipients]) 
+      : this.recipients).map(r => (r || "").trim()).filter(Boolean);
+
+    if (actualRecipients.length === 0) {
+      console.log(`ℹ️ [SmartNotifier] 수신 대상자(recipients)가 지정되지 않아 이메일을 발송하지 않습니다. (${subject})`);
+      return { success: false, message: "수신 대상자 이메일이 지정되지 않았습니다. [데이터 관리]에서 수신 이메일을 등록해주세요." };
+    }
+
     const logItem = {
       id: Date.now() + Math.random().toString(36).substr(2, 4),
       timestamp: new Date().toISOString(),
@@ -801,7 +815,10 @@ class SmartNotifierService {
   }
 
   async sendTestEmail(targetEmail) {
-    const testRecipient = targetEmail || this.recipients[0] || "test@kihs.re.kr";
+    const testRecipient = targetEmail || this.recipients[0];
+    if (!testRecipient) {
+      return { success: false, message: "수신 대상자 이메일이 설정되지 않았습니다. 수신자 이메일을 입력하세요." };
+    }
     const eff = this.getEffectiveProvider();
     const subject = `[테스트] 한국수자원조사기술원 스마트 이메일 알림 연동 테스트 (${eff})`;
     const html = `

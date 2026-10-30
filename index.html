@@ -1112,9 +1112,9 @@
                   <div class="form-group" style="margin-bottom:0;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                       <label class="form-label" style="font-weight:700; margin-bottom:0; color:#1e293b;">📬 알림 수신 대상자 (이메일 쉼표 구분) *</label>
-                      <span id="recipients-active-status" style="font-size:0.75rem; color:#16a34a; font-weight:700;">● 정상 수신 가동 중</span>
+                      <span id="recipients-active-status" style="font-size:0.75rem; color:#64748b; font-weight:700;">● 수신자 미설정</span>
                     </div>
-                    <input type="text" id="smtp-recipients" class="form-input" placeholder="psn5578@naver.com, psn5578@kihs.re.kr" value="psn5578@naver.com, psn5578@kihs.re.kr" style="background:#ffffff;">
+                    <input type="text" id="smtp-recipients" class="form-input" placeholder="예: user1@kihs.re.kr, user2@domain.com (쉼표로 구분하여 여러 명 등록 가능)" value="" style="background:#ffffff;">
                     <!-- Hidden field to preserve threshold compatibility if needed -->
                     <select id="smtp-threshold" style="display:none;">
                       <option value="6" selected>6</option>
@@ -1178,7 +1178,7 @@
                     </div>
                     <div class="form-group">
                       <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 계정 (이메일)</label>
-                      <input type="text" id="smtp-user" name="system_smtp_user_email_cfg" class="form-input" placeholder="예: psn5578@naver.com" autocomplete="new-password" data-lpignore="true">
+                      <input type="text" id="smtp-user" name="system_smtp_user_email_cfg" class="form-input" placeholder="예: sender@domain.com" autocomplete="new-password" data-lpignore="true">
                     </div>
                     <div class="form-group">
                       <label class="form-label" style="font-weight:600; font-size:0.8rem;">SMTP 비밀번호 (앱 비밀번호)</label>
