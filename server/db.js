@@ -166,6 +166,24 @@ async function initDb() {
 
     // Ensure issue_date column exists if table was previously created
     sqliteDb.run(`ALTER TABLE maintenance_history ADD COLUMN issue_date TEXT`, () => {});
+
+    // Quality Monitoring Hourly Snapshots Table (Diff alert & 30-day retention)
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS quality_hourly_snapshots (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hourly_slot TEXT NOT NULL,
+        st_code TEXT NOT NULL,
+        station_name TEXT NOT NULL,
+        gauge_type TEXT DEFAULT "ADVM",
+        region TEXT DEFAULT "전국",
+        rule_id TEXT NOT NULL,
+        category TEXT NOT NULL,
+        continuous_count INTEGER DEFAULT 6,
+        problem_detail TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_quality_snapshots_slot ON quality_hourly_snapshots (hourly_slot)`);
   });
 
   // B. Seed Supabase Cloud DB
@@ -888,6 +906,112 @@ const dbService = {
         if (err) console.error("Failed to record local activity log:", err);
       }
     );
+  },
+
+  // -------------------------------------------------------------
+  // Quality Hourly Snapshots (Diff-based Email Alert & 30-Day Retention)
+  // -------------------------------------------------------------
+  async saveHourlySnapshot(hourlySlot, abnormalStations = []) {
+    return new Promise((resolve, reject) => {
+      if (!Array.isArray(abnormalStations) || abnormalStations.length === 0) {
+        sqliteDb.run(
+          `INSERT INTO quality_hourly_snapshots 
+           (hourly_slot, st_code, station_name, rule_id, category, continuous_count, problem_detail)
+           VALUES (?, '__EMPTY__', '전국정상', 'NONE', 'NORMAL', 0, '전국 관측소 1시간 이상 고장 없음')`,
+          [hourlySlot],
+          (err) => {
+            if (err) console.error("Error saving empty snapshot marker:", err);
+            resolve();
+          }
+        );
+        return;
+      }
+
+      sqliteDb.serialize(() => {
+        const stmt = sqliteDb.prepare(`
+          INSERT INTO quality_hourly_snapshots 
+          (hourly_slot, st_code, station_name, gauge_type, region, rule_id, category, continuous_count, problem_detail)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        for (const st of abnormalStations) {
+          stmt.run([
+            hourlySlot,
+            st.stCode || "",
+            st.stationName || "",
+            st.gaugeType || st.method || "ADVM",
+            st.region || st.basin || "전국",
+            st.ruleId || "",
+            st.category || "",
+            st.continuousCount || 6,
+            st.detail || st.problem || ""
+          ]);
+        }
+
+        stmt.finalize((err) => {
+          if (err) {
+            console.error("Error finalizing hourly snapshots insert:", err);
+            return reject(err);
+          }
+          resolve();
+        });
+      });
+    });
+  },
+
+  async getLastHourlySnapshot() {
+    return new Promise((resolve, reject) => {
+      sqliteDb.get(
+        `SELECT hourly_slot FROM quality_hourly_snapshots ORDER BY id DESC LIMIT 1`,
+        [],
+        (err, row) => {
+          if (err) return reject(err);
+          if (!row || !row.hourly_slot) {
+            return resolve({ hourlySlot: null, issues: [] });
+          }
+
+          const slot = row.hourly_slot;
+          sqliteDb.all(
+            `SELECT * FROM quality_hourly_snapshots WHERE hourly_slot = ? AND st_code != '__EMPTY__'`,
+            [slot],
+            (err2, rows) => {
+              if (err2) return reject(err2);
+              resolve({
+                hourlySlot: slot,
+                issues: (rows || []).map(r => ({
+                  stCode: r.st_code,
+                  stationName: r.station_name,
+                  gaugeType: r.gauge_type,
+                  region: r.region,
+                  ruleId: r.rule_id,
+                  category: r.category,
+                  continuousCount: r.continuous_count,
+                  detail: r.problem_detail,
+                  problem: r.problem_detail
+                }))
+              });
+            }
+          );
+        }
+      );
+    });
+  },
+
+  async cleanupOldSnapshots(retentionDays = 30) {
+    return new Promise((resolve) => {
+      sqliteDb.run(
+        `DELETE FROM quality_hourly_snapshots WHERE created_at < datetime('now', '-' || ? || ' days')`,
+        [retentionDays],
+        function(err) {
+          if (err) {
+            console.warn("⚠️ [DB] Snapshot retention cleanup error:", err.message);
+          } else if (this.changes > 0) {
+            console.log(`🧹 [DB] Cleaned up ${this.changes} quality snapshot records older than ${retentionDays} days.`);
+          }
+          resolve();
+        }
+      );
+    });
   }
 };
 

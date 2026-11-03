@@ -1,6 +1,7 @@
 const nodemailer = require("nodemailer");
 const fs = require("fs");
 const path = require("path");
+const { dbService } = require("./db");
 
 class SmartNotifierService {
   constructor() {
@@ -308,8 +309,51 @@ class SmartNotifierService {
     }
   }
 
+  computeDigestDiff(previousIssues = [], currentIssues = []) {
+    const prevMap = new Map();
+    for (const item of previousIssues) {
+      const key = `${item.stCode || item.stationName}_${item.category || item.ruleId}`;
+      prevMap.set(key, item);
+    }
+
+    const currMap = new Map();
+    for (const item of currentIssues) {
+      const key = `${item.stCode || item.stationName}_${item.category || item.ruleId}`;
+      currMap.set(key, item);
+    }
+
+    const newIssues = [];
+    const ongoingIssues = [];
+    const resolvedIssues = [];
+
+    for (const [key, item] of currMap.entries()) {
+      if (prevMap.has(key)) {
+        ongoingIssues.push(item);
+      } else {
+        newIssues.push(item);
+      }
+    }
+
+    for (const [key, item] of prevMap.entries()) {
+      if (!currMap.has(key)) {
+        resolvedIssues.push(item);
+      }
+    }
+
+    const hasChanges = newIssues.length > 0 || resolvedIssues.length > 0;
+    return {
+      hasChanges,
+      newIssues,
+      resolvedIssues,
+      ongoingIssues,
+      prevCount: previousIssues.length,
+      currCount: currentIssues.length
+    };
+  }
+
   /**
    * Hourly Digest: Evaluates top-of-hour timing and triggers a single consolidated report
+   * ONLY when there are state changes (new errors or resolved errors) compared to previous hour!
    */
   async checkAndSendHourlyDigest(currentIssues, targetTime, isManualForce = false, customTargetEmail = null) {
     if (!this.enabled && !isManualForce) return;
@@ -349,23 +393,10 @@ class SmartNotifierService {
       }
     }
 
-    if (!isManualForce) {
-      this.lastReportedHourKey = hourKey;
-    }
-
-    return await this.sendHourlyDigestReport(currentIssues, displayTime, isManualForce, customTargetEmail);
-  }
-
-  /**
-   * Builds and dispatches the single consolidated Hourly Quality Digest Email
-   */
-  async sendHourlyDigestReport(currentIssues = [], displayTime = "", isManual = false, customTargetEmail = null) {
+    // 1. Filter: 1시간 이상 지속된 오류 & 사용자가 선택한 오류 항목만 추출
     const minThresholdCount = (this.minContinuousHours || 1) * 6; // 1시간 = 연속 6회
     const selected = new Set(this.selectedRules || ["DATA_MISSING", "BATTERY_VOLTAGE"]);
-
-    // 1. Filter: 1시간 이상 지속된 오류 & 사용자가 선택한 오류 항목만 추출
-    const filteredIssues = [];
-    const stationMap = new Map(); // stCode -> consolidated issue object
+    const stationMap = new Map();
 
     for (const iss of currentIssues) {
       const count = iss.continuousCount || 1;
@@ -380,9 +411,71 @@ class SmartNotifierService {
       }
     }
 
-    const reportIssues = Array.from(stationMap.values());
+    const currentReportIssues = Array.from(stationMap.values());
 
-    // 2. Group by Category
+    // 2. Query Previous Snapshot from DB
+    let lastSnapshot = null;
+    try {
+      lastSnapshot = await dbService.getLastHourlySnapshot();
+    } catch (e) {
+      console.warn("⚠️ [SmartNotifier] Failed to load last snapshot from DB:", e.message);
+    }
+
+    // 3. Diff Calculation
+    const previousIssues = (lastSnapshot && Array.isArray(lastSnapshot.issues)) ? lastSnapshot.issues : [];
+    const isFirstRun = (!lastSnapshot || !lastSnapshot.hourlySlot);
+    const diff = this.computeDigestDiff(previousIssues, currentReportIssues);
+
+    // 4. Decision: If no changes and not manual force and not first run, SKIP sending email!
+    if (!isManualForce && !isFirstRun && !diff.hasChanges) {
+      console.log(`ℹ️ [SmartNotifier] 1시간 전 대비 변동사항 없음 (신규: 0, 복구: 0, 지속: ${diff.ongoingIssues.length}건). 이메일 발송 생략(Skip).`);
+      this.lastReportedHourKey = hourKey;
+
+      // Update snapshot slot and run 30-day retention cleanup
+      try {
+        await dbService.saveHourlySnapshot(displayTime, currentReportIssues);
+        await dbService.cleanupOldSnapshots(30);
+      } catch (e) {}
+
+      const logItem = {
+        id: Date.now() + Math.random().toString(36).substr(2, 4),
+        timestamp: new Date().toISOString(),
+        stationName: "전국 관측소 정기 종합 리포트",
+        level: "NORMAL",
+        count: currentReportIssues.length,
+        subject: `[발송 생략] 1시간 전 대비 변동사항 없음 (${displayTime})`,
+        recipients: this.recipients.join(", "),
+        status: "SKIPPED_NO_CHANGE",
+        mode: this.getEffectiveProvider()
+      };
+      this.notificationLogs.unshift(logItem);
+      if (this.notificationLogs.length > 50) this.notificationLogs.pop();
+
+      return { success: true, skipped: true, message: "1시간 전 대비 변동사항이 없어 발송을 생략했습니다." };
+    }
+
+    if (!isManualForce) {
+      this.lastReportedHourKey = hourKey;
+    }
+
+    const sendRes = await this.sendHourlyDigestReport(currentReportIssues, displayTime, isManualForce, customTargetEmail, diff, isFirstRun);
+
+    // Persist current snapshot to DB & cleanup older than 30 days
+    try {
+      await dbService.saveHourlySnapshot(displayTime, currentReportIssues);
+      await dbService.cleanupOldSnapshots(30);
+    } catch (dbErr) {
+      console.error("⚠️ [SmartNotifier] Error saving hourly snapshot to DB:", dbErr.message);
+    }
+
+    return sendRes;
+  }
+
+  /**
+   * Builds and dispatches the single consolidated Hourly Quality Digest Email
+   */
+  async sendHourlyDigestReport(reportIssues = [], displayTime = "", isManual = false, customTargetEmail = null, diffInfo = null, isFirstRun = false) {
+    // Group by Category
     const missingStations = reportIssues.filter(i => i.category === "DATA_MISSING");
     const batteryStations = reportIssues.filter(i => i.category === "BATTERY_VOLTAGE");
     const otherStations = reportIssues.filter(i => i.category !== "DATA_MISSING" && i.category !== "BATTERY_VOLTAGE");
@@ -390,14 +483,22 @@ class SmartNotifierService {
     const totalAbnormalCount = reportIssues.length;
     const timeLabel = displayTime || new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
 
-    // 3. Email Subject
+    // Email Subject
     let subject = "";
     if (isManual) {
-      subject = `[테스트] [한국수자원조사기술원] 전국 관측소 품질감시 정기 리포트 (${timeLabel} 기준)`;
-    } else if (totalAbnormalCount > 0) {
-      subject = `[전국 관측소 품질감시 정기 리포트] 1시간 이상 이상지점 총 ${totalAbnormalCount}건 요약 (${timeLabel} 기준)`;
+      subject = `[테스트] [자동유량 모니터링] 관측품질 정기 리포트 (${timeLabel} 기준)`;
+    } else if (isFirstRun) {
+      subject = `[관측품질 정각 기준현황] 1시간 이상 이상지점 총 ${totalAbnormalCount}건 (기준점 등록, ${timeLabel} 기준)`;
+    } else if (diffInfo && diffInfo.newIssues && diffInfo.newIssues.length > 0 && diffInfo.resolvedIssues && diffInfo.resolvedIssues.length > 0) {
+      subject = `[관측품질 변동알림] 🚨신규 ${diffInfo.newIssues.length}건 발생 / ✅${diffInfo.resolvedIssues.length}건 복구 (총 ${totalAbnormalCount}건 지속, ${timeLabel})`;
+    } else if (diffInfo && diffInfo.newIssues && diffInfo.newIssues.length > 0) {
+      subject = `[관측품질 신규이상] 🚨${diffInfo.newIssues[0].stationName} 등 ${diffInfo.newIssues.length}개소 신규 감지 (총 ${totalAbnormalCount}건, ${timeLabel})`;
+    } else if (diffInfo && diffInfo.resolvedIssues && diffInfo.resolvedIssues.length > 0 && totalAbnormalCount === 0) {
+      subject = `[관측품질 전 지점 정상화] 🎉전국 223개 관측소 정상 수신 복구 확인 (${timeLabel} 기준)`;
+    } else if (diffInfo && diffInfo.resolvedIssues && diffInfo.resolvedIssues.length > 0) {
+      subject = `[관측품질 정상복구] ✅${diffInfo.resolvedIssues[0].stationName} 등 ${diffInfo.resolvedIssues.length}개소 복구 완료 (잔여 이상 ${totalAbnormalCount}건, ${timeLabel})`;
     } else {
-      subject = `[전국 관측소 품질감시 정기 리포트] 전국 관측소 1시간 이상 이상 없음 (정상 가동) (${timeLabel} 기준)`;
+      subject = `[전국 관측소 품질감시 정기 리포트] 1시간 이상 이상지점 총 ${totalAbnormalCount}건 요약 (${timeLabel} 기준)`;
     }
 
     // 4. Build Table Rows
@@ -468,6 +569,42 @@ class SmartNotifierService {
               <div style="font-size:11px; color:#94a3b8;">중대 결측 없음</div>
             </div>
           </div>
+        </div>
+
+        <!-- ⚡ Diff Section: 1시간 전 대비 변동 사항 -->
+        <div style="padding:16px 24px; background:#fffbeb; border-bottom:1px solid #fef3c7;">
+          <div style="font-size:13px; font-weight:800; color:#92400e; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+            <span>⚡ 1시간 전 대비 관측품질 상태 변동 내역</span>
+            <span style="font-size:11px; background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:10px; font-weight:700;">조건부 발송</span>
+          </div>
+
+          ${diffInfo && diffInfo.newIssues && diffInfo.newIssues.length > 0 ? `
+            <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:10px 14px; margin-bottom:8px;">
+              <div style="font-size:12px; font-weight:800; color:#b91c1c; margin-bottom:4px;">
+                🚨 새로 발생한 이상 지점 (${diffInfo.newIssues.length}개소) - 1시간 이상 지속 도달
+              </div>
+              <ul style="margin:0; padding-left:18px; font-size:12px; color:#7f1d1d; line-height:1.6;">
+                ${diffInfo.newIssues.map(n => `<li><strong>${n.stationName}</strong> (${n.category === "DATA_MISSING" ? "자료 미수신" : "배터리 전압이상"}) - ${n.detail || n.problem || "1시간 이상 지속"}</li>`).join("")}
+              </ul>
+            </div>
+          ` : ""}
+
+          ${diffInfo && diffInfo.resolvedIssues && diffInfo.resolvedIssues.length > 0 ? `
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:10px 14px; margin-bottom:8px;">
+              <div style="font-size:12px; font-weight:800; color:#15803d; margin-bottom:4px;">
+                ✅ 정상 복구 확인 지점 (${diffInfo.resolvedIssues.length}개소) - 결측 해소 완료
+              </div>
+              <ul style="margin:0; padding-left:18px; font-size:12px; color:#14532d; line-height:1.6;">
+                ${diffInfo.resolvedIssues.map(r => `<li><strong>${r.stationName}</strong> (${r.category === "DATA_MISSING" ? "자료 미수신 해소" : "배터리 정상화"}) - 정상 수신 복구 확인</li>`).join("")}
+              </ul>
+            </div>
+          ` : ""}
+
+          ${(!diffInfo || (!diffInfo.newIssues?.length && !diffInfo.resolvedIssues?.length)) ? `
+            <div style="font-size:12px; color:#6b7280; font-style:italic;">
+              ${isFirstRun ? "📌 시스템 초기 가동: 현재 시점의 관측품질 기준점(Baseline) 현황입니다." : "• 1시간 전 대비 신규 이상이나 복구 지점 없음 (현재 지속 현황 요약)"}
+            </div>
+          ` : ""}
         </div>
 
         <!-- Body Tables -->
