@@ -54,9 +54,9 @@
           <span class="nav-icon">🛠️</span>
           <span>유지관리 과업</span>
         </button>
-        <button class="nav-item" data-tab="calibration">
-          <span class="nav-icon">🎯</span>
-          <span>유속계 검정</span>
+        <button class="nav-item" data-tab="equipment">
+          <span class="nav-icon">📦</span>
+          <span>장비 관리</span>
         </button>
         <button class="nav-item" data-tab="schedules">
           <span class="nav-icon">📅</span>
@@ -694,97 +694,668 @@
             </div>
           </div>
         </section>
-        </section>
 
 
-                <!-- 5. CALIBRATION VIEW (FLOWMETER ACCURACY INSPECTION) -->
-        <section class="view-panel" id="view-calibration">
+                <!-- 5. EQUIPMENT & ASSET MANAGEMENT VIEW -->
+        <section class="view-panel" id="view-equipment">
           <!-- Top KPI Summary Cards -->
           <div class="kpi-grid">
             <div class="kpi-card">
-              <div class="kpi-icon purple">🎯</div>
+              <div class="kpi-icon blue">📦</div>
               <div class="kpi-content">
-                <div class="kpi-label">26년 유속계 검정 대상 지점</div>
-                <div class="kpi-value" id="kpi-calib-total-stations">30개소</div>
-                <div class="kpi-sub">정기검정 법정 대상 지점</div>
+                <div class="kpi-label">전체 설비·자산 총괄</div>
+                <div class="kpi-value" id="kpi-eq-total-count">2,113점</div>
+                <div class="kpi-sub">전국 176개 관측시설 9대 설비</div>
               </div>
             </div>
             <div class="kpi-card">
-              <div class="kpi-icon blue">🌊</div>
+              <div class="kpi-icon green">⚡</div>
               <div class="kpi-content">
-                <div class="kpi-label">검정대상 유속계 총 수량</div>
-                <div class="kpi-value" id="kpi-calib-total-gauges">176대</div>
-                <div class="kpi-sub">EWSV / ADVM 검정 대상 기기</div>
+                <div class="kpi-label">정상 가동 (운영중)</div>
+                <div class="kpi-value" id="kpi-eq-operating-count">1,940점</div>
+                <div class="kpi-sub">현장 정상 관측 가동률 91.8%</div>
               </div>
             </div>
             <div class="kpi-card">
-              <div class="kpi-icon green">📊</div>
+              <div class="kpi-icon purple">🌊</div>
               <div class="kpi-content">
-                <div class="kpi-label">검정 추진율 (진행 현황)</div>
-                <div class="kpi-value" id="kpi-calib-progress">0% (0/30개소)</div>
-                <div class="kpi-sub">시험·검정 및 교정 완료율</div>
+                <div class="kpi-label">핵심 센서 (유속·수위)</div>
+                <div class="kpi-value">유속 645 / 수위 233</div>
+                <div class="kpi-sub">RQ-30D, CM300 등 주력 계측기</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon amber">🛠️</div>
+              <div class="kpi-content">
+                <div class="kpi-label">수리 및 후속조치</div>
+                <div class="kpi-value" id="kpi-eq-repair-count" style="color:#b91c1c;">7건</div>
+                <div class="kpi-sub">전문업체 정밀점검·수리 진행중</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon cyan">🎯</div>
+              <div class="kpi-content">
+                <div class="kpi-label">26년 법정 검정대상</div>
+                <div class="kpi-value">30개소</div>
+                <div class="kpi-sub">정기검정 법정 의무 관리</div>
               </div>
             </div>
           </div>
 
-          <!-- Section: Calibration Table -->
-          <div class="card">
-            <div class="card-header" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem;">
-              <div class="card-title">
-                <span>🎯</span> 2026년 유속계 검정 대상 지점 관리 (총 30개소)
+          <!-- Equipment Sub-Tab Navigation Bar -->
+          <div class="eq-tabs-bar">
+            <button class="eq-tab-btn active" data-tab="dashboard" onclick="window.equipmentManager.switchSubTab('dashboard')">
+              <span>📊</span> 장비 종합 대시보드
+            </button>
+            <button class="eq-tab-btn" data-tab="stations" onclick="window.equipmentManager.switchSubTab('stations')">
+              <span>📍</span> 지점별 현황 (176개소)
+            </button>
+            <button class="eq-tab-btn" data-tab="devices" onclick="window.equipmentManager.switchSubTab('devices')">
+              <span>📋</span> 전체 장비대장 (9대 설비)
+            </button>
+            <button class="eq-tab-btn" data-tab="repairs" onclick="window.equipmentManager.switchSubTab('repairs')">
+              <span>🛠️</span> 수리·후속조치
+            </button>
+            <button class="eq-tab-btn" data-tab="actions" onclick="window.equipmentManager.switchSubTab('actions')">
+              <span>📜</span> 조치·교체이력
+            </button>
+            <button class="eq-tab-btn" data-tab="export" onclick="window.equipmentManager.switchSubTab('export')">
+              <span>📥</span> 엑셀 다운로드
+            </button>
+            <button class="eq-tab-btn" data-tab="bulkupload" onclick="window.equipmentManager.switchSubTab('bulkupload')">
+              <span>📤</span> 엑셀 일괄수정·업로드
+            </button>
+          </div>
+
+          <!-- ========================================================= -->
+          <!-- SUB-VIEW 0: 장비 종합 대시보드 (Overall Status Dashboard) -->
+          <!-- ========================================================= -->
+          <div id="eq-subview-dashboard" class="eq-subview" style="display: block; padding-bottom: 2rem;">
+            <!-- Dashboard Header with Actions -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 1.35rem;">📊</span>
+                  <h2 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">전국 자동유량관측시설 장비·자산 종합 대시보드</h2>
+                  <span class="badge badge-blue" style="font-weight: 700;">전국 176개소 9대 설비</span>
+                </div>
+                <div style="font-size: 0.83rem; color: #64748b; margin-top: 4px;">
+                  유속계·수위계 등 핵심 계측기기 종류별(모델별) 보유 대수, 운영·예비·수리 상태 및 내구연한 종합 분석
+                </div>
               </div>
-
-              <div style="display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem;">
-                <div class="search-input-wrapper" style="min-width: 220px;">
-                  <span class="search-icon">🔍</span>
-                  <input type="text" id="calib-search-input" class="search-input" placeholder="지점명, 하천명, 주소 검색...">
-                </div>
-
-                <select id="calib-filter-region" class="filter-select">
-                  <option value="all">전체 권역</option>
-                  <option value="한강">한강</option>
-                  <option value="낙동강">낙동강</option>
-                  <option value="금강">금강</option>
-                  <option value="영산강">영산강·섬진강</option>
-                </select>
-
-                <select id="calib-filter-status" class="filter-select">
-                  <option value="all">전체 상태</option>
-                  <option value="pending">⏳ 검정 대기</option>
-                  <option value="ongoing">🧪 시험·검정중</option>
-                  <option value="completed">✅ 검정 완료</option>
-                </select>
-
-                <div style="font-size:0.85rem; color:#64748b; white-space:nowrap;">
-                  표시 지점: <b id="calib-table-count" style="color:#1e40af;">30</b>개소
-                </div>
-
-                <button class="btn btn-outline btn-sm" onclick="window.excelManager.exportCalibration()" title="2026 유속계 검정 대상 및 결과 대장 엑셀 다운로드">
-                  <span>📥</span> <span>검정 대장 엑셀 (.xlsx)</span>
+              <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="window.equipmentManager.loadDashboard()" title="대시보드 통계 새로고침">
+                  <span>🔄</span> <span>새로고침</span>
+                </button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="window.equipmentManager.exportDashboardSummaryExcel()" title="대시보드 현황 엑셀 다운로드">
+                  <span>📥</span> <span>대시보드 통계 엑셀 다운로드 (.xlsx)</span>
                 </button>
               </div>
             </div>
 
-            <div class="card-body" style="padding:0;">
-              <div class="table-responsive" style="max-height:540px;">
-                <table class="custom-table">
-                  <thead>
-                    <tr>
-                      <th>순번</th>
-                      <th>권역</th>
-                      <th>하천명</th>
-                      <th>관측소명(지점명)</th>
-                      <th>유속계 형식 / 검정대수</th>
-                      <th>검정 진행 상태</th>
-                      <th>검정완료일자</th>
-                      <th>검정 성적서 번호</th>
-                      <th>검정결과 관리</th>
-                    </tr>
-                  </thead>
-                  <tbody id="calib-table-body">
-                    <!-- Dynamically populated from calibration.js -->
-                  </tbody>
-                </table>
+            <!-- Row 1: Executive KPI Cards -->
+            <div class="kpi-grid" style="margin-bottom: 1.25rem;">
+              <div class="kpi-card" style="cursor: pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'ALL' })" title="클릭 시 전체 장비대장으로 이동">
+                <div class="kpi-icon blue">📦</div>
+                <div class="kpi-content">
+                  <div class="kpi-label">전체 설비·자산</div>
+                  <div class="kpi-value" id="dash-kpi-total">2,113점</div>
+                  <div class="kpi-sub">정상 가동 <b id="dash-kpi-operating">2,007</b>대 (95.0%)</div>
+                </div>
+              </div>
+              <div class="kpi-card" style="cursor: pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'FLOWMETER' })" title="클릭 시 유속계 대장으로 이동">
+                <div class="kpi-icon purple">🌊</div>
+                <div class="kpi-content">
+                  <div class="kpi-label">유속계 총괄 대수</div>
+                  <div class="kpi-value" id="dash-kpi-flowmeter">645대</div>
+                  <div class="kpi-sub">비접촉 <b id="dash-kpi-flow-noncontact">446</b> | 접촉 <b id="dash-kpi-flow-contact">199</b></div>
+                </div>
+              </div>
+              <div class="kpi-card" style="cursor: pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL' })" title="클릭 시 수위계 대장으로 이동">
+                <div class="kpi-icon cyan">📏</div>
+                <div class="kpi-content">
+                  <div class="kpi-label">수위계 총괄 대수</div>
+                  <div class="kpi-value" id="dash-kpi-waterlevel">233대</div>
+                  <div class="kpi-sub">레이더 <b id="dash-kpi-water-radar">104</b> | 수압·기타 <b id="dash-kpi-water-pressure">129</b></div>
+                </div>
+              </div>
+              <div class="kpi-card" style="cursor: pointer;" onclick="window.equipmentManager.switchSubTab('repairs')" title="클릭 시 수리관리 탭으로 이동">
+                <div class="kpi-icon amber">🛠️</div>
+                <div class="kpi-content">
+                  <div class="kpi-label">전문 수리 / 예비품</div>
+                  <div class="kpi-value" id="dash-kpi-repair" style="color: #b91c1c;">수리 7 / 예비 74</div>
+                  <div class="kpi-sub">리버앤씨 수리 및 보관품</div>
+                </div>
+              </div>
+              <div class="kpi-card" style="cursor: pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ isOver: '1' })" title="클릭 시 내구연한 경과 장비 목록으로 이동">
+                <div class="kpi-icon red">⚠️</div>
+                <div class="kpi-content">
+                  <div class="kpi-label">내구연한 경과(초과)</div>
+                  <div class="kpi-value" id="dash-kpi-lifespan" style="color: #dc2626;">119점</div>
+                  <div class="kpi-sub">전체 대비 5.6% (노후 교체 우선순위)</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 2: 유속계(Flowmeter) 종류별·모델별 정밀 보유 현황 -->
+            <div class="card" style="margin-bottom: 1.25rem;">
+              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <div class="card-title">
+                  <span>🌊</span> 유속계 종류별(모델별) 보유 및 운영 현황
+                  <span class="badge badge-purple" style="margin-left: 8px;">총 645대 (15종 모델)</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <span class="badge badge-blue" style="font-weight: 700;">📡 비접촉식 446대 (69.1%)</span>
+                  <span class="badge badge-purple" style="font-weight: 700;">🌊 접촉식 199대 (30.9%)</span>
+                </div>
+              </div>
+              <div class="card-body">
+                <!-- Measurement Method Visual Bar -->
+                <div style="margin-bottom: 1rem; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">
+                    <span style="color: #1e40af;">📡 비접촉식 전자파표면유속계: 446대 (69.1%) - RG-30D, RQ-30D, ESVFlow, RQ-30</span>
+                    <span style="color: #6b21a8;">🌊 접촉식 초음파도플러(ADVM/다경로): 199대 (30.9%) - CM600, CM1200, CM300 등</span>
+                  </div>
+                  <div style="display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: #e2e8f0;">
+                    <div style="width: 69.1%; background: #3b82f6;" title="비접촉식 446대 (69.1%)"></div>
+                    <div style="width: 30.9%; background: #9333ea;" title="접촉식 199대 (30.9%)"></div>
+                  </div>
+                </div>
+
+                <!-- Flowmeter Table -->
+                <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+                  <table class="custom-table" style="width: 100%;">
+                    <thead>
+                      <tr>
+                        <th style="width: 45px; text-align: center;">No.</th>
+                        <th style="width: 140px;">유속계 모델명</th>
+                        <th style="width: 170px;">계측 방식</th>
+                        <th style="width: 90px; text-align: right;">보유대수</th>
+                        <th style="width: 130px;">점유율 (비율)</th>
+                        <th style="width: 85px; text-align: center;">운영중</th>
+                        <th style="width: 80px; text-align: center;">예비품</th>
+                        <th style="width: 80px; text-align: center;">수리중</th>
+                        <th style="width: 80px; text-align: center;">불용/폐기</th>
+                        <th style="width: 105px; text-align: center;">내구연한초과</th>
+                        <th style="width: 95px; text-align: center;">장비목록</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dash-flowmeter-tbody">
+                      <tr><td colspan="11" style="text-align: center; padding: 2rem; color: #94a3b8;">유속계 모델별 통계를 집계하는 중...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 3: 수위계(Water Level) 종류별·모델별 보유 현황 -->
+            <div class="card" style="margin-bottom: 1.25rem;">
+              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <div class="card-title">
+                  <span>📏</span> 수위계 종류별(모델별) 보유 및 운영 현황
+                  <span class="badge badge-cyan" style="margin-left: 8px;">총 233대</span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  <span class="badge badge-cyan" style="font-weight: 700;">📡 레이더 수위계 104대 (44.6%)</span>
+                  <span class="badge badge-blue" style="font-weight: 700;">🌊 압력/수압식 센서 129대 (55.4%)</span>
+                </div>
+              </div>
+              <div class="card-body">
+                <!-- Water Level Table -->
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                  <table class="custom-table" style="width: 100%;">
+                    <thead>
+                      <tr>
+                        <th style="width: 45px; text-align: center;">No.</th>
+                        <th style="width: 150px;">수위계 모델명</th>
+                        <th style="width: 160px;">계측 방식</th>
+                        <th style="width: 90px; text-align: right;">보유대수</th>
+                        <th style="width: 130px;">점유율 (비율)</th>
+                        <th style="width: 85px; text-align: center;">운영중</th>
+                        <th style="width: 80px; text-align: center;">예비품</th>
+                        <th style="width: 80px; text-align: center;">수리중</th>
+                        <th style="width: 80px; text-align: center;">불용/폐기</th>
+                        <th style="width: 105px; text-align: center;">내구연한초과</th>
+                        <th style="width: 95px; text-align: center;">장비목록</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dash-waterlevel-tbody">
+                      <tr><td colspan="11" style="text-align: center; padding: 2rem; color: #94a3b8;">수위계 모델별 통계를 집계하는 중...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 4: 9대 설비 카테고리 종합 분포 & 4대 권역별 배치 비교 (2 Column Grid) -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 1.25rem;">
+              <!-- Left: 9 Categories Distribution -->
+              <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                  <div class="card-title">
+                    <span>🏢</span> 9대 설비 카테고리별 종합 자산 분포
+                  </div>
+                  <span class="badge badge-gray">총 2,113점</span>
+                </div>
+                <div class="card-body" id="dash-categories-body" style="padding: 1rem;">
+                  <!-- Dynamically populated from equipment.js -->
+                  <div style="text-align: center; padding: 2rem; color: #94a3b8;">설비 분류별 통계 로딩중...</div>
+                </div>
+              </div>
+
+              <!-- Right: Regional Distribution -->
+              <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                  <div class="card-title">
+                    <span>🗺️</span> 4대 권역별 장비 배치 현황 & 예비율
+                  </div>
+                  <span class="badge badge-gray">전국 4대강 + 본원 보관소</span>
+                </div>
+                <div class="card-body" id="dash-regions-body" style="padding: 1rem;">
+                  <!-- Dynamically populated from equipment.js -->
+                  <div style="text-align: center; padding: 2rem; color: #94a3b8;">권역별 통계 로딩중...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========================================================= -->
+          <!-- SUB-VIEW 1: 지점별 현황 (Workbench Split Layout) -->
+          <!-- ========================================================= -->
+          <div id="eq-subview-stations" class="eq-workbench" style="display: none;">
+            <!-- Left Column: Station Selector & Filter List -->
+            <div class="eq-sidebar-col" style="width: 100%; min-width: 360px; max-width: 440px; flex-shrink: 0; background: #ffffff; border-radius: 10px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; height: calc(100vh - 275px);">
+              <div style="padding: 1rem 1rem 0.5rem 1rem; border-bottom: 1px solid #f1f5f9; background: #f8fafc;">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                  <div class="search-input-wrapper" style="flex: 1;">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="eq-st-search" class="search-input" placeholder="지점명, 하천명, 코드..." oninput="window.equipmentManager.stationSearch = this.value; window.equipmentManager.loadStationsSummary();" style="width: 100%;">
+                  </div>
+                  <select id="eq-st-region" class="filter-select" onchange="window.equipmentManager.stationRegion = this.value; window.equipmentManager.loadStationsSummary();" style="min-width: 90px;">
+                    <option value="all">전체</option>
+                    <option value="한강">한강</option>
+                    <option value="낙동강">낙동강</option>
+                    <option value="금강">금강</option>
+                    <option value="영산강">영산강</option>
+                  </select>
+                </div>
+
+                <!-- Station Filter Pills -->
+                <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px;">
+                  <button class="eq-filter-pill active" data-filter="all" onclick="window.equipmentManager.setStationFilter('all')">전체 (223)</button>
+                  <button class="eq-filter-pill" data-filter="operating" onclick="window.equipmentManager.setStationFilter('operating')">운영중 (176)</button>
+                  <button class="eq-filter-pill" data-filter="repair" onclick="window.equipmentManager.setStationFilter('repair')">🚨 수리중</button>
+                </div>
+              </div>
+
+              <!-- List Header -->
+              <div style="padding: 0.5rem 1rem; background: #f1f5f9; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 700; color: #475569;">
+                <span>관측시설 목록</span>
+                <span class="badge badge-blue" id="eq-station-count-badge">176개소</span>
+              </div>
+
+              <!-- Station Card Scroll List -->
+              <div id="eq-station-list" style="flex: 1; overflow-y: auto; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                <!-- Dynamically populated from equipment.js -->
+              </div>
+            </div>
+
+            <!-- Right Column: Station Detail Panel -->
+            <div class="eq-main-col" style="flex: 1; min-width: 0; height: calc(100vh - 275px); overflow-y: auto;">
+              <div id="eq-station-detail-panel">
+                <div style="padding: 4rem; text-align: center; color: #94a3b8;">
+                  좌측 관측소 목록에서 지점을 선택하시면 상세 장비 현황과 조치 이력이 표시됩니다.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========================================================= -->
+          <!-- SUB-VIEW 2: 전체 장비대장 (9대 설비 Cross-Grid) -->
+          <!-- ========================================================= -->
+          <div id="eq-subview-devices" style="display: none;">
+            <div class="card">
+              <div class="card-header" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                  <div class="card-title">
+                    <span>📋</span> 9대 설비 전체 물품관리대장
+                    <span class="badge badge-blue" id="eq-all-devices-count" style="margin-left: 8px;">2,113대/식</span>
+                  </div>
+                  <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <button class="btn btn-primary btn-sm" onclick="window.equipmentManager.openAddDeviceModal()">
+                      <span>➕</span> <span>새 장비 신규 등록</span>
+                    </button>
+                    <button class="btn btn-outline btn-sm" onclick="window.equipmentManager.downloadBulkTemplate()">
+                      <span>📥</span> <span>엑셀 다운로드</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Category Pills -->
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button class="eq-cat-pill active" data-cat="ALL" onclick="window.equipmentManager.setDeviceCategory('ALL')">전체 (2,113)</button>
+                  <button class="eq-cat-pill" data-cat="FLOWMETER" onclick="window.equipmentManager.setDeviceCategory('FLOWMETER')">1. 유속계 (645)</button>
+                  <button class="eq-cat-pill" data-cat="WATER_LEVEL" onclick="window.equipmentManager.setDeviceCategory('WATER_LEVEL')">2. 수위계 (233)</button>
+                  <button class="eq-cat-pill" data-cat="MOUNT" onclick="window.equipmentManager.setDeviceCategory('MOUNT')">3. 센서지지대 (176)</button>
+                  <button class="eq-cat-pill" data-cat="CONTROL" onclick="window.equipmentManager.setDeviceCategory('CONTROL')">4. 제어시스템 (176)</button>
+                  <button class="eq-cat-pill" data-cat="SHELTER" onclick="window.equipmentManager.setDeviceCategory('SHELTER')">5. 관측국사 (176)</button>
+                  <button class="eq-cat-pill" data-cat="UNDERWATER" onclick="window.equipmentManager.setDeviceCategory('UNDERWATER')">6. 수중센서보호장치 (176)</button>
+                  <button class="eq-cat-pill" data-cat="LIGHTNING" onclick="window.equipmentManager.setDeviceCategory('LIGHTNING')">7. 낙뢰보호장치 (176)</button>
+                  <button class="eq-cat-pill" data-cat="CCTV" onclick="window.equipmentManager.setDeviceCategory('CCTV')">8. 영상정보처리기기 (179)</button>
+                  <button class="eq-cat-pill" data-cat="ANCILLARY" onclick="window.equipmentManager.setDeviceCategory('ANCILLARY')">9. 부대시설 (176)</button>
+                </div>
+
+                <!-- Search & Filters -->
+                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                  <div class="search-input-wrapper" style="min-width: 260px; flex: 1;">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="eq-dev-search" class="search-input" placeholder="모델명, S/N, 자산번호, 지점명 검색..." oninput="window.equipmentManager.deviceSearch = this.value; window.equipmentManager.devicePage = 1; window.equipmentManager.loadDevices();" style="width: 100%;">
+                  </div>
+
+                  <select id="eq-dev-status" class="filter-select" onchange="window.equipmentManager.deviceStatus = this.value; window.equipmentManager.devicePage = 1; window.equipmentManager.loadDevices();">
+                    <option value="ALL">전체 운영상태</option>
+                    <option value="OPERATING">운영중</option>
+                    <option value="SPARE">예비품</option>
+                    <option value="REPAIRING">수리중</option>
+                    <option value="DISPOSAL">폐품</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="card-body" style="padding: 0;">
+                <div class="table-responsive" style="max-height: 600px;">
+                  <table class="custom-table" style="width: 100%;">
+                    <thead>
+                      <tr>
+                        <th style="width: 50px; text-align: center;">No.</th>
+                        <th style="width: 110px;">장비 ID</th>
+                        <th style="width: 110px;">구분</th>
+                        <th>모델명 / 규격</th>
+                        <th>제조번호 (S/N)</th>
+                        <th>자산번호</th>
+                        <th>배정 관측소</th>
+                        <th style="width: 90px; text-align: center;">상태</th>
+                        <th>보관처 / 위치</th>
+                      </tr>
+                    </thead>
+                    <tbody id="eq-all-devices-tbody">
+                      <!-- Dynamically loaded from equipment.js -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========================================================= -->
+          <!-- SUB-VIEW 3: 수리·후속조치 (Repair Kanban & Tracking) -->
+          <!-- ========================================================= -->
+          <div id="eq-subview-repairs" style="display: none;">
+            <div class="card">
+              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                <div class="card-title">
+                  <span>🛠️</span> 이상 장비 수리 및 반출입 진행 관리
+                  <span class="badge badge-red" id="eq-repairs-count" style="margin-left: 8px;">7건</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <div class="search-input-wrapper" style="min-width: 220px;">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="eq-rep-search" class="search-input" placeholder="수리번호, 장비, 지점..." oninput="window.equipmentManager.repairSearch = this.value; window.equipmentManager.loadRepairs();">
+                  </div>
+                  <select id="eq-rep-stage-filter" class="filter-select" onchange="window.equipmentManager.repairStage = this.value; window.equipmentManager.loadRepairs();">
+                    <option value="ALL">전체 진행단계</option>
+                    <option value="접수">1. 접수</option>
+                    <option value="발송·입고">2. 발송·입고</option>
+                    <option value="진단중">3. 진단중</option>
+                    <option value="수리중">4. 수리중</option>
+                    <option value="수리완료">5. 수리완료</option>
+                    <option value="반입·재설치">6. 반입·재설치</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="card-body" style="padding: 0;">
+                <div class="table-responsive">
+                  <table class="custom-table" style="width: 100%;">
+                    <thead>
+                      <tr>
+                        <th style="width: 50px; text-align: center;">No.</th>
+                        <th style="width: 120px;">수리번호</th>
+                        <th>소속 지점</th>
+                        <th>대상 장비 (ID / S/N)</th>
+                        <th>정비업체</th>
+                        <th>접수일자</th>
+                        <th style="width: 110px; text-align: center;">진행단계</th>
+                        <th style="width: 110px; text-align: center;">단계 전환</th>
+                      </tr>
+                    </thead>
+                    <tbody id="eq-repairs-tbody">
+                      <!-- Dynamically loaded from equipment.js -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========================================================= -->
+          <!-- SUB-VIEW 4: 조치·교체이력 (지점별 필터 & 리스트/엑셀 다운로드) -->
+          <!-- ========================================================= -->
+          <div id="eq-subview-actions" style="display: none;">
+            <div class="card">
+              <div class="card-header" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <!-- Header Top: Title, Count, Download Button -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                  <div class="card-title">
+                    <span>📜</span> 전국 관측소 현장 점검 및 정비·조치 누적 이력
+                    <span class="badge badge-blue" id="eq-actions-count" style="margin-left: 8px;">298건</span>
+                  </div>
+                  <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <!-- View Mode Toggle: Table vs Cards -->
+                    <div class="btn-group" style="display: inline-flex; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden;">
+                      <button type="button" class="btn btn-sm" id="eq-act-view-table-btn" onclick="window.equipmentManager.setActionViewMode('table')" style="border-radius: 0; padding: 5px 12px; font-size: 0.8rem; font-weight: 700; background: #1e40af; color: #ffffff; border: none;">
+                        📋 목록(표) 보기
+                      </button>
+                      <button type="button" class="btn btn-sm" id="eq-act-view-cards-btn" onclick="window.equipmentManager.setActionViewMode('cards')" style="border-radius: 0; padding: 5px 12px; font-size: 0.8rem; font-weight: 700; background: #f8fafc; color: #475569; border: none;">
+                        📜 카드 보기
+                      </button>
+                    </div>
+
+                    <!-- Excel Download Button -->
+                    <button class="btn btn-primary btn-sm" onclick="window.equipmentManager.exportActionsExcel()" title="현재 필터링된 조치·교체이력을 엑셀 리스트로 다운로드합니다">
+                      <span>📥</span> <span>조치이력 엑셀 다운로드 (.xlsx)</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Filters Row: Region, Station, Keyword Search -->
+                <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                  <select id="eq-act-region-filter" class="filter-select" onchange="window.equipmentManager.onActionRegionChange(this.value)" style="min-width: 110px;">
+                    <option value="all">전체 권역</option>
+                    <option value="한강">한강</option>
+                    <option value="낙동강">낙동강</option>
+                    <option value="금강">금강</option>
+                    <option value="영산강">영산강·섬진강</option>
+                  </select>
+
+                  <select id="eq-act-station-filter" class="filter-select" onchange="window.equipmentManager.onActionStationChange(this.value)" style="min-width: 220px; max-width: 300px; font-weight: 600;">
+                    <option value="all">전체 관측시설 (전국 176개소)</option>
+                    <!-- Dynamically populated from equipment.js -->
+                  </select>
+
+                  <div class="search-input-wrapper" style="flex: 1; min-width: 220px;">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="eq-act-search" class="search-input" placeholder="지점명, 작업자, S/N, 조치내용 검색..." oninput="window.equipmentManager.actionSearch = this.value; window.equipmentManager.loadActions();" style="width: 100%;">
+                  </div>
+                </div>
+
+                <!-- Structured Action Taxonomy Filter Pills -->
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button class="eq-act-pill active" data-code="ALL" onclick="window.equipmentManager.setActionCodeFilter('ALL')">전체 이력</button>
+                  <button class="eq-act-pill" data-code="REPLACE_FLOW" onclick="window.equipmentManager.setActionCodeFilter('REPLACE_FLOW')">🔄 유속계 본체 교체</button>
+                  <button class="eq-act-pill" data-code="INSTALL_FLOW" onclick="window.equipmentManager.setActionCodeFilter('INSTALL_FLOW')">➕ 유속계 신규/설치</button>
+                  <button class="eq-act-pill" data-code="REPLACE_WATER" onclick="window.equipmentManager.setActionCodeFilter('REPLACE_WATER')">🔄 수위계 본체 교체</button>
+                  <button class="eq-act-pill" data-code="INSTALL_WATER" onclick="window.equipmentManager.setActionCodeFilter('INSTALL_WATER')">➕ 수위계 신규/설치</button>
+                  <button class="eq-act-pill" data-code="COMM_PARTS" onclick="window.equipmentManager.setActionCodeFilter('COMM_PARTS')">📡 통신·모뎀·컨버터</button>
+                  <button class="eq-act-pill" data-code="CABLE_WIRING" onclick="window.equipmentManager.setActionCodeFilter('CABLE_WIRING')">🔌 케이블·배선·커넥터</button>
+                  <button class="eq-act-pill" data-code="UNDERWATER_PARTS" onclick="window.equipmentManager.setActionCodeFilter('UNDERWATER_PARTS')">🛡️ 수중보호·리피터</button>
+                  <button class="eq-act-pill" data-code="CONTROL_SYSTEM" onclick="window.equipmentManager.setActionCodeFilter('CONTROL_SYSTEM')">💻 제어시스템·PC</button>
+                  <button class="eq-act-pill" data-code="SENSOR_CALIB" onclick="window.equipmentManager.setActionCodeFilter('SENSOR_CALIB')">⚖️ 센서보정·옵셋·세척</button>
+                  <button class="eq-act-pill" data-code="POWER_BATTERY" onclick="window.equipmentManager.setActionCodeFilter('POWER_BATTERY')">🔋 전원·배터리·충전기</button>
+                  <button class="eq-act-pill" data-code="STRUCT_MAINT" onclick="window.equipmentManager.setActionCodeFilter('STRUCT_MAINT')">🏗️ 구조물·현황판·국사</button>
+                  <button class="eq-act-pill" data-code="CCTV_SURVEIL" onclick="window.equipmentManager.setActionCodeFilter('CCTV_SURVEIL')">📹 CCTV 영상 정비</button>
+                  <button class="eq-act-pill" data-code="NORMAL_CHECK" onclick="window.equipmentManager.setActionCodeFilter('NORMAL_CHECK')">✅ 정기·수시 종합점검</button>
+                </div>
+              </div>
+
+              <div class="card-body" style="padding: 0;">
+                <!-- 1. Table View (리스트 형태) -->
+                <div id="eq-actions-table-wrap" class="table-responsive" style="max-height: 650px; overflow-y: auto;">
+                  <table class="custom-table" style="width: 100%;">
+                    <thead>
+                      <tr>
+                        <th style="width: 45px; text-align: center;">No.</th>
+                        <th style="width: 95px; text-align: center;">작업일자</th>
+                        <th style="width: 150px;">관측소명(권역)</th>
+                        <th style="width: 90px; text-align: center;">작업구분</th>
+                        <th style="width: 140px; text-align: center;">표준 조치유형</th>
+                        <th>교체 내역 (전/후 S/N) 및 부품</th>
+                        <th style="width: 110px; text-align: center;">측정/파라미터</th>
+                        <th style="width: 90px; text-align: center;">작업자</th>
+                        <th>상세 조치내역</th>
+                      </tr>
+                    </thead>
+                    <tbody id="eq-actions-table-body">
+                      <!-- Dynamically loaded from equipment.js -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- 2. Cards / Timeline View -->
+                <div id="eq-actions-cards-wrap" style="display: none; max-height: 650px; overflow-y: auto; padding: 1rem;">
+                  <div id="eq-actions-timeline">
+                    <!-- Dynamically loaded from equipment.js -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========================================================= -->
+          <!-- SUB-VIEW 5: 엑셀 다운로드 (One-Click Export Center) -->
+          <!-- ========================================================= -->
+          <div id="eq-subview-export" style="display: none;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem;">
+              <div class="card" style="padding: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                  <span style="font-size: 2rem;">🌊</span>
+                  <div>
+                    <h3 style="margin: 0; font-size: 1.1rem; color: #0f172a;">전체 9대 설비 종합 마스터팩</h3>
+                    <p style="margin: 0; font-size: 0.8rem; color: #64748b;">유속계, 수위계 등 9개 설비 총 2,113점 일괄 추출</p>
+                  </div>
+                </div>
+                <p style="font-size: 0.85rem; color: #475569; line-height: 1.5; margin-bottom: 1.25rem;">
+                  전국 176개 관측시설에 배치된 모든 장비의 모델명, S/N, 자산번호, 운영상태를 표준 엑셀로 내려받습니다.
+                </p>
+                <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="window.equipmentManager.downloadBulkTemplate()">
+                  <span>📥</span> <span>마스터팩 엑셀 다운로드 (.xlsx)</span>
+                </button>
+              </div>
+
+              <div class="card" style="padding: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                  <span style="font-size: 2rem;">🎯</span>
+                  <div>
+                    <h3 style="margin: 0; font-size: 1.1rem; color: #0f172a;">2026년 법정 정기검정 대상 대장</h3>
+                    <p style="margin: 0; font-size: 0.8rem; color: #64748b;">올해 정기검정 법정 의무 30개소 전용 대장</p>
+                  </div>
+                </div>
+                <p style="font-size: 0.85rem; color: #475569; line-height: 1.5; margin-bottom: 1.25rem;">
+                  2026년 유속계 검정 대상 지점 목록, 형식, 검정 만료일 및 성적서 번호 관리 현황을 추출합니다.
+                </p>
+                <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="if(window.excelManager) window.excelManager.exportCalibration()">
+                  <span>🎯</span> <span>검정 대장 엑셀 다운로드 (.xlsx)</span>
+                </button>
+              </div>
+
+              <div class="card" style="padding: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                  <span style="font-size: 2rem;">📜</span>
+                  <div>
+                    <h3 style="margin: 0; font-size: 1.1rem; color: #0f172a;">현장 조치 및 부품 교체 이력 대장</h3>
+                    <p style="margin: 0; font-size: 0.8rem; color: #64748b;">표준 유형별(유속계 교체, 배터리 등) 정밀 기록</p>
+                  </div>
+                </div>
+                <p style="font-size: 0.85rem; color: #475569; line-height: 1.5; margin-bottom: 1.25rem;">
+                  과거 170건을 포함한 전체 현장 출동 작업일지, 교체 전/후 S/N 변경 기록을 일괄 추출합니다.
+                </p>
+                <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="window.equipmentManager.exportActionsExcel()">
+                  <span>📊</span> <span>조치 이력 대장 다운로드 (.xlsx)</span>
+                </button>
+              </div>
+
+              <div class="card" style="padding: 1.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                  <span style="font-size: 2rem;">📍</span>
+                  <div>
+                    <h3 style="margin: 0; font-size: 1.1rem; color: #0f172a;">선택 관측소 단독 장비·이력 패키지</h3>
+                    <p style="margin: 0; font-size: 0.8rem; color: #64748b;">현재 선택된 특정 지점의 장비 + 이력 시트</p>
+                  </div>
+                </div>
+                <p style="font-size: 0.85rem; color: #475569; line-height: 1.5; margin-bottom: 1.25rem;">
+                  지점별 현황에서 선택된 관측소의 모든 보유 설비와 작업 이력을 단일 통합 엑셀로 내보냅니다.
+                </p>
+                <button class="btn btn-outline" style="width: 100%; justify-content: center;" onclick="if(window.equipmentManager.selectedStationId) window.equipmentManager.exportStationPackage(window.equipmentManager.selectedStationId); else alert('먼저 지점별 현황에서 관측소를 선택해주세요.');">
+                  <span>📑</span> <span>선택 지점 패키지 내보내기</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========================================================= -->
+          <!-- SUB-VIEW 6: 엑셀 일괄수정·업로드 (Bulk Edit & Safety Diff) -->
+          <!-- ========================================================= -->
+          <div id="eq-subview-bulkupload" style="display: none;">
+            <div class="card" style="margin-bottom: 1.25rem;">
+              <div class="card-header">
+                <div class="card-title">
+                  <span>📤</span> 엑셀 양식을 통한 장비 정보 대량 일괄 갱신
+                </div>
+              </div>
+              <div class="card-body">
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem;">
+                  <h4 style="margin: 0 0 0.5rem 0; color: #166534; font-size: 0.95rem;">💡 안전한 일괄 수정 절차 안내</h4>
+                  <ol style="margin: 0; padding-left: 1.2rem; font-size: 0.85rem; color: #14532d; line-height: 1.6;">
+                    <li>아래 <b>[일괄 수정용 엑셀 양식 다운로드]</b> 버튼을 클릭하여 현재 전체 장비 데이터를 내려받습니다.</li>
+                    <li>엑셀 파일에서 <b>모델명, 제조번호(S/N), 자산번호, 보관위치, 비고</b> 컬럼만 자유롭게 수정합니다. (장비 ID 및 버전 열은 절대 수정 금지)</li>
+                    <li>수정 완료된 엑셀 파일을 업로드 영역에 드래그하거나 선택하여 <b>사전 검증(Diff Preview)</b>을 수행합니다.</li>
+                    <li>변경 사항 요약 및 검증 결과를 확인한 뒤, <b>[일괄 수정 최종 반영]</b>을 누르면 DB에 즉시 안전하게 반영됩니다.</li>
+                  </ol>
+                </div>
+
+                <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem;">
+                  <button class="btn btn-primary" onclick="window.equipmentManager.downloadBulkTemplate()">
+                    <span>📥</span> <span>1단계: 일괄 수정용 엑셀 양식 다운로드</span>
+                  </button>
+                  <span style="font-size: 0.85rem; color: #64748b;">현재 등록된 2,113점의 최신 버전 데이터가 포함됩니다.</span>
+                </div>
+
+                <!-- Dropzone -->
+                <div style="border: 2px dashed #cbd5e1; border-radius: 10px; padding: 2.5rem; text-align: center; background: #f8fafc; cursor: pointer;" onclick="document.getElementById('eq-bulk-file-input').click()">
+                  <input type="file" id="eq-bulk-file-input" accept=".xlsx, .xls" style="display: none;" onchange="if(this.files && this.files[0]) window.equipmentManager.handleBulkUploadFile(this.files[0])">
+                  <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📂</div>
+                  <div style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 0.25rem;">
+                    수정한 엑셀 파일(.xlsx)을 여기에 끌어다 놓거나 클릭하여 선택하세요
+                  </div>
+                  <div style="font-size: 0.8rem; color: #64748b;">
+                    SheetJS 엔진이 실시간으로 컬럼 및 변경 사항을 정밀 검증합니다.
+                  </div>
+                </div>
+
+                <!-- Bulk Preview Box (Initially Hidden) -->
+                <div id="eq-bulk-preview-box" style="display: none; margin-top: 1.5rem; padding: 1.25rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;">
+                  <!-- Dynamically populated from equipment.js -->
+                </div>
               </div>
             </div>
           </div>
@@ -2528,6 +3099,220 @@
     </div>
   </div>
 
+  <!-- ========================================================= -->
+  <!-- EQUIPMENT MANAGEMENT MODALS -->
+  <!-- ========================================================= -->
+
+  <!-- 1. Equipment Add Modal -->
+  <div class="modal-backdrop" id="eq-add-modal">
+    <div class="modal-dialog" style="max-width: 560px;">
+      <div class="modal-header">
+        <div class="modal-title"><span>➕</span> 새 장비 신규 등록</div>
+        <button class="modal-close" onclick="window.equipmentManager.closeAddDeviceModal()">✕</button>
+      </div>
+      <form onsubmit="window.equipmentManager.submitAddDevice(event)">
+        <div class="modal-body">
+          <input type="hidden" id="eq-add-station-id">
+          <div class="form-group" style="margin-bottom: 0.8rem;">
+            <label class="form-label">설비 구분 (카테고리) *</label>
+            <select id="eq-add-category" class="filter-select" style="width: 100%;" required>
+              <option value="FLOWMETER">1. 유속계</option>
+              <option value="WATER_LEVEL">2. 수위계</option>
+              <option value="MOUNT">3. 센서지지대</option>
+              <option value="CONTROL">4. 제어시스템</option>
+              <option value="SHELTER">5. 관측국사</option>
+              <option value="UNDERWATER">6. 수중센서보호장치</option>
+              <option value="LIGHTNING">7. 낙뢰보호장치</option>
+              <option value="CCTV">8. 영상정보처리기기</option>
+              <option value="ANCILLARY">9. 부대시설</option>
+              <option value="ETC">기타</option>
+            </select>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 0.8rem;">
+            <div class="form-group">
+              <label class="form-label">모델명 / 규격 *</label>
+              <input type="text" id="eq-add-model" class="form-input" placeholder="예: RQ-30D, CM300" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">제조번호 (S/N)</label>
+              <input type="text" id="eq-add-sn" class="form-input" placeholder="예: 24258648">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 0.8rem;">
+            <div class="form-group">
+              <label class="form-label">자산번호</label>
+              <input type="text" id="eq-add-asset" class="form-input" placeholder="예: 2024-FLOW-012">
+            </div>
+            <div class="form-group">
+              <label class="form-label">운영상태 *</label>
+              <select id="eq-add-status" class="filter-select" style="width: 100%;" required>
+                <option value="OPERATING">운영중</option>
+                <option value="SPARE">예비품</option>
+                <option value="REPAIRING">수리중</option>
+                <option value="DISPOSAL">폐품</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.8rem;">
+            <label class="form-label">설치 / 보관 위치</label>
+            <input type="text" id="eq-add-location" class="form-input" placeholder="예: 현장 교각 지지대, 기술원 보관실">
+          </div>
+          <div class="form-group">
+            <label class="form-label">비고 / 메모</label>
+            <textarea id="eq-add-memo" class="form-input" rows="2" placeholder="기타 특이사항 입력..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+          <button type="button" class="btn btn-outline" onclick="window.equipmentManager.closeAddDeviceModal()">취소</button>
+          <button type="submit" class="btn btn-primary">등록 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Equipment Work (Action) Modal -->
+  <div class="modal-backdrop" id="eq-work-modal">
+    <div class="modal-dialog" style="max-width: 620px;">
+      <div class="modal-header">
+        <div class="modal-title"><span>🛠️</span> 현장 점검 및 조치·교체 등록</div>
+        <button class="modal-close" onclick="window.equipmentManager.closeWorkModal()">✕</button>
+      </div>
+      <form onsubmit="window.equipmentManager.submitWork(event)">
+        <div class="modal-body">
+          <input type="hidden" id="eq-work-station-id">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 0.8rem;">
+            <div class="form-group">
+              <label class="form-label">작업 일자 *</label>
+              <input type="date" id="eq-work-date" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">작업 구분 (대분류) *</label>
+              <select id="eq-work-type" class="filter-select" style="width: 100%;" required>
+                <option value="정기점검">정기점검 (상/하반기)</option>
+                <option value="수시점검">수시점검 (이상알림 출동)</option>
+                <option value="긴급점검">긴급점검 (홍수기/재난)</option>
+                <option value="원격보수">원격·통신보수</option>
+                <option value="신설개체">신설·개체공사</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.8rem;">
+            <label class="form-label">출동 작업자</label>
+            <input type="text" id="eq-work-workers" class="form-input" placeholder="예: 김수자(인프라팀), 이정비(리버앤씨)">
+          </div>
+          <div class="form-group" style="margin-bottom: 0.8rem;">
+            <label class="form-label">표준 조치 유형 (중분류) *</label>
+            <select id="eq-work-action-code" class="filter-select" style="width: 100%; font-weight: 700; color: #1e40af;" onchange="window.equipmentManager.onWorkActionTypeChange()" required>
+              <option value="REPLACE_FLOW">🔄 유속계 본체 교체 (S/N 스위칭)</option>
+              <option value="INSTALL_FLOW">➕ 유속계 신규/추가/재설치</option>
+              <option value="REPLACE_WATER">🔄 수위계 본체 교체 (S/N 스위칭)</option>
+              <option value="INSTALL_WATER">➕ 수위계 신규/추가/재설치</option>
+              <option value="COMM_PARTS">📡 통신·모뎀·컨버터·공유기 정비</option>
+              <option value="CABLE_WIRING">🔌 센서 케이블·배선·커넥터 교체</option>
+              <option value="UNDERWATER_PARTS">🛡️ 수중센서보호장치·리피터 정비</option>
+              <option value="CONTROL_SYSTEM">💻 시스템 컨트롤러(Logger/Sender)·PC</option>
+              <option value="SENSOR_CALIB">⚖️ 센서 영점/옵셋 보정 및 세척</option>
+              <option value="POWER_BATTERY">🔋 전원·배터리·자동충전기 정비</option>
+              <option value="STRUCT_MAINT">🏗️ 관측국사·센서지지대·지점현황판</option>
+              <option value="CCTV_SURVEIL">📹 영상정보처리기기(CCTV/모니터)</option>
+              <option value="NORMAL_CHECK">✅ 정기/수시 종합점검 및 이상없음</option>
+              <option value="ETC_ACTION">기타 조치</option>
+            </select>
+          </div>
+          <!-- Dynamic Structured Fields Container -->
+          <div id="eq-work-dynamic-fields"></div>
+          <div class="form-group" style="margin-bottom: 0.8rem;">
+            <label class="form-label">작업 요약</label>
+            <input type="text" id="eq-work-summary" class="form-input" placeholder="예: 유속계 CM300 본체 신품 교체 및 정상 가동 확인">
+          </div>
+          <div class="form-group">
+            <label class="form-label">상세 조치 내역 (자유 서술) *</label>
+            <textarea id="eq-work-detail-text" class="form-input" rows="3" placeholder="현장 조치 상세 내용, 이상 원인, 현장 특이사항 등을 기록하세요..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+          <button type="button" class="btn btn-outline" onclick="window.equipmentManager.closeWorkModal()">취소</button>
+          <button type="submit" class="btn btn-primary">조치 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Equipment Status Modal -->
+  <div class="modal-backdrop" id="eq-status-modal">
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <div class="modal-title"><span>🔄</span> 장비 상태 및 보관위치 변경</div>
+        <button class="modal-close" onclick="window.equipmentManager.closeStatusModal()">✕</button>
+      </div>
+      <form onsubmit="window.equipmentManager.submitStatusChange(event)">
+        <div class="modal-body">
+          <input type="hidden" id="eq-status-id">
+          <div class="form-group" style="margin-bottom: 0.8rem;">
+            <label class="form-label">변경할 상태 *</label>
+            <select id="eq-status-select" class="filter-select" style="width: 100%;" required>
+              <option value="OPERATING">운영중 (현장 정상 계측)</option>
+              <option value="SPARE">예비품 (창고/차량 보관)</option>
+              <option value="REPAIRING">수리중 (점검/정비 의뢰)</option>
+              <option value="DISPOSAL">폐품 (불용/폐기 대상)</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.8rem;">
+            <label class="form-label">보관 / 설치 위치 *</label>
+            <input type="text" id="eq-status-location" class="form-input" placeholder="예: 현장교각, 기술원 창고, 리버앤씨 공장" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">변경 사유</label>
+            <input type="text" id="eq-status-reason" class="form-input" placeholder="예: 현장 계측 이상으로 인한 수리의뢰 반출">
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+          <button type="button" class="btn btn-outline" onclick="window.equipmentManager.closeStatusModal()">취소</button>
+          <button type="submit" class="btn btn-primary">상태 변경 반영</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. Equipment Repair Modal -->
+  <div class="modal-backdrop" id="eq-repair-modal">
+    <div class="modal-dialog" style="max-width: 500px;">
+      <div class="modal-header">
+        <div class="modal-title"><span>🛠️</span> 장비 수리 진행단계 관리</div>
+        <button class="modal-close" onclick="window.equipmentManager.closeRepairModal()">✕</button>
+      </div>
+      <form onsubmit="window.equipmentManager.submitRepair(event)">
+        <div class="modal-body">
+          <input type="hidden" id="eq-repair-id">
+          <input type="hidden" id="eq-repair-eq-id">
+          <div class="form-group" style="margin-bottom: 0.8rem;">
+            <label class="form-label">수리 진행단계 *</label>
+            <select id="eq-repair-stage" class="filter-select" style="width: 100%; font-weight: 700;" required>
+              <option value="접수">1. 접수 (이상 접수 및 반출 준비)</option>
+              <option value="발송·입고">2. 발송·입고 (정비업체 택배 발송/입고)</option>
+              <option value="진단중">3. 진단중 (원인 정밀 분석 중)</option>
+              <option value="수리중">4. 수리중 (부품 교체 및 수리 중)</option>
+              <option value="수리완료">5. 수리완료 (동작 검증 완료)</option>
+              <option value="반입·재설치">6. 반입·재설치 (현장 복귀 및 설치 완료)</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.8rem;">
+            <label class="form-label">정비 / 수리 업체</label>
+            <input type="text" id="eq-repair-vendor" class="form-input" value="리버앤씨" placeholder="예: 리버앤씨, 하이드로코리아">
+          </div>
+          <div class="form-group">
+            <label class="form-label">수리 및 점검 특이사항</label>
+            <textarea id="eq-repair-memo" class="form-input" rows="3" placeholder="진단 결과, 교체 부품, 수리 견적, 일정 등 입력..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+          <button type="button" class="btn btn-outline" onclick="window.equipmentManager.closeRepairModal()">취소</button>
+          <button type="submit" class="btn btn-primary">진행단계 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container"></div>
 
@@ -2544,6 +3329,7 @@
   <script src="js/maintenance.js?v=3.7"></script>
   <script src="js/history.js?v=3.7"></script>
   <script src="js/calibration.js?v=3.7"></script>
+  <script src="js/equipment.js?v=1.0"></script>
   <script src="js/schedule.js?v=3.7"></script>
   <script src="js/monitor.js?v=3.8"></script>
   <script src="js/waterlevel.js?v=3.7"></script>

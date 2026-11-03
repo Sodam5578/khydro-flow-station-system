@@ -318,6 +318,7 @@ class MaintenanceManager {
           <td>
             <div style="display:flex; gap:4px;">
               <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); window.maintenanceManager.openMaintEditModal(${st.id})" style="font-size:0.75rem; padding:3px 8px;">✏️ 과업수정</button>
+              <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); window.equipmentManager.navigateToStation(${st.id}, '${(st.name||'').replace(/'/g, "\\'")}', 'devices')" style="font-size:0.75rem; padding:3px 8px; color:#1e40af; border-color:#93c5fd; background:#eff6ff; font-weight:700;" title="이 지점의 장비 목록 및 교체이력 조회">🛠️ 장비</button>
               <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); window.modalManager.openDetail(${st.id})" style="font-size:0.75rem; padding:3px 8px;">상세</button>
             </div>
           </td>

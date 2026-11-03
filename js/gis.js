@@ -419,9 +419,10 @@ class GISManager {
       }
 
       const primaryIssue = isAbnormal ? issues[0] : null;
+      const safeName = (st.name || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
       const scheduleBtnAction = primaryIssue 
-        ? `window.scheduleManager.openAddModalWithStation(${st.id}, '${st.name}', '[${primaryIssue.ruleId}] ${primaryIssue.problem}', '${primaryIssue.detail} (연속 ${primaryIssue.continuousCount}회)')`
-        : `window.scheduleManager.openAddModalWithStation(${st.id}, '${st.name}', '', '')`;
+        ? `window.scheduleManager.openAddModalWithStation(${st.id}, '${safeName}', '[${primaryIssue.ruleId}] ${primaryIssue.problem}', '${primaryIssue.detail} (연속 ${primaryIssue.continuousCount}회)')`
+        : `window.scheduleManager.openAddModalWithStation(${st.id}, '${safeName}', '', '')`;
 
       const headerBadge = isAbnormal 
         ? '<span class="badge" style="background:#fef2f2; color:#b91c1c; font-weight:700;">🚨 조치 필요</span>' 
@@ -444,19 +445,27 @@ class GISManager {
               <span class="popup-row-label">유속계 형식:</span> 
               <span><b style="color:${isDual ? "#7c3aed" : "#1d4ed8"};">${st.gaugeType || "-"}</b> ${isDual ? "(EWSV+ADVM 복합)" : ""} ${isWireless ? '<span class="badge badge-cyan" style="font-weight:700;">📶 무선</span>' : ""}</span>
             </div>
-            <div class="popup-row">
+            <div class="popup-row" style="align-items:center;">
               <span class="popup-row-label">장비 대수:</span> 
-              <span>EWSV: <b>${st.ewsvCount||"-"}대</b> / ADVM: <b>${st.advmCount||"-"}대</b></span>
+              <span style="display:inline-flex; align-items:center; gap:6px;">
+                <span>EWSV: <b>${st.ewsvCount||"-"}대</b> / ADVM: <b>${st.advmCount||"-"}대</b></span>
+                <button type="button" class="btn btn-outline btn-sm" style="padding:1px 6px; font-size:0.7rem; color:#1e40af; border-color:#93c5fd; background:#eff6ff; font-weight:700; border-radius:4px;" onclick="window.equipmentManager.navigateToStation(${st.id}, '${safeName}', 'devices')" title="해당 관측소 장비 상세 현황으로 바로 이동">
+                  장비 상세 ➔
+                </button>
+              </span>
             </div>
             <div class="popup-row"><span class="popup-row-label">설치/개시:</span> <span>${st.installYear || "-"}년 / ${st.obsStartYear || "-"}년</span></div>
             <div class="popup-row"><span class="popup-row-label">26년 운영여부:</span> <span>${st.isOperating2026 ? "<span class=\"badge badge-green\">운영중</span>" : "<span class=\"badge badge-gray\">미운영/대기</span>"}</span></div>
             <div class="popup-row"><span class="popup-row-label">지정 구분:</span> <span>${st.solarInstall ? "<span class=\"badge badge-amber\">☀️ 태양광</span> " : ""}${st.floodAlert ? "<span class=\"badge badge-red\">홍수</span> " : ""}${st.droughtAlert ? "<span class=\"badge badge-amber\">갈수</span> " : ""}${st.calib2026 ? "<span class=\"badge badge-cyan\">검정</span>" : ""}${!st.solarInstall && !st.floodAlert && !st.droughtAlert && !st.calib2026 ? "-" : ""}</span></div>
           </div>
           
-          <div class="popup-footer">
-            <button class="btn btn-outline btn-sm" onclick="window.modalManager.openDetail(${st.id})">상세정보 & 편집</button>
+          <div class="popup-footer" style="display:flex; gap:4px; flex-wrap:wrap; justify-content:space-between; align-items:center;">
+            <button class="btn btn-outline btn-sm" onclick="window.modalManager.openDetail(${st.id})" title="지점 기본정보 및 점검현황">상세제원</button>
+            <button class="btn btn-outline btn-sm" style="color:#1e40af; border-color:#93c5fd; background:#eff6ff; font-weight:700;" onclick="window.equipmentManager.navigateToStation(${st.id}, '${safeName}', 'devices')" title="이 지점의 전체 장비 리스트 및 교체·수리 이력으로 이동">
+              🛠️ 장비 목록
+            </button>
             <button class="btn btn-primary btn-sm" style="${isAbnormal ? "background:#dc2626; border-color:#dc2626;" : ""}" onclick="${scheduleBtnAction}">
-              🚗 점검일정 잡기
+              🚗 점검일정
             </button>
           </div>
         </div>

@@ -184,6 +184,145 @@ async function initDb() {
       )
     `);
     sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_quality_snapshots_slot ON quality_hourly_snapshots (hourly_slot)`);
+
+    // Equipment & Asset Management Tables
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS equipment_master (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        equipment_id TEXT UNIQUE NOT NULL,
+        station_id INTEGER,
+        station_name TEXT,
+        station_code TEXT,
+        category TEXT NOT NULL,
+        category_name TEXT NOT NULL,
+        item_name TEXT,
+        manage_no TEXT,
+        model_name TEXT,
+        spec TEXT,
+        serial_no TEXT,
+        asset_no TEXT,
+        asset_no_temp TEXT,
+        quantity INTEGER DEFAULT 1,
+        status TEXT DEFAULT 'OPERATING',
+        status_label TEXT DEFAULT '운영중',
+        location TEXT,
+        acquisition_date TEXT,
+        acquisition_cost INTEGER DEFAULT 0,
+        lifespan_years INTEGER DEFAULT 0,
+        lifespan_end_year TEXT,
+        is_lifespan_over INTEGER DEFAULT 0,
+        calib_status TEXT DEFAULT 'pending',
+        recent_calib_date TEXT,
+        calib_cert_no TEXT,
+        calib_expire_date TEXT,
+        version INTEGER DEFAULT 1,
+        memo TEXT,
+        source_sheet TEXT,
+        source_row INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS equipment_work (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        work_no TEXT UNIQUE NOT NULL,
+        station_id INTEGER,
+        station_name TEXT,
+        station_code TEXT,
+        work_date TEXT NOT NULL,
+        work_type TEXT NOT NULL,
+        workers TEXT,
+        summary TEXT NOT NULL,
+        detail_raw TEXT,
+        source_ref TEXT,
+        created_by TEXT DEFAULT '관리자',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS equipment_action (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        work_id INTEGER NOT NULL,
+        equipment_id TEXT,
+        action_category TEXT,
+        action_code TEXT NOT NULL,
+        action_name TEXT NOT NULL,
+        before_model TEXT,
+        before_sn TEXT,
+        after_model TEXT,
+        after_sn TEXT,
+        part_name TEXT,
+        part_qty INTEGER DEFAULT 1,
+        param_change TEXT,
+        detail_text TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS equipment_repair (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        repair_no TEXT UNIQUE NOT NULL,
+        equipment_id TEXT NOT NULL,
+        equipment_name TEXT,
+        station_id INTEGER,
+        station_name TEXT,
+        stage TEXT DEFAULT '접수',
+        vendor TEXT,
+        issue_desc TEXT,
+        received_date TEXT NOT NULL,
+        target_date TEXT,
+        completed_date TEXT,
+        cost INTEGER DEFAULT 0,
+        action_memo TEXT,
+        created_by TEXT DEFAULT '관리자',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS equipment_audit_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        equipment_id TEXT NOT NULL,
+        field_name TEXT NOT NULL,
+        before_value TEXT,
+        after_value TEXT,
+        changed_by TEXT NOT NULL,
+        reason TEXT,
+        source TEXT DEFAULT 'UI',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS equipment_upload_batch (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        batch_id TEXT UNIQUE NOT NULL,
+        filename TEXT NOT NULL,
+        total_rows INTEGER DEFAULT 0,
+        changed_rows INTEGER DEFAULT 0,
+        unchanged_rows INTEGER DEFAULT 0,
+        error_rows INTEGER DEFAULT 0,
+        conflict_rows INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'VALIDATED',
+        summary_json TEXT,
+        applied_by TEXT,
+        applied_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_station ON equipment_master (station_id)`);
+    sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_category ON equipment_master (category)`);
+    sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_sn ON equipment_master (serial_no)`);
+    sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_status ON equipment_master (status)`);
+    sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_work_st ON equipment_work (station_id)`);
+    sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_action_work ON equipment_action (work_id)`);
   });
 
   // B. Seed Supabase Cloud DB

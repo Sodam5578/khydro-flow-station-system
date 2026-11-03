@@ -330,6 +330,9 @@ class TableManager {
             <td>${calibBadge}</td>
             <td>
               <div style="display:flex; gap:0.25rem;" onclick="event.stopPropagation();">
+                <button class="btn btn-outline btn-sm" style="color:#1e40af; border-color:#93c5fd; background:#eff6ff; font-weight:700;" onclick="window.equipmentManager.navigateToStation(${st.id}, '${(st.name||'').replace(/'/g, "\\'")}', 'devices')" title="해당 지점의 장비 목록(유속계·수위계·CCTV 등) 및 조치·수리이력 조회">
+                  🛠️ 장비
+                </button>
                 <button class="btn btn-outline btn-sm" onclick="window.modalManager.openEdit(${st.id})" title="수정">✏️</button>
                 <button class="btn btn-outline btn-sm" onclick="window.app.locateOnMap(${st.id})" title="지도에서 위치 보기">🗺️</button>
               </div>
@@ -400,16 +403,58 @@ class TableManager {
   }
 
   filterBySolarFromDashboard() {
-    this.filters.solarInstall = "yes";
+    // 1. Reset other filters so user clearly sees all 42 solar stations
+    this.searchTerm = "";
+    const searchInput = document.getElementById("table-search-input");
+    if (searchInput) searchInput.value = "";
+
+    this.filters = {
+      region: "all",
+      gaugeType: "all",
+      operating: "all",
+      shelterType: "all",
+      installYear: "all",
+      floodAlert: "all",
+      droughtAlert: "all",
+      calib2026: "all",
+      solarInstall: "yes",
+      ewsvWireless: "all"
+    };
+
+    const regSel = document.getElementById("table-filter-region");
+    if (regSel) regSel.value = "all";
+    const gaugeSel = document.getElementById("table-filter-gauge");
+    if (gaugeSel) gaugeSel.value = "all";
+    const opSel = document.getElementById("table-filter-operating");
+    if (opSel) opSel.value = "all";
+    const shelterSel = document.getElementById("table-filter-shelter");
+    if (shelterSel) shelterSel.value = "all";
+    const yearSel = document.getElementById("table-filter-year");
+    if (yearSel) yearSel.value = "all";
+
     const solarCheck = document.getElementById("table-filter-solar");
     if (solarCheck) solarCheck.checked = true;
     this.updateSolarLabelStyle(true);
+
+    const wirelessCheck = document.getElementById("table-filter-wireless");
+    if (wirelessCheck) wirelessCheck.checked = false;
+    this.updateWirelessLabelStyle(false);
+
     this.currentPage = 1;
-    if (window.app && typeof window.app.switchView === "function") {
+
+    // 2. Switch tab to stations view
+    if (window.app && typeof window.app.switchTab === "function") {
+      window.app.switchTab("stations");
+    } else if (window.app && typeof window.app.switchView === "function") {
       window.app.switchView("stations");
     } else {
       this.render();
     }
+
+    // 3. Scroll to top of table
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    const viewStations = document.getElementById("view-stations");
+    if (viewStations) viewStations.scrollTop = 0;
   }
 }
 

@@ -54,9 +54,10 @@ class App {
       console.error("Failed to init maintenanceManager:", e);
     }
 
-    // 7. Initialize Calibration Manager
+    // 7. Initialize Calibration & Equipment Manager
     try {
-      window.calibrationManager.init();
+      if (window.calibrationManager) window.calibrationManager.init();
+      if (window.equipmentManager) window.equipmentManager.init();
     } catch(e) {
       console.error(e);
     }
@@ -144,6 +145,10 @@ class App {
     });
   }
 
+  switchView(tabName) {
+    return this.switchTab(tabName);
+  }
+
   switchTab(tabName) {
     this.activeTab = tabName;
 
@@ -166,6 +171,7 @@ class App {
       "stations": "관측시설 목록 및 상세 관리",
       "maintenance": "2026년 유지관리 과업 총괄 관제",
       "calibration": "2026년 유속계 검정 관리",
+      "equipment": "전국 관측시설 장비 및 물품 통합 관리",
       "schedules": "팀원 업무 및 현장점검 일정 관리",
       "monitor": "전국 자동유량 실시간 관측자료 품질 모니터링",
       "timeseries": "실시간 관측자료 시계열 분석",
@@ -201,6 +207,10 @@ class App {
       if (window.calibrationManager) {
         window.calibrationManager.renderKPIs();
         window.calibrationManager.renderTable();
+      }
+    } else if (tabName === "equipment") {
+      if (window.equipmentManager) {
+        window.equipmentManager.onTabActivated();
       }
     } else if (tabName === "schedules") {
       if (window.scheduleManager) {

@@ -659,6 +659,10 @@ body {
 .badge-gray { background-color: #f1f5f9; color: #475569; }
 .badge-red { background-color: #fee2e2; color: #991b1b; }
 .badge-cyan { background-color: #cffafe; color: #155e75; }
+.badge-indigo { background-color: #e0e7ff; color: #3730a3; }
+.badge-teal { background-color: #ccfbf1; color: #115e59; }
+.badge-orange { background-color: #ffedd5; color: #9a3412; }
+.badge-pink { background-color: #fce7f3; color: #9d174d; }
 
 /* Pagination */
 .pagination-wrapper {
@@ -1672,4 +1676,123 @@ body {
   background: #475569;
   border-color: #475569;
   box-shadow: 0 2px 5px rgba(71, 85, 105, 0.3);
+}
+
+/* ==================================================
+   EQUIPMENT & ASSET MANAGEMENT STYLES
+   ================================================== */
+.eq-tabs-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  background: #ffffff;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.eq-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.eq-tab-btn:hover {
+  background: #f1f5f9;
+  color: #1e40af;
+}
+
+.eq-tab-btn.active {
+  background: #1e40af;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(30, 64, 175, 0.25);
+}
+
+.eq-workbench {
+  display: grid;
+  grid-template-columns: 440px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .eq-workbench {
+    grid-template-columns: 380px 1fr;
+  }
+}
+
+@media (max-width: 1024px) {
+  .eq-workbench {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
+
+.eq-act-card {
+  transition: all 0.15s ease-in-out;
+}
+
+.eq-act-card:hover {
+  border-color: #93c5fd !important;
+  background: #f8fafc !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
+
+.eq-st-card {
+  padding: 0.85rem 1rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 0.55rem;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.eq-st-card:hover {
+  border-color: #93c5fd;
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.eq-st-card.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
+}
+
+.eq-filter-pill, .eq-cat-pill, .eq-act-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 16px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.eq-filter-pill:hover, .eq-cat-pill:hover, .eq-act-pill:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.eq-filter-pill.active, .eq-cat-pill.active, .eq-act-pill.active {
+  background: #1e40af;
+  color: #ffffff;
+  border-color: #1e40af;
 }

@@ -346,6 +346,9 @@ class MonitorManager {
                 📊 수위비교
               </button>
               ${stId ? `
+                <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:#1e40af; border-color:#93c5fd; background:#eff6ff; font-weight:700;" onclick="window.equipmentManager.navigateToStation(${stId}, '${(item.stationName||'').replace(/'/g, "\\'")}', 'devices')" title="해당 지점의 장비 목록 및 교체이력 조회">
+                  🛠️ 장비
+                </button>
                 <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem;" onclick="window.modalManager.openDetail(${stId})" title="제원 및 이력 조회">
                   🔍 제원
                 </button>

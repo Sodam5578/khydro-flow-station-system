@@ -144,7 +144,10 @@ class ModalManager {
             <span class="badge badge-blue">${st.region || "-"}권역</span>
             ${isDual ? `<span class="badge badge-purple" style="font-weight:700;">⚡ EWSV+ADVM 이중화</span>` : ""}
           </div>
-          <div style="display:flex; align-items:center; gap:0.4rem;">
+          <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" style="font-size:0.75rem; padding:4px 10px; background:#eff6ff; color:#1e40af; border-color:#93c5fd; font-weight:700;" onclick="window.equipmentManager.navigateToStation(${st.id}, '${(st.name || '').replace(/'/g, "\\'")}', 'devices');" title="장비 관리 지점별 현황(실물 장비 목록 및 조치·수리이력)으로 이동">
+              🛠️ 장비 목록·이력
+            </button>
             <button class="btn btn-primary btn-sm" style="font-size:0.75rem; padding:4px 10px; background:#0284c7; border-color:#0284c7;" onclick="window.modalManager.closeDetail(); window.timeSeriesMenuManager.openForStation('${st.code || st.id}');">
               📈 실시간 관측자료 분석
             </button>
@@ -385,6 +388,20 @@ class ModalManager {
         <div>${operatingHtml}</div>
       </div>
 
+      <!-- Quick Jump to Equipment Master & Actions -->
+      <div style="margin-bottom:1rem; padding:0.75rem 1rem; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:1.3rem;">🛠️</span>
+          <div>
+            <div style="font-size:0.86rem; font-weight:700; color:#1e40af;">이 지점 실물 장비 목록 및 조치·수리 이력</div>
+            <div style="font-size:0.75rem; color:#475569;">등록된 유속계·수위계·영상장치(CCTV)·제어기·SPD 등 전수 목록과 교체 타임라인을 확인합니다.</div>
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm" style="background:#1e40af; color:#ffffff; font-size:0.75rem; font-weight:700; padding:5px 12px; border:none; border-radius:6px; cursor:pointer;" onclick="window.equipmentManager.navigateToStation(${st.id}, '${(st.name || '').replace(/'/g, "\\'")}', 'devices');">
+          장비 리스트로 이동 ➔
+        </button>
+      </div>
+
       <div class="detail-section-title">📍 시설 기본 제원 및 위치 정보</div>
       <table class="detail-table">
         <tr>
@@ -404,8 +421,15 @@ class ModalManager {
           <td>${st.installYear || "-"}년 / ${st.obsStartYear || "-"}년</td>
           <th>유속계 형식</th>
           <td>
-            <b>${st.gaugeType || "-"}</b> (EWSV:${st.ewsvCount||"-"}, ADVM:${st.advmCount||"-"})
-            ${(st.ewsvWireless || st.maintenance?.ewsvWireless) ? '<span class="badge badge-cyan" style="font-weight:700; margin-left:6px;">📶 EWSV 무선지점</span>' : ""}
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px;">
+              <span>
+                <b>${st.gaugeType || "-"}</b> (EWSV:${st.ewsvCount||"-"}, ADVM:${st.advmCount||"-"})
+                ${(st.ewsvWireless || st.maintenance?.ewsvWireless) ? '<span class="badge badge-cyan" style="font-weight:700; margin-left:6px;">📶 EWSV 무선지점</span>' : ""}
+              </span>
+              <button type="button" class="btn btn-outline btn-sm" style="padding:1px 6px; font-size:0.7rem; color:#1e40af; border-color:#93c5fd; background:#ffffff; font-weight:700; border-radius:4px;" onclick="window.equipmentManager.navigateToStation(${st.id}, '${(st.name || '').replace(/'/g, "\\'")}', 'devices')">
+                장비 목록 ➔
+              </button>
+            </div>
           </td>
         </tr>
         <tr>

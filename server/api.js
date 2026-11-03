@@ -1071,4 +1071,148 @@ router.get("/waterlevel/compare/:code", verifyToken, async (req, res) => {
   }
 });
 
+// 20. Equipment & Asset Management APIs
+const equipmentService = require("./equipment");
+
+// 20-0. Overall Equipment Dashboard Stats
+router.get("/equipment/dashboard", verifyToken, async (req, res) => {
+  try {
+    const stats = await equipmentService.getDashboardStats();
+    res.json({ success: true, ...stats });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 20-1. Stations Summary with Equipment Counts
+router.get("/equipment/stations", verifyToken, async (req, res) => {
+  try {
+    const stations = await equipmentService.getStationsSummary(req.query);
+    res.json({ success: true, count: stations.length, stations });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 20-2. Single Station Detailed Equipment & Timeline
+router.get("/equipment/stations/:id", verifyToken, async (req, res) => {
+  try {
+    const data = await equipmentService.getStationDetails(req.params.id);
+    if (!data) return res.status(404).json({ success: false, message: "지점을 찾을 수 없습니다." });
+    res.json({ success: true, ...data });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 20-3. All Equipment List & Search
+router.get("/equipment/devices", verifyToken, async (req, res) => {
+  try {
+    const result = await equipmentService.getDevices(req.query);
+    res.json({ success: true, ...result });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 20-4. Register New Equipment
+router.post("/equipment/devices", verifyToken, async (req, res) => {
+  try {
+    const result = await equipmentService.createDevice(req.body, req.user);
+    logActivity(req.user, "장비등록", result.equipmentId, `신규 장비 등록: ${req.body.model_name || ""}`, req.ip);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 20-5. Update Equipment Status & Location
+router.patch("/equipment/devices/:id/status", verifyToken, async (req, res) => {
+  try {
+    const { status, location, reason } = req.body;
+    const result = await equipmentService.updateDeviceStatus(req.params.id, status, location, reason, req.user);
+    logActivity(req.user, "장비상태변경", req.params.id, `상태 변경: ${status} (${location || ""})`, req.ip);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 20-6. Register Field Work with Structured Actions
+router.post("/equipment/works", verifyToken, async (req, res) => {
+  try {
+    const result = await equipmentService.createWork(req.body, req.user);
+    logActivity(req.user, "현장조치등록", result.workNo, `현장 조치 등록 (${req.body.summary || ""})`, req.ip);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 20-7. List Active Repairs & Stages
+router.get("/equipment/repairs", verifyToken, async (req, res) => {
+  try {
+    const repairs = await equipmentService.getRepairs(req.query);
+    res.json({ success: true, count: repairs.length, repairs });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 20-8. Open a New Repair Case
+router.post("/equipment/repairs", verifyToken, async (req, res) => {
+  try {
+    const result = await equipmentService.createRepair(req.body, req.user);
+    logActivity(req.user, "수리접수", result.repairNo, `수리 접수: ${req.body.equipment_name || ""}`, req.ip);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 20-9. Update Repair Stage
+router.patch("/equipment/repairs/:id/stage", verifyToken, async (req, res) => {
+  try {
+    const { stage, memo, completedDate, cost } = req.body;
+    const result = await equipmentService.updateRepairStage(req.params.id, stage, memo, completedDate, cost, req.user);
+    logActivity(req.user, "수리단계변경", `수리ID:${req.params.id}`, `단계 변경: ${stage}`, req.ip);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 20-10. List Actions Across All Stations
+router.get("/equipment/actions", verifyToken, async (req, res) => {
+  try {
+    const actions = await equipmentService.getActions(req.query);
+    res.json({ success: true, count: actions.length, actions });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 20-11. Bulk Upload Validate Preview
+router.post("/equipment/bulk-upload/validate", verifyToken, async (req, res) => {
+  try {
+    const { rows } = req.body;
+    const result = await equipmentService.validateBulkUpload(rows);
+    res.json({ success: true, ...result });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 20-12. Bulk Upload Apply Validated Changes
+router.post("/equipment/bulk-upload/apply", verifyToken, async (req, res) => {
+  try {
+    const { items, reason } = req.body;
+    const result = await equipmentService.applyBulkUpload(items, req.user, reason);
+    logActivity(req.user, "일괄수정반영", `반영:${result.appliedCount}건`, `엑셀 일괄 수정 반영: ${reason || ""}`, req.ip);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 module.exports = router;

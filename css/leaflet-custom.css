@@ -62,7 +62,8 @@
 
 .leaflet-popup-content {
   margin: 0;
-  min-width: 270px;
+  min-width: 310px;
+  max-width: 360px;
   font-family: "Pretendard", sans-serif;
 }
 

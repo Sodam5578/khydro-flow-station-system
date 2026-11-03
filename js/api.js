@@ -401,6 +401,106 @@ class ApiClient {
     });
     return await res.json();
   }
+
+  // ==========================================
+  // REST API: Equipment & Asset Management
+  // ==========================================
+  async getEquipmentDashboard() {
+    const res = await fetch(`${this.baseUrl}/equipment/dashboard`, { headers: this.getHeaders() });
+    return await res.json();
+  }
+
+  async getEquipmentStations(filters = {}) {
+    const q = new URLSearchParams(filters).toString();
+    const res = await fetch(`${this.baseUrl}/equipment/stations?${q}`, { headers: this.getHeaders() });
+    return await res.json();
+  }
+
+  async getEquipmentStationDetails(stationId) {
+    const res = await fetch(`${this.baseUrl}/equipment/stations/${stationId}`, { headers: this.getHeaders() });
+    return await res.json();
+  }
+
+  async getEquipmentDevices(filters = {}) {
+    const q = new URLSearchParams(filters).toString();
+    const res = await fetch(`${this.baseUrl}/equipment/devices?${q}`, { headers: this.getHeaders() });
+    return await res.json();
+  }
+
+  async createEquipmentDevice(data) {
+    const res = await fetch(`${this.baseUrl}/equipment/devices`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return await res.json();
+  }
+
+  async updateEquipmentStatus(equipmentId, status, location, reason) {
+    const res = await fetch(`${this.baseUrl}/equipment/devices/${encodeURIComponent(equipmentId)}/status`, {
+      method: "PATCH",
+      headers: this.getHeaders(),
+      body: JSON.stringify({ status, location, reason })
+    });
+    return await res.json();
+  }
+
+  async createEquipmentWork(workData) {
+    const res = await fetch(`${this.baseUrl}/equipment/works`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify(workData)
+    });
+    return await res.json();
+  }
+
+  async getEquipmentRepairs(filters = {}) {
+    const q = new URLSearchParams(filters).toString();
+    const res = await fetch(`${this.baseUrl}/equipment/repairs?${q}`, { headers: this.getHeaders() });
+    return await res.json();
+  }
+
+  async createEquipmentRepair(repairData) {
+    const res = await fetch(`${this.baseUrl}/equipment/repairs`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify(repairData)
+    });
+    return await res.json();
+  }
+
+  async updateEquipmentRepairStage(repairId, stage, memo, completedDate, cost) {
+    const res = await fetch(`${this.baseUrl}/equipment/repairs/${repairId}/stage`, {
+      method: "PATCH",
+      headers: this.getHeaders(),
+      body: JSON.stringify({ stage, memo, completedDate, cost })
+    });
+    return await res.json();
+  }
+
+  async getEquipmentActions(filters = {}) {
+    const q = new URLSearchParams(filters).toString();
+    const res = await fetch(`${this.baseUrl}/equipment/actions?${q}`, { headers: this.getHeaders() });
+    return await res.json();
+  }
+
+  async validateBulkUpload(rows) {
+    const res = await fetch(`${this.baseUrl}/equipment/bulk-upload/validate`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify({ rows })
+    });
+    return await res.json();
+  }
+
+  async applyBulkUpload(items, reason) {
+    const res = await fetch(`${this.baseUrl}/equipment/bulk-upload/apply`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify({ items, reason })
+    });
+    return await res.json();
+  }
 }
 
 window.apiClient = new ApiClient();
