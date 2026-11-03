@@ -21,7 +21,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="css/main.css?v=4.1">
+  <link rel="stylesheet" href="css/main.css?v=4.2">
   <link rel="stylesheet" href="css/leaflet-custom.css?v=3.6">
 </head>
 <body>
@@ -1435,8 +1435,42 @@
 
           <!-- Filter & Control Card -->
           <div class="table-controls-card" style="margin-bottom: 1rem;">
+            <!-- Category Quick Filter Pills Row (자료 미수신 / 배터리 전압 이상 전용 퀵 필터) -->
+            <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem; padding-bottom:0.75rem; margin-bottom:0.75rem; border-bottom:1px solid #e2e8f0;">
+              <div style="display:flex; flex-wrap:wrap; gap:0.45rem; align-items:center;">
+                <span style="font-size:0.82rem; font-weight:700; color:#334155; margin-right:4px;">🔍 이상 유형 퀵필터:</span>
+                <button type="button" class="btn-filter-pill active" data-category="all" onclick="window.monitorManager.setCategory('all')">
+                  전체 이상 <span class="pill-count" id="pill-count-all">0</span>
+                </button>
+                <button type="button" class="btn-filter-pill pill-missing" data-category="DATA_MISSING" onclick="window.monitorManager.setCategory('DATA_MISSING')">
+                  📡 자료 미수신 <span class="pill-count" id="pill-count-missing">0</span>
+                </button>
+                <button type="button" class="btn-filter-pill pill-battery" data-category="BATTERY_VOLTAGE" onclick="window.monitorManager.setCategory('BATTERY_VOLTAGE')">
+                  🔋 배터리 전압 이상 <span class="pill-count" id="pill-count-battery">0</span>
+                </button>
+                <button type="button" class="btn-filter-pill pill-other" data-category="OTHER" onclick="window.monitorManager.setCategory('OTHER')">
+                  ⚡ 기타 품질 이상 <span class="pill-count" id="pill-count-other">0</span>
+                </button>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="window.monitorManager.resetFilters()" style="padding:4px 10px; font-size:0.8rem; color:#64748b; font-weight:600;" title="모든 검색 및 필터 초기화">
+                  ↺ 필터 전체 초기화
+                </button>
+              </div>
+            </div>
+
+            <!-- Detailed Multi-Filter Controls Row -->
             <div class="controls-row" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem;">
               <div style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+                <!-- Category Select Dropdown (Synced with Pills) -->
+                <select id="monitor-filter-category" class="filter-select" style="min-width:145px; font-weight:600;" onchange="window.monitorManager.onCategoryChange(this.value)">
+                  <option value="all">전체 이상 유형</option>
+                  <option value="DATA_MISSING">📡 자료 미수신</option>
+                  <option value="BATTERY_VOLTAGE">🔋 배터리 전압 이상</option>
+                  <option value="OTHER">⚡ 기타 품질 이상</option>
+                </select>
+
                 <!-- Method Filter -->
                 <select id="monitor-filter-method" class="filter-select" style="min-width:130px;" onchange="window.monitorManager.onFilterChange()">
                   <option value="all">전체 관측방식</option>
@@ -2511,7 +2545,7 @@
   <script src="js/history.js?v=3.7"></script>
   <script src="js/calibration.js?v=3.7"></script>
   <script src="js/schedule.js?v=3.7"></script>
-  <script src="js/monitor.js?v=3.7"></script>
+  <script src="js/monitor.js?v=3.8"></script>
   <script src="js/waterlevel.js?v=3.7"></script>
   <script src="js/logs.js?v=3.7"></script>
   <script src="js/timeseriesChart.js?v=4.6"></script>

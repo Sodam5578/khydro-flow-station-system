@@ -1609,3 +1609,67 @@ body {
   color: #166534;
   font-weight: 600;
 }
+
+/* Real-Time Monitor Filter Pills */
+.btn-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.btn-filter-pill:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.btn-filter-pill.active {
+  background: #1e40af;
+  color: #ffffff;
+  border-color: #1e40af;
+  box-shadow: 0 2px 5px rgba(30, 64, 175, 0.25);
+}
+
+.btn-filter-pill .pill-count {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #475569;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn-filter-pill.active .pill-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.btn-filter-pill.pill-missing.active {
+  background: #ea580c;
+  border-color: #ea580c;
+  box-shadow: 0 2px 5px rgba(234, 88, 12, 0.3);
+}
+
+.btn-filter-pill.pill-battery.active {
+  background: #dc2626;
+  border-color: #dc2626;
+  box-shadow: 0 2px 5px rgba(220, 38, 38, 0.3);
+}
+
+.btn-filter-pill.pill-other.active {
+  background: #475569;
+  border-color: #475569;
+  box-shadow: 0 2px 5px rgba(71, 85, 105, 0.3);
+}

@@ -7,6 +7,7 @@ class MonitorManager {
     this.data = null;
     this.issues = [];
     this.filteredIssues = [];
+    this.selectedCategory = "all"; // 'all', 'DATA_MISSING', 'BATTERY_VOLTAGE', 'OTHER'
     this.selectedMethod = "all";
     this.selectedBasin = "all";
     this.selectedStatus = "all";
@@ -33,6 +34,88 @@ class MonitorManager {
     }
   }
 
+  isDataMissing(item) {
+    if (!item) return false;
+    const r = (item.ruleId || "").toUpperCase();
+    const p = (item.problem || "").toLowerCase();
+    const d = (item.detail || "").toLowerCase();
+    return r === "ADVM-R01" || r === "EWSV-R01" || p.includes("미수신") || d.includes("미수신");
+  }
+
+  isBatteryVoltage(item) {
+    if (!item) return false;
+    const r = (item.ruleId || "").toUpperCase();
+    const p = (item.problem || "").toLowerCase();
+    const d = (item.detail || "").toLowerCase();
+    return r === "ADVM-R10" || r === "EWSV-R10" || p.includes("배터리") || p.includes("battery") || d.includes("배터리");
+  }
+
+  setCategory(category) {
+    this.selectedCategory = category || "all";
+    const select = document.getElementById("monitor-filter-category");
+    if (select) select.value = this.selectedCategory;
+    this.updateCategoryPills();
+    this.applyFilters();
+  }
+
+  onCategoryChange(val) {
+    this.selectedCategory = val || "all";
+    this.updateCategoryPills();
+    this.applyFilters();
+  }
+
+  updateCategoryPills() {
+    const pills = document.querySelectorAll(".btn-filter-pill");
+    pills.forEach(pill => {
+      if (pill.dataset.category === this.selectedCategory) {
+        pill.classList.add("active");
+      } else {
+        pill.classList.remove("active");
+      }
+    });
+
+    const totalCount = this.issues.length;
+    const missingCount = this.issues.filter(i => this.isDataMissing(i)).length;
+    const batteryCount = this.issues.filter(i => this.isBatteryVoltage(i)).length;
+    const otherCount = this.issues.filter(i => !this.isDataMissing(i) && !this.isBatteryVoltage(i)).length;
+
+    const elAll = document.getElementById("pill-count-all");
+    const elMissing = document.getElementById("pill-count-missing");
+    const elBattery = document.getElementById("pill-count-battery");
+    const elOther = document.getElementById("pill-count-other");
+
+    if (elAll) elAll.textContent = totalCount;
+    if (elMissing) elMissing.textContent = missingCount;
+    if (elBattery) elBattery.textContent = batteryCount;
+    if (elOther) elOther.textContent = otherCount;
+  }
+
+  resetFilters() {
+    this.selectedMethod = "all";
+    this.selectedBasin = "all";
+    this.selectedStatus = "all";
+    this.selectedCategory = "all";
+    this.searchTerm = "";
+
+    const methodSelect = document.getElementById("monitor-filter-method");
+    if (methodSelect) methodSelect.value = "all";
+
+    const basinSelect = document.getElementById("monitor-filter-basin");
+    if (basinSelect) basinSelect.value = "all";
+
+    const statusSelect = document.getElementById("monitor-filter-status");
+    if (statusSelect) statusSelect.value = "all";
+
+    const catSelect = document.getElementById("monitor-filter-category");
+    if (catSelect) catSelect.value = "all";
+
+    const searchInput = document.getElementById("monitor-search-input");
+    if (searchInput) searchInput.value = "";
+
+    this.updateCategoryPills();
+    this.applyFilters();
+  }
+
   async loadData(isSilent = false) {
     if (!window.apiClient) return;
 
@@ -45,6 +128,7 @@ class MonitorManager {
         window.liveIssuesMap = res.stationIssuesMap || {};
 
         this.renderKPIs();
+        this.updateCategoryPills();
         this.applyFilters();
 
         // Refresh GIS markers if map is initialized
@@ -100,6 +184,12 @@ class MonitorManager {
   }
 
   onFilterChange() {
+    const catSelect = document.getElementById("monitor-filter-category");
+    if (catSelect) {
+      this.selectedCategory = catSelect.value;
+      this.updateCategoryPills();
+    }
+
     const methodSelect = document.getElementById("monitor-filter-method");
     if (methodSelect) this.selectedMethod = methodSelect.value;
 
@@ -115,18 +205,31 @@ class MonitorManager {
   applyFilters() {
     let result = [...this.issues];
 
+    // 1. Category Filter
+    if (this.selectedCategory === "DATA_MISSING") {
+      result = result.filter(i => this.isDataMissing(i));
+    } else if (this.selectedCategory === "BATTERY_VOLTAGE") {
+      result = result.filter(i => this.isBatteryVoltage(i));
+    } else if (this.selectedCategory === "OTHER") {
+      result = result.filter(i => !this.isDataMissing(i) && !this.isBatteryVoltage(i));
+    }
+
+    // 2. Method Filter
     if (this.selectedMethod !== "all") {
       result = result.filter(i => i.method === this.selectedMethod);
     }
 
+    // 3. Basin Filter
     if (this.selectedBasin !== "all") {
       result = result.filter(i => i.basin && i.basin.includes(this.selectedBasin));
     }
 
+    // 4. Status Filter
     if (this.selectedStatus !== "all") {
       result = result.filter(i => i.statusType === this.selectedStatus || i.statusLabel === this.selectedStatus);
     }
 
+    // 5. Search Text Filter
     if (this.searchTerm) {
       result = result.filter(i => {
         const name = (i.stationName || "").toLowerCase();
@@ -192,6 +295,14 @@ class MonitorManager {
 
       let methodBadge = item.method === "ADVM" ? `<span class="badge badge-blue">ADVM</span>` : `<span class="badge badge-cyan">EWSV</span>`;
 
+      // Specific Category Pill Badge
+      let categoryBadge = "";
+      if (this.isDataMissing(item)) {
+        categoryBadge = `<span class="badge" style="background:#ffedd5; color:#c2410c; font-size:0.72rem; margin-right:4px; font-weight:700;">📡 미수신</span>`;
+      } else if (this.isBatteryVoltage(item)) {
+        categoryBadge = `<span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.72rem; margin-right:4px; font-weight:700;">🔋 배터리</span>`;
+      }
+
       // Find local station id
       let stId = null;
       if (window.dataManager) {
@@ -218,7 +329,10 @@ class MonitorManager {
             </span>
           </td>
           <td>
-            <div style="font-weight:700; color:#b91c1c;">${item.problem}</div>
+            <div style="font-weight:700; color:#b91c1c; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+              ${categoryBadge}
+              <span>${item.problem}</span>
+            </div>
             <div style="font-size:0.75rem; color:#475569; margin-top:2px;">${item.detail}</div>
           </td>
           <td style="text-align:center;">
