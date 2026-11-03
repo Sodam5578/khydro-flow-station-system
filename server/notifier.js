@@ -204,12 +204,12 @@ class SmartNotifierService {
 
   getFromAddress() {
     if (this.smtpConfig.auth && this.smtpConfig.auth.user) {
-      return `자동유량관측 이상알림 <${this.smtpConfig.auth.user}>`;
+      return `자동유량 모니터링 리포트 <${this.smtpConfig.auth.user}>`;
     }
     if (this.apiSender) {
-      return `자동유량관측 이상알림 <${this.apiSender}>`;
+      return `자동유량 모니터링 리포트 <${this.apiSender}>`;
     }
-    return this.smtpConfig.from || "자동유량관측 이상알림";
+    return this.smtpConfig.from || "자동유량 모니터링 리포트";
   }
 
   getRuleCategory(ruleId, problem = "") {
@@ -759,7 +759,7 @@ class SmartNotifierService {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          from: "자동유량관측 이상알림 <onboarding@resend.dev>",
+          from: "자동유량 모니터링 리포트 <onboarding@resend.dev>",
           to: recipients,
           subject,
           html
@@ -793,7 +793,7 @@ class SmartNotifierService {
           "accept": "application/json"
         },
         body: JSON.stringify({
-          sender: { name: "한국수자원조사기술원 이상알림", email: senderEmail },
+          sender: { name: "자동유량 모니터링 리포트", email: senderEmail },
           to: recipients.map(email => ({ email })),
           subject,
           htmlContent: html
