@@ -7,6 +7,7 @@ const liveMonitor = require("./monitor");
 const notifier = require("./notifier");
 const waterLevelService = require("./waterlevel");
 const timeseriesService = require("./timeseries");
+const sftpCollector = require("./sftpCollector");
 
 // 1. Auth: Login
 router.post("/auth/login", async (req, res) => {
@@ -984,6 +985,19 @@ router.get("/monitor/timeseries/:code", async (req, res) => {
     res.json({ success: true, ...data });
   } catch (e) {
     console.error("[API] /monitor/timeseries error:", e);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 14-2. Live Monitor: Raw SFTP Bridge Endpoint (Served by Hangang Bridge server for Mac/Render dev instances)
+router.get("/monitor/raw-bridge/:code", async (req, res) => {
+  try {
+    const code = String(req.params.code || "").trim();
+    const types = String(req.query.types || "ADVM,EWSV").split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
+    const dts = String(req.query.dts || "").split(",").map(s => s.trim()).filter(s => /^\d{12}$/.test(s)).slice(0, 150);
+    const result = await sftpCollector.fetchStationRawLines(code, types, dts);
+    res.json(result);
+  } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
 });

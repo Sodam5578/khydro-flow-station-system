@@ -106,6 +106,107 @@ class SftpCollector {
       } catch (_) {}
     }
   }
+
+  /**
+   * Fetches raw lines for a specific station across a list of missing 10-minute slots (YYYYMMDDhhmm).
+   * Only connects to SFTP if SFTP is reachable (short circuit breaker after failure to avoid slowing down external servers).
+   */
+  async fetchStationRawLines(code, types = ["ADVM", "EWSV"], missingDTs = []) {
+    if (!code || !Array.isArray(missingDTs) || missingDTs.length === 0) {
+      return { success: false, advmLines: {}, ewsvLines: {} };
+    }
+
+    const now = Date.now();
+    if (this._unreachableUntil && now < this._unreachableUntil) {
+      return { success: false, skipped: true, advmLines: {}, ewsvLines: {} };
+    }
+
+    if (!this._stationSlotCache) {
+      this._stationSlotCache = new Map(); // `${type}_${code}_${dt}` -> rawDataLine | null
+    }
+
+    const advmLines = {};
+    const ewsvLines = {};
+    const needAdvm = types.includes("ADVM");
+    const needEwsv = types.includes("EWSV");
+
+    const toFetch = [];
+    for (const dt of missingDTs) {
+      if (needAdvm) {
+        const k = `ADVM_${code}_${dt}`;
+        if (this._stationSlotCache.has(k)) {
+          const v = this._stationSlotCache.get(k);
+          if (v) advmLines[dt] = v;
+        } else {
+          toFetch.push({ type: "ADVM", dt });
+        }
+      }
+      if (needEwsv) {
+        const k = `EWSV_${code}_${dt}`;
+        if (this._stationSlotCache.has(k)) {
+          const v = this._stationSlotCache.get(k);
+          if (v) ewsvLines[dt] = v;
+        } else {
+          toFetch.push({ type: "EWSV", dt });
+        }
+      }
+    }
+
+    if (toFetch.length === 0) {
+      return { success: true, advmLines, ewsvLines };
+    }
+
+    const sftp = new Client(`sftp-station-${code}-${now}`);
+    try {
+      await sftp.connect({ ...this.config, readyTimeout: 3000, retries: 0 });
+      this._unreachableUntil = 0;
+
+      for (const item of toFetch) {
+        const { type, dt } = item;
+        const yyyy = dt.slice(0, 4);
+        const mm = dt.slice(4, 6);
+        const dd = dt.slice(6, 8);
+        const ext = type === "ADVM" ? "adv" : "esv";
+        const root = type === "ADVM" ? this.advmRemoteRoot : this.ewsvRemoteRoot;
+        const remotePath = `${root}/${yyyy}/${mm}/${dd}/${code}_${dt}.${ext}`;
+        const cacheKey = `${type}_${code}_${dt}`;
+
+        try {
+          const buf = await sftp.get(remotePath);
+          const text = buf.toString("utf-8").trim();
+          const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+          // Second line is the data line (first line is header)
+          const dataLine = lines.length >= 2 ? lines[1] : (lines[0] && /^\d+,\d{12},/.test(lines[0]) ? lines[0] : null);
+          if (dataLine) {
+            this._stationSlotCache.set(cacheKey, dataLine);
+            if (type === "ADVM") advmLines[dt] = dataLine;
+            else ewsvLines[dt] = dataLine;
+          } else {
+            // Only cache null if the slot is older than 30 minutes
+            this._stationSlotCache.set(cacheKey, null);
+          }
+        } catch (_) {
+          // File not found for this slot
+        }
+      }
+
+      // Prune cache if too large
+      if (this._stationSlotCache.size > 15000) {
+        const keys = Array.from(this._stationSlotCache.keys()).slice(0, 5000);
+        for (const k of keys) this._stationSlotCache.delete(k);
+      }
+
+      return { success: true, advmLines, ewsvLines };
+    } catch (err) {
+      // Mark SFTP unreachable for 2 minutes so Mac/Render doesn't block on every request
+      this._unreachableUntil = Date.now() + 2 * 60 * 1000;
+      return { success: false, error: err.message, advmLines, ewsvLines };
+    } finally {
+      try {
+        await sftp.end();
+      } catch (_) {}
+    }
+  }
 }
 
 module.exports = new SftpCollector();

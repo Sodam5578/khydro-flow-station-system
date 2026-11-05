@@ -725,6 +725,7 @@ const dbService = {
   },
 
   async createSchedule(s) {
+    let cloudData = null;
     if (supabase) {
       const { data, error } = await supabase.from("schedules").insert([{
         title: s.title,
@@ -739,20 +740,26 @@ const dbService = {
         description: s.description || "",
         created_by: s.created_by
       }]).select().single();
-      if (!error && data) return data;
+      if (!error && data) cloudData = data;
     }
-    return new Promise((resolve, reject) => {
-      sqliteDb.run(`
-        INSERT INTO schedules (title, station_id, station_name, schedule_type, start_date, end_date, assignee, attendees, status, description, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [s.title, String(s.station_id||""), s.station_name||"", s.schedule_type, s.start_date, s.end_date||s.start_date, s.assignee, s.attendees||"", s.status||"scheduled", s.description||"", s.created_by], function(err) {
+    const localData = await new Promise((resolve, reject) => {
+      const explicitId = cloudData && cloudData.id ? cloudData.id : null;
+      const sql = explicitId
+        ? `INSERT OR REPLACE INTO schedules (id, title, station_id, station_name, schedule_type, start_date, end_date, assignee, attendees, status, description, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        : `INSERT INTO schedules (title, station_id, station_name, schedule_type, start_date, end_date, assignee, attendees, status, description, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      const params = explicitId
+        ? [explicitId, s.title, String(s.station_id||""), s.station_name||"", s.schedule_type, s.start_date, s.end_date||s.start_date, s.assignee, s.attendees||"", s.status||"scheduled", s.description||"", s.created_by]
+        : [s.title, String(s.station_id||""), s.station_name||"", s.schedule_type, s.start_date, s.end_date||s.start_date, s.assignee, s.attendees||"", s.status||"scheduled", s.description||"", s.created_by];
+      sqliteDb.run(sql, params, function(err) {
         if (err) return reject(err);
-        resolve({ id: this.lastID, ...s });
+        resolve({ id: explicitId || this.lastID, ...s });
       });
     });
+    return cloudData || localData;
   },
 
   async updateSchedule(id, s) {
+    let cloudData = null;
     if (supabase) {
       const { data, error } = await supabase.from("schedules").update({
         title: s.title,
@@ -767,9 +774,9 @@ const dbService = {
         description: s.description || "",
         updated_at: new Date().toISOString()
       }).eq("id", id).select().single();
-      if (!error && data) return data;
+      if (!error && data) cloudData = data;
     }
-    return new Promise((resolve, reject) => {
+    const localData = await new Promise((resolve, reject) => {
       sqliteDb.run(`
         UPDATE schedules 
         SET title = ?, station_id = ?, station_name = ?, schedule_type = ?, start_date = ?, end_date = ?, assignee = ?, attendees = ?, status = ?, description = ?, updated_at = CURRENT_TIMESTAMP
@@ -779,12 +786,12 @@ const dbService = {
         resolve({ id, ...s });
       });
     });
+    return cloudData || localData;
   },
 
   async deleteSchedule(id) {
     if (supabase) {
-      const { data, error } = await supabase.from("schedules").delete().eq("id", id);
-      if (!error) return true;
+      await supabase.from("schedules").delete().eq("id", id);
     }
     return new Promise((resolve, reject) => {
       sqliteDb.run("DELETE FROM schedules WHERE id = ?", [id], function(err) {
@@ -892,20 +899,26 @@ const dbService = {
       created_by: log.created_by || "관리자"
     };
 
+    let cloudData = null;
     if (supabase) {
       const { data, error } = await supabase.from("maintenance_history").insert([record]).select().single();
-      if (!error && data) return data;
+      if (!error && data) cloudData = data;
     }
 
-    return new Promise((resolve, reject) => {
-      sqliteDb.run(`
-        INSERT INTO maintenance_history (station_id, station_name, issue_date, action_date, action_type, category, target_equipment, description, actor_type, worker_name, result_status, cost, memo, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [record.station_id, record.station_name, record.issue_date, record.action_date, record.action_type, record.category, record.target_equipment, record.description, record.actor_type, record.worker_name, record.result_status, record.cost, record.memo, record.created_by], function(err) {
+    const localData = await new Promise((resolve, reject) => {
+      const explicitId = cloudData && cloudData.id ? cloudData.id : null;
+      const sql = explicitId
+        ? `INSERT OR REPLACE INTO maintenance_history (id, station_id, station_name, issue_date, action_date, action_type, category, target_equipment, description, actor_type, worker_name, result_status, cost, memo, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        : `INSERT INTO maintenance_history (station_id, station_name, issue_date, action_date, action_type, category, target_equipment, description, actor_type, worker_name, result_status, cost, memo, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      const params = explicitId
+        ? [explicitId, record.station_id, record.station_name, record.issue_date, record.action_date, record.action_type, record.category, record.target_equipment, record.description, record.actor_type, record.worker_name, record.result_status, record.cost, record.memo, record.created_by]
+        : [record.station_id, record.station_name, record.issue_date, record.action_date, record.action_type, record.category, record.target_equipment, record.description, record.actor_type, record.worker_name, record.result_status, record.cost, record.memo, record.created_by];
+      sqliteDb.run(sql, params, function(err) {
         if (err) return reject(err);
-        resolve({ id: this.lastID, ...record });
+        resolve({ id: explicitId || this.lastID, ...record });
       });
     });
+    return cloudData || localData;
   },
 
   async updateMaintenanceHistory(id, log) {
@@ -926,12 +939,13 @@ const dbService = {
       updated_at: new Date().toISOString()
     };
 
+    let cloudData = null;
     if (supabase) {
       const { data, error } = await supabase.from("maintenance_history").update(record).eq("id", id).select().single();
-      if (!error && data) return data;
+      if (!error && data) cloudData = data;
     }
 
-    return new Promise((resolve, reject) => {
+    const localData = await new Promise((resolve, reject) => {
       sqliteDb.run(`
         UPDATE maintenance_history 
         SET station_id = ?, station_name = ?, issue_date = ?, action_date = ?, action_type = ?, category = ?, target_equipment = ?, description = ?, actor_type = ?, worker_name = ?, result_status = ?, cost = ?, memo = ?, updated_at = CURRENT_TIMESTAMP
@@ -941,12 +955,12 @@ const dbService = {
         resolve({ id, ...record });
       });
     });
+    return cloudData || localData;
   },
 
   async deleteMaintenanceHistory(id) {
     if (supabase) {
-      const { data, error } = await supabase.from("maintenance_history").delete().eq("id", id);
-      if (!error) return true;
+      await supabase.from("maintenance_history").delete().eq("id", id);
     }
     return new Promise((resolve, reject) => {
       sqliteDb.run("DELETE FROM maintenance_history WHERE id = ?", [id], function(err) {

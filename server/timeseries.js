@@ -22,6 +22,7 @@ const http = require("http");
 const https = require("https");
 const { dbService } = require("./db");
 const waterLevelService = require("./waterlevel");
+const sftpCollector = require("./sftpCollector");
 
 const TEN_MIN_MS = 10 * 60 * 1000;
 const LAG_MS = 20 * 60 * 1000;
@@ -63,6 +64,8 @@ function parseKstDT(dtStr) {
 class TimeSeriesService {
   constructor() {
     this.archiveBaseUrl = (process.env.HYDRO_MONITOR_BASE_URL || "http://183.96.156.168:8080").replace(/\/+$/, "");
+    this.hangangBridgeUrl = (process.env.HANGANG_BRIDGE_URL || "http://183.96.156.168:3000").replace(/\/+$/, "");
+    this.hangangBridgeUnreachableUntil = 0;
     this.payloadCache = new Map(); // `${code}_${mode}` -> { endDT, builtAtMs, data }
     this.streamCache = new Map();  // `${month}_${code}_${type}` -> { lastFetchedEndDT, fetchedAtMs, rowsMap }
     this.indexCache = new Map();   // `${month}` -> { fetchedAtMs, byStation: Map<code, Set<type>>, entriesByKey: Map }
@@ -907,7 +910,55 @@ class TimeSeriesService {
 
     await Promise.all(fetchTasks);
 
-    // Identify latest available timestamp in archive streams
+    // ---------------------------------------------------------------------------
+    // Direct SFTP / Hangang Bridge Raw Packet Collection for Missing Recent Slots
+    // - If running on Hangang Bridge server: directly reads .adv / .esv from SFTP (211.114.42.234:9940)
+    // - If running on Mac / Render: queries Hangang Bridge server (/api/monitor/raw-bridge/:code)
+    // Strictly parses authentic raw lines using parseAdvmCols / parseEwsvCols (never fabricates data)
+    // ---------------------------------------------------------------------------
+    const missingRealtimeDTs = [];
+    for (let step = 0; step <= WINDOW_STEPS; step++) {
+      const dt = formatKstSlot(rtStartSlotMs + step * TEN_MIN_MS).dt;
+      const needE = availableTypes.has("EWSV") && !ewsvRowsMap.has(dt);
+      const needA = availableTypes.has("ADVM") && !advmRowsMap.has(dt);
+      if (needE || needA) {
+        missingRealtimeDTs.push(dt);
+      }
+    }
+
+    if (missingRealtimeDTs.length > 0 && !options.skipBridge) {
+      const typesArr = Array.from(availableTypes);
+      const sftpRes = await sftpCollector.fetchStationRawLines(code, typesArr, missingRealtimeDTs);
+      let rawAdvmLines = sftpRes.advmLines || {};
+      let rawEwsvLines = sftpRes.ewsvLines || {};
+
+      // If direct SFTP was unreachable (e.g. running on Mac or Render), try Hangang Bridge server relay
+      if (!sftpRes.success && Date.now() >= this.hangangBridgeUnreachableUntil) {
+        try {
+          const bridgeUrl = `${this.hangangBridgeUrl}/api/monitor/raw-bridge/${encodeURIComponent(code)}?types=${encodeURIComponent(typesArr.join(","))}&dts=${encodeURIComponent(missingRealtimeDTs.join(","))}`;
+          const bridgeJson = await this._httpGetJson(bridgeUrl, 3500);
+          if (bridgeJson && bridgeJson.success) {
+            rawAdvmLines = bridgeJson.advmLines || {};
+            rawEwsvLines = bridgeJson.ewsvLines || {};
+          }
+        } catch (_) {
+          this.hangangBridgeUnreachableUntil = Date.now() + 60 * 1000;
+        }
+      }
+
+      for (const [dt, line] of Object.entries(rawEwsvLines)) {
+        if (!line || ewsvRowsMap.has(dt)) continue;
+        const parsed = this.parseEwsvCols(line.split(","));
+        if (parsed) ewsvRowsMap.set(dt, parsed);
+      }
+      for (const [dt, line] of Object.entries(rawAdvmLines)) {
+        if (!line || advmRowsMap.has(dt)) continue;
+        const parsed = this.parseAdvmCols(line.split(","));
+        if (parsed) advmRowsMap.set(dt, parsed);
+      }
+    }
+
+    // Identify latest available timestamp in archive + direct SFTP streams
     let latestArchiveDT = "";
     for (const dt of ewsvRowsMap.keys()) {
       if (dt > latestArchiveDT) latestArchiveDT = dt;
