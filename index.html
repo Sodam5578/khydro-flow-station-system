@@ -1059,6 +1059,14 @@
                     <option value="REPAIRING">수리중</option>
                     <option value="DISPOSAL">폐품</option>
                   </select>
+
+                  <select id="eq-dev-page-size" class="filter-select" onchange="window.equipmentManager.setDeviceLimit(this.value);" title="페이지당 표시 건수">
+                    <option value="50">50개씩 보기</option>
+                    <option value="100">100개씩 보기</option>
+                    <option value="200">200개씩 보기</option>
+                    <option value="500">500개씩 보기</option>
+                    <option value="all">전체 보기</option>
+                  </select>
                 </div>
               </div>
 
@@ -1082,6 +1090,18 @@
                       <!-- Dynamically loaded from equipment.js -->
                     </tbody>
                   </table>
+                </div>
+
+                <!-- Pagination Controls -->
+                <div class="pagination-wrapper" id="eq-dev-pagination-bar" style="padding: 0.75rem 1.25rem; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #ffffff; flex-wrap: wrap; gap: 0.5rem;">
+                  <div id="eq-dev-page-info" style="font-size: 0.85rem; color: #64748b; font-weight: 600;">1-50 / 총 2,113개 장비</div>
+                  <div class="pagination-buttons" style="display: flex; gap: 0.35rem; align-items: center;">
+                    <button class="page-btn" id="btn-eq-dev-first" onclick="window.equipmentManager.changeDevicePage(1)" title="첫 페이지">« 처음</button>
+                    <button class="page-btn" id="btn-eq-dev-prev" onclick="window.equipmentManager.prevDevicePage()" title="이전 페이지">‹ 이전</button>
+                    <div id="eq-dev-page-numbers" style="display: flex; gap: 0.25rem;"></div>
+                    <button class="page-btn" id="btn-eq-dev-next" onclick="window.equipmentManager.nextDevicePage()" title="다음 페이지">다음 ›</button>
+                    <button class="page-btn" id="btn-eq-dev-last" onclick="window.equipmentManager.lastDevicePage()" title="마지막 페이지">마지막 »</button>
+                  </div>
                 </div>
               </div>
             </div>

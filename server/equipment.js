@@ -275,12 +275,12 @@ class EquipmentService {
       params.push(stationId);
     }
 
-    if (category && category !== "all") {
+    if (category && String(category).toLowerCase() !== "all") {
       whereClause += " AND category = ?";
       params.push(category);
     }
 
-    if (status && status !== "all") {
+    if (status && String(status).toLowerCase() !== "all") {
       whereClause += " AND status = ?";
       params.push(status);
     }
@@ -305,20 +305,23 @@ class EquipmentService {
     const countRow = await this.get(`SELECT COUNT(*) as total FROM equipment_master ${whereClause}`, params);
     const total = countRow ? countRow.total : 0;
 
-    const offset = (Math.max(1, parseInt(page, 10)) - 1) * parseInt(limit, 10);
-    const sql = `
-      SELECT * FROM equipment_master 
-      ${whereClause} 
-      ORDER BY id ASC 
-      LIMIT ? OFFSET ?
-    `;
-    const rows = await this.all(sql, [...params, parseInt(limit, 10), offset]);
+    const isAll = (String(limit).toLowerCase() === "all" || parseInt(limit, 10) <= 0);
+    const parsedLimit = isAll ? (total || 1) : (parseInt(limit, 10) || 50);
+    const parsedPage = isAll ? 1 : Math.max(1, parseInt(page, 10) || 1);
+    const offset = isAll ? 0 : (parsedPage - 1) * parsedLimit;
+
+    const sql = isAll
+      ? `SELECT * FROM equipment_master ${whereClause} ORDER BY id ASC`
+      : `SELECT * FROM equipment_master ${whereClause} ORDER BY id ASC LIMIT ? OFFSET ?`;
+
+    const queryParams = isAll ? params : [...params, parsedLimit, offset];
+    const rows = await this.all(sql, queryParams);
 
     return {
       total,
-      page: parseInt(page, 10),
-      limit: parseInt(limit, 10),
-      totalPages: Math.ceil(total / parseInt(limit, 10)),
+      page: parsedPage,
+      limit: isAll ? total : parsedLimit,
+      totalPages: isAll ? 1 : (Math.ceil(total / parsedLimit) || 1),
       devices: rows
     };
   }

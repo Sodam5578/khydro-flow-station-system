@@ -20,6 +20,9 @@ class EquipmentManager {
     this.deviceStatus = "all";
     this.deviceSearch = "";
     this.devicePage = 1;
+    this.deviceLimit = 50;
+    this.deviceTotal = 0;
+    this.deviceTotalPages = 1;
 
     this.repairStage = "all";
     this.repairSearch = "";
@@ -490,8 +493,8 @@ class EquipmentManager {
     this.switchSubTab("devices");
     if (filter.category) {
       this.deviceCategory = filter.category;
-      document.querySelectorAll(".eq-dev-pill").forEach(p => {
-        if (p.dataset.cat === filter.category) p.classList.add("active");
+      document.querySelectorAll(".eq-cat-pill").forEach(p => {
+        if (p.dataset.cat && p.dataset.cat.toUpperCase() === filter.category.toUpperCase()) p.classList.add("active");
         else p.classList.remove("active");
       });
     }
@@ -1087,20 +1090,29 @@ class EquipmentManager {
         status: this.deviceStatus,
         search: this.deviceSearch,
         page: this.devicePage,
-        limit: 50
+        limit: this.deviceLimit
       };
 
       const res = await window.apiClient.getEquipmentDevices(params);
       if (res.success) {
-        if (countEl) countEl.textContent = `${res.total || 0}대/식`;
+        this.deviceTotal = res.total || 0;
+        this.deviceTotalPages = res.totalPages || 1;
+        this.devicePage = res.page || 1;
+
+        if (countEl) countEl.textContent = `${(res.total || 0).toLocaleString()}대/식`;
 
         if (!res.devices || res.devices.length === 0) {
           tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:3rem; color:#94a3b8;">조건에 해당하는 장비가 없습니다.</td></tr>`;
+          this.renderDevicePagination(res);
           return;
         }
 
+        const isAll = String(this.deviceLimit).toLowerCase() === "all";
+        const pageLimit = isAll ? (res.total || 1) : (parseInt(this.deviceLimit, 10) || 50);
+        const startOffset = (this.devicePage - 1) * pageLimit;
+
         tbody.innerHTML = res.devices.map((d, idx) => {
-          const rowNo = (res.page - 1) * res.limit + idx + 1;
+          const rowNo = startOffset + idx + 1;
           let stBadge = `<span class="badge badge-green">운영중</span>`;
           if (d.status === "SPARE") stBadge = `<span class="badge badge-amber">예비품</span>`;
           else if (d.status === "REPAIRING") stBadge = `<span class="badge badge-red">수리중</span>`;
@@ -1120,6 +1132,12 @@ class EquipmentManager {
             </tr>
           `;
         }).join("");
+
+        this.renderDevicePagination(res);
+
+        // Scroll table container to top on page change
+        const tableWrap = document.querySelector("#eq-subview-devices .table-responsive");
+        if (tableWrap) tableWrap.scrollTop = 0;
       }
     } catch (e) {
       console.error(e);
@@ -1131,10 +1149,101 @@ class EquipmentManager {
     this.deviceCategory = cat;
     this.devicePage = 1;
     document.querySelectorAll(".eq-cat-pill").forEach(p => {
-      if (p.dataset.cat === cat) p.classList.add("active");
+      const pCat = p.dataset.cat || "";
+      if (pCat.toUpperCase() === String(cat).toUpperCase()) p.classList.add("active");
       else p.classList.remove("active");
     });
     this.loadDevices();
+  }
+
+  setDeviceLimit(limitVal) {
+    this.deviceLimit = (String(limitVal).toLowerCase() === "all") ? "all" : (parseInt(limitVal, 10) || 50);
+    this.devicePage = 1;
+    this.loadDevices();
+  }
+
+  changeDevicePage(page) {
+    const target = Math.max(1, Math.min(page, this.deviceTotalPages || 1));
+    if (this.devicePage === target) return;
+    this.devicePage = target;
+    this.loadDevices();
+  }
+
+  prevDevicePage() {
+    if (this.devicePage > 1) {
+      this.devicePage--;
+      this.loadDevices();
+    }
+  }
+
+  nextDevicePage() {
+    if (this.devicePage < (this.deviceTotalPages || 1)) {
+      this.devicePage++;
+      this.loadDevices();
+    }
+  }
+
+  lastDevicePage() {
+    if (this.deviceTotalPages && this.devicePage < this.deviceTotalPages) {
+      this.devicePage = this.deviceTotalPages;
+      this.loadDevices();
+    }
+  }
+
+  renderDevicePagination(res) {
+    const pageInfo = document.getElementById("eq-dev-page-info");
+    const pageNumbers = document.getElementById("eq-dev-page-numbers");
+    const btnFirst = document.getElementById("btn-eq-dev-first");
+    const btnPrev = document.getElementById("btn-eq-dev-prev");
+    const btnNext = document.getElementById("btn-eq-dev-next");
+    const btnLast = document.getElementById("btn-eq-dev-last");
+
+    const total = res.total || 0;
+    const page = res.page || 1;
+    const totalPages = res.totalPages || 1;
+    const isAll = String(this.deviceLimit).toLowerCase() === "all";
+
+    if (pageInfo) {
+      if (total === 0) {
+        pageInfo.textContent = "0건 / 총 0개 장비";
+      } else if (isAll) {
+        pageInfo.textContent = `전체 1-${total.toLocaleString()} / 총 ${total.toLocaleString()}개 장비 (전체 표시)`;
+      } else {
+        const pageSize = parseInt(this.deviceLimit, 10) || 50;
+        const startNo = (page - 1) * pageSize + 1;
+        const endNo = Math.min(startNo + (res.devices ? res.devices.length : 0) - 1, total);
+        pageInfo.textContent = `${startNo.toLocaleString()}-${endNo.toLocaleString()} / 총 ${total.toLocaleString()}개 장비 (페이지 ${page}/${totalPages})`;
+      }
+    }
+
+    if (btnFirst) btnFirst.disabled = page <= 1 || isAll;
+    if (btnPrev) btnPrev.disabled = page <= 1 || isAll;
+    if (btnNext) btnNext.disabled = page >= totalPages || isAll;
+    if (btnLast) btnLast.disabled = page >= totalPages || isAll;
+
+    if (pageNumbers) {
+      if (isAll || totalPages <= 1) {
+        pageNumbers.innerHTML = "";
+        return;
+      }
+
+      // Show sliding window of up to 5 page buttons
+      let startP = Math.max(1, page - 2);
+      let endP = Math.min(totalPages, startP + 4);
+      if (endP - startP < 4) {
+        startP = Math.max(1, endP - 4);
+      }
+
+      let btnsHtml = "";
+      for (let p = startP; p <= endP; p++) {
+        btnsHtml += `
+          <button class="page-btn ${p === page ? "active" : ""}" 
+                  style="${p === page ? "font-weight:700; background:#1e40af; color:#ffffff; border-color:#1e40af;" : ""}" 
+                  onclick="window.equipmentManager.changeDevicePage(${p})">${p}</button>
+        `;
+      }
+      pageNumbers.innerHTML = btnsHtml;
+    }
   }
 
   /**
