@@ -979,7 +979,8 @@ router.get("/monitor/timeseries/:code", async (req, res) => {
   try {
     const code = req.params.code;
     const forceRefresh = req.query.refresh === "1" || req.query.refresh === "true";
-    const data = await timeseriesService.get24hTimeSeries(code, { forceRefresh });
+    const mode = req.query.mode === "latest" ? "latest" : "realtime";
+    const data = await timeseriesService.get24hTimeSeries(code, { forceRefresh, mode });
     res.json({ success: true, ...data });
   } catch (e) {
     console.error("[API] /monitor/timeseries error:", e);

@@ -21,12 +21,13 @@
 const http = require("http");
 const https = require("https");
 const { dbService } = require("./db");
+const waterLevelService = require("./waterlevel");
 
 const TEN_MIN_MS = 10 * 60 * 1000;
 const LAG_MS = 20 * 60 * 1000;
 const WINDOW_STEPS = 144; // 24 hours = 144 intervals -> 145 inclusive 10-minute timestamps
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
-const KEEP_HISTORY_MS = 36 * 60 * 60 * 1000; // Retain rolling 36h rows per stream in cache
+const KEEP_HISTORY_MS = 48 * 60 * 60 * 1000; // Retain rolling 48h rows per stream in cache
 const INDEX_TTL_MS = 5 * 60 * 1000;
 const META_TTL_MS = 60 * 1000;
 const STREAM_MAX_AGE_MS = 6 * 60 * 60 * 1000;
@@ -49,12 +50,23 @@ function formatKstSlot(epochMs) {
   };
 }
 
+function parseKstDT(dtStr) {
+  if (!dtStr || dtStr.length < 12) return null;
+  const y = parseInt(dtStr.slice(0, 4), 10);
+  const m = parseInt(dtStr.slice(4, 6), 10) - 1;
+  const d = parseInt(dtStr.slice(6, 8), 10);
+  const h = parseInt(dtStr.slice(8, 10), 10);
+  const mi = parseInt(dtStr.slice(10, 12), 10);
+  return Date.UTC(y, m, d, h, mi) - KST_OFFSET_MS;
+}
+
 class TimeSeriesService {
   constructor() {
     this.archiveBaseUrl = (process.env.HYDRO_MONITOR_BASE_URL || "http://183.96.156.168:8080").replace(/\/+$/, "");
-    this.payloadCache = new Map(); // `${code}` -> { endDT, builtAtMs, data }
+    this.payloadCache = new Map(); // `${code}_${mode}` -> { endDT, builtAtMs, data }
     this.streamCache = new Map();  // `${month}_${code}_${type}` -> { lastFetchedEndDT, fetchedAtMs, rowsMap }
     this.indexCache = new Map();   // `${month}` -> { fetchedAtMs, byStation: Map<code, Set<type>>, entriesByKey: Map }
+    this.liveWlCache = new Map();  // `${method}_${code}` -> { fetchedAtMs, map }
     this.inflightStreams = new Map();
     this.inflightIndex = new Map();
 
@@ -155,8 +167,77 @@ class TimeSeriesService {
       ewsvCount,
       advmCount,
       solarInstall,
-      ewsvWireless
+      ewsvWireless,
+      memo: String(st.memo ?? fallback?.memo ?? "").trim(),
+      mountType: String(st.mount_type ?? st.mountType ?? fallback?.mountType ?? "").trim()
     };
+  }
+
+  /**
+   * Fetches real-time 10-minute water level data up to the latest minute (e.g. 13:10)
+   * from HydroMonitor /water-level/{method}/{code}/export.csv?days=1
+   */
+  async _getLiveWaterLevelSeries(code, stMeta, forceRefresh = false) {
+    try {
+      if (!waterLevelService.hmStations || waterLevelService.hmStations.size === 0) {
+        await waterLevelService.syncMasterList();
+      }
+      const stName = stMeta?.name || "";
+      const cleanName = stMeta?.cleanName || stName.replace(/[\(\)\s]/g, "");
+      const hmInfo = waterLevelService.hmStations.get(code) ||
+                     waterLevelService.hmStations.get(stName) ||
+                     waterLevelService.hmStations.get(cleanName);
+      if (!hmInfo) return null;
+
+      const cacheKey = `${hmInfo.method}_${hmInfo.code}`;
+      const cached = this.liveWlCache.get(cacheKey);
+      const now = Date.now();
+      if (!forceRefresh && cached && (now - cached.fetchedAtMs < 60000)) {
+        return cached.map;
+      }
+
+      const url = `${this.archiveBaseUrl}/water-level/${hmInfo.method}/${hmInfo.code}/export.csv?days=1`;
+      const client = url.startsWith("https") ? https : http;
+      const csvData = await new Promise((resolve, reject) => {
+        const req = client.get(url, { headers: { Connection: "close" }, timeout: 6000 }, (res) => {
+          if (res.statusCode !== 200) {
+            res.resume();
+            return reject(new Error(`HTTP ${res.statusCode}`));
+          }
+          let body = "";
+          res.setEncoding("utf-8");
+          res.on("data", (chunk) => { body += chunk; });
+          res.on("end", () => resolve(body));
+        });
+        req.on("timeout", () => req.destroy(new Error("Timeout fetching live water level CSV")));
+        req.on("error", reject);
+      });
+
+      const lines = csvData.trim().split("\n");
+      const map = new Map();
+      for (let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(",");
+        if (parts.length < 5) continue;
+        const dt = parts[0].trim();
+        const autoStr = parts[1].trim();
+        const refStr = parts[2].trim() || parts[3].trim();
+        const diffStr = parts[4].trim();
+        if (dt && dt.length === 12) {
+          map.set(dt, {
+            waterLevel: autoStr !== "" ? parseFloat(autoStr) : null,
+            refWaterLevel: refStr !== "" ? parseFloat(refStr) : null,
+            diff: diffStr !== "" ? parseFloat(diffStr) : null,
+            status: parts[6] ? parts[6].trim() : "NORMAL"
+          });
+        }
+      }
+
+      this.liveWlCache.set(cacheKey, { fetchedAtMs: now, map });
+      return map;
+    } catch (err) {
+      console.warn(`[TimeSeriesService] Live water level fetch note for ${code}:`, err.message);
+      return null;
+    }
   }
 
   async _ensureStationsMeta() {
@@ -704,30 +785,59 @@ class TimeSeriesService {
 
   /**
    * Retrieves authentic 24-hour (10-minute interval, 145 slots) time-series data for a station.
-   * Window: [endSlot - 24h, endSlot] where endSlot = floor((now - 20m) / 10m) * 10m in KST.
+   * Supports:
+   *   - mode: "realtime" (default) -> [now - 20m - 24h, now - 20m] with live HydroMonitor water level backfill
+   *   - mode: "latest"   -> [latestArchiveDT - 24h, latestArchiveDT] (100% full authentic archive window)
    */
   async get24hTimeSeries(stCodeOrId, options = {}) {
     const forceRefresh = Boolean(options && typeof options === "object" && options.forceRefresh);
+    const requestedMode = (options && typeof options === "object" && options.mode === "latest") ? "latest" : "realtime";
     const { code, meta: stMeta } = await this._resolveStation(stCodeOrId);
     const win = this.getQueryWindow();
-    const { startSlotMs, endSlotMs, startFmt, endFmt, minKeepDT } = win;
+    const { startSlotMs: rtStartSlotMs, endSlotMs: rtEndSlotMs, startFmt: rtStartFmt, endFmt: rtEndFmt, minKeepDT } = win;
 
     if (!code || !/^\d{7}$/.test(code)) {
       return {
         success: true,
         hasData: false,
         code: code || String(stCodeOrId || ""),
-        startTime: startFmt.full,
-        endTime: endFmt.full,
+        startTime: rtStartFmt.full,
+        endTime: rtEndFmt.full,
         reason: "NO_STATION_CODE",
-        message: `해당 관측소는 7자리 표준 지점코드가 부여되지 않은 구축예정/미수집 지점으로 조회 가능한 실시간 원시자료가 없습니다. (조회 기준 구간: ${startFmt.full} ~ ${endFmt.full})`
+        message: `해당 관측소는 7자리 표준 지점코드가 부여되지 않은 구축예정/미수집 지점으로 조회 가능한 실시간 원시자료가 없습니다. (조회 기준 구간: ${rtStartFmt.full} ~ ${rtEndFmt.full})`
       };
     }
 
-    // Return cached 145-point payload if already built for the current 10-minute endDT slot
-    // (If the latest endDT row had not arrived yet when built, expire payload cache after 45s to pick up newly synced files)
-    const cachedPayload = this.payloadCache.get(code);
-    if (cachedPayload && cachedPayload.endDT === endFmt.dt) {
+    // Special handling for scheduled stations (2026 신설/구축 예정 지점)
+    if (stMeta && stMeta.isOperating === false) {
+      return {
+        success: true,
+        hasData: false,
+        code,
+        startTime: rtStartFmt.full,
+        endTime: rtEndFmt.full,
+        reason: "SCHEDULED_STATION",
+        message: `해당 관측소(지점코드: ${code})는 2026년 신설 구축 예정 지점으로 현장 관측시설 설치 및 원시자료 수집 연계 이전 상태입니다.`
+      };
+    }
+
+    // Special handling for known maintenance suspended stations (e.g. 상주시 강창교)
+    if (code === "2007586") {
+      return {
+        success: true,
+        hasData: false,
+        code,
+        startTime: rtStartFmt.full,
+        endTime: rtEndFmt.full,
+        reason: "MAINTENANCE_SUSPENDED",
+        message: `해당 관측소(상주시 강창교, 2007586)는 교량공사로 인한 측정중단(ADVM 점검 중) 상태로 실시간 원시자료 수집이 일시 중단된 지점입니다.`
+      };
+    }
+
+    // Return cached payload if already built for current slot & requested mode
+    const cacheKey = `${code}_${requestedMode}`;
+    const cachedPayload = this.payloadCache.get(cacheKey);
+    if (cachedPayload && cachedPayload.endDT === rtEndFmt.dt) {
       const ageMs = Date.now() - cachedPayload.builtAtMs;
       if (forceRefresh) {
         if (ageMs < 15000) return cachedPayload.data;
@@ -736,13 +846,15 @@ class TimeSeriesService {
       }
     }
 
-    const monthsNeeded = startFmt.month === endFmt.month
-      ? [endFmt.month]
-      : [startFmt.month, endFmt.month];
+    const monthsNeeded = rtStartFmt.month === rtEndFmt.month
+      ? [rtEndFmt.month]
+      : [rtStartFmt.month, rtEndFmt.month];
 
-    const monthIndices = await Promise.all(
-      monthsNeeded.map((m) => this._getArchiveIndex(m, forceRefresh))
-    );
+    // Concurrently fetch monthly archive indices and live 24h water level series
+    const [monthIndices, liveWlMap] = await Promise.all([
+      Promise.all(monthsNeeded.map((m) => this._getArchiveIndex(m, forceRefresh))),
+      this._getLiveWaterLevelSeries(code, stMeta, forceRefresh)
+    ]);
 
     const availableTypes = new Set();
     monthIndices.forEach((idxObj) => {
@@ -753,19 +865,16 @@ class TimeSeriesService {
     });
 
     if (availableTypes.size === 0) {
-      const isScheduled = stMeta && stMeta.isOperating === false;
       const noDataPayload = {
         success: true,
         hasData: false,
         code,
-        startTime: startFmt.full,
-        endTime: endFmt.full,
-        reason: isScheduled ? "SCHEDULED_STATION" : "NO_ARCHIVE_STREAM",
-        message: isScheduled
-          ? `해당 관측소(지점코드: ${code})는 2026년 구축예정/미운영 지점으로 실시간 원시자료 수집 대상이 아닙니다.`
-          : `해당 관측소(지점코드: ${code})는 현재 원시자료 수집 서버에 수신된 관측 파일이 없습니다. (장기 미수신 또는 점검 지점 · 조회 구간: ${startFmt.full} ~ ${endFmt.full})`
+        startTime: rtStartFmt.full,
+        endTime: rtEndFmt.full,
+        reason: "NO_ARCHIVE_STREAM",
+        message: `해당 관측소(지점코드: ${code})는 현재 원시자료 수집 서버에 수신된 관측 파일이 없습니다. (장기 미수신 또는 점검 지점 · 조회 구간: ${rtStartFmt.full} ~ ${rtEndFmt.full})`
       };
-      this.payloadCache.set(code, { endDT: endFmt.dt, builtAtMs: Date.now(), data: noDataPayload });
+      this.payloadCache.set(cacheKey, { endDT: rtEndFmt.dt, builtAtMs: Date.now(), data: noDataPayload });
       return noDataPayload;
     }
 
@@ -779,18 +888,18 @@ class TimeSeriesService {
       const idxObj = monthIndices[mIdx];
       const monthTypes = idxObj.byStation.get(code);
       if (!monthTypes) continue;
-      const isCurrentMonth = month === endFmt.month;
+      const isCurrentMonth = month === rtEndFmt.month;
 
       if (monthTypes.has("EWSV")) {
         fetchTasks.push(
-          this._getStreamRows(month, code, "EWSV", endFmt.dt, minKeepDT, isCurrentMonth, forceRefresh).then((map) => {
+          this._getStreamRows(month, code, "EWSV", rtEndFmt.dt, minKeepDT, isCurrentMonth, forceRefresh).then((map) => {
             for (const [dt, row] of map.entries()) ewsvRowsMap.set(dt, row);
           })
         );
       }
       if (monthTypes.has("ADVM")) {
         fetchTasks.push(
-          this._getStreamRows(month, code, "ADVM", endFmt.dt, minKeepDT, isCurrentMonth, forceRefresh).then((map) => {
+          this._getStreamRows(month, code, "ADVM", rtEndFmt.dt, minKeepDT, isCurrentMonth, forceRefresh).then((map) => {
             for (const [dt, row] of map.entries()) advmRowsMap.set(dt, row);
           })
         );
@@ -799,13 +908,87 @@ class TimeSeriesService {
 
     await Promise.all(fetchTasks);
 
+    // Identify latest available timestamp in archive streams
+    let latestArchiveDT = "";
+    for (const dt of ewsvRowsMap.keys()) {
+      if (dt > latestArchiveDT) latestArchiveDT = dt;
+    }
+    for (const dt of advmRowsMap.keys()) {
+      if (dt > latestArchiveDT) latestArchiveDT = dt;
+    }
+
+    // If archive has no rows within the 24h realtime window (e.g. 3301565 부여군 규암리 stuck at Nov 4 20:10),
+    // automatically use the latest archive window when requestedMode === "latest" or when realtime window has 0 archive + 0 WL rows
+    let effectiveMode = requestedMode;
+    if (effectiveMode === "realtime" && latestArchiveDT && latestArchiveDT < rtStartFmt.dt) {
+      let hasWlInRt = false;
+      if (liveWlMap) {
+        for (const dt of liveWlMap.keys()) {
+          if (dt >= rtStartFmt.dt && dt <= rtEndFmt.dt) { hasWlInRt = true; break; }
+        }
+      }
+      if (!hasWlInRt) {
+        effectiveMode = "latest";
+      }
+    }
+
+    // Calculate query window based on effectiveMode
+    let startSlotMs, endSlotMs, startFmt, endFmt;
+    if (effectiveMode === "latest" && latestArchiveDT && parseKstDT(latestArchiveDT)) {
+      endSlotMs = parseKstDT(latestArchiveDT);
+      startSlotMs = endSlotMs - WINDOW_STEPS * TEN_MIN_MS;
+      startFmt = formatKstSlot(startSlotMs);
+      endFmt = formatKstSlot(endSlotMs);
+
+      // If startFmt crosses into previous month or earlier than minKeepDT, ensure we have those rows
+      const latestMinKeepDT = formatKstSlot(startSlotMs - 2 * TEN_MIN_MS).dt;
+      if (latestMinKeepDT < minKeepDT) {
+        const extraTasks = [];
+        for (let mIdx = 0; mIdx < monthsNeeded.length; mIdx++) {
+          const month = monthsNeeded[mIdx];
+          const idxObj = monthIndices[mIdx];
+          const monthTypes = idxObj.byStation.get(code);
+          if (!monthTypes) continue;
+          const isCurrentMonth = month === rtEndFmt.month;
+          if (monthTypes.has("EWSV")) {
+            extraTasks.push(
+              this._getStreamRows(month, code, "EWSV", rtEndFmt.dt, latestMinKeepDT, isCurrentMonth, true).then((map) => {
+                for (const [dt, row] of map.entries()) ewsvRowsMap.set(dt, row);
+              })
+            );
+          }
+          if (monthTypes.has("ADVM")) {
+            extraTasks.push(
+              this._getStreamRows(month, code, "ADVM", rtEndFmt.dt, latestMinKeepDT, isCurrentMonth, true).then((map) => {
+                for (const [dt, row] of map.entries()) advmRowsMap.set(dt, row);
+              })
+            );
+          }
+        }
+        await Promise.all(extraTasks);
+      }
+    } else {
+      startSlotMs = rtStartSlotMs;
+      endSlotMs = rtEndSlotMs;
+      startFmt = rtStartFmt;
+      endFmt = rtEndFmt;
+    }
+
+    const latestArchiveTime = latestArchiveDT ? formatKstSlot(parseKstDT(latestArchiveDT)).full : null;
+    const archiveLagHours = latestArchiveDT
+      ? Math.max(0, Number(((rtEndSlotMs - parseKstDT(latestArchiveDT)) / (3600 * 1000)).toFixed(1)))
+      : 0;
+    const isArchiveLagging = archiveLagHours >= 1.0;
+
     // Build exact 145 timestamps from startSlotMs to endSlotMs (10-minute increments)
     const slotFormats = [];
     let observedEwsvSensors = 0;
     let observedAdvmSensors = 0;
+    let rawReceivedCount = 0;
     let receivedCount = 0;
     let ewsvReceivedCount = 0;
     let advmReceivedCount = 0;
+    let waterLevelBackfilledCount = 0;
 
     for (let step = 0; step <= WINDOW_STEPS; step++) {
       const fmt = formatKstSlot(startSlotMs + step * TEN_MIN_MS);
@@ -813,6 +996,8 @@ class TimeSeriesService {
 
       const eRow = ewsvRowsMap.get(fmt.dt);
       const aRow = advmRowsMap.get(fmt.dt);
+      const wlRow = liveWlMap ? liveWlMap.get(fmt.dt) : null;
+
       if (eRow) {
         ewsvReceivedCount++;
         if (eRow.sensors.length > observedEwsvSensors) observedEwsvSensors = eRow.sensors.length;
@@ -822,11 +1007,14 @@ class TimeSeriesService {
         if (aRow.sensors.length > observedAdvmSensors) observedAdvmSensors = aRow.sensors.length;
       }
       if (eRow || aRow) {
+        rawReceivedCount++;
+      }
+      if (eRow || aRow || (wlRow && wlRow.waterLevel !== null)) {
         receivedCount++;
       }
     }
 
-    if (receivedCount === 0) {
+    if (receivedCount === 0 && rawReceivedCount === 0) {
       const emptyWindowPayload = {
         success: true,
         hasData: false,
@@ -838,7 +1026,7 @@ class TimeSeriesService {
         reason: "NO_RECENT_24H_DATA",
         message: `조회 기준 구간(${startFmt.full} ~ ${endFmt.full}) 동안 수신된 10분 주기 원시 관측자료가 없습니다 (최근 24시간 수신 0 / ${WINDOW_STEPS + 1}건 · 연속 미수신 상태).`
       };
-      this.payloadCache.set(code, { endDT: endFmt.dt, builtAtMs: Date.now(), data: emptyWindowPayload });
+      this.payloadCache.set(cacheKey, { endDT: rtEndFmt.dt, builtAtMs: Date.now(), data: emptyWindowPayload });
       return emptyWindowPayload;
     }
 
@@ -894,12 +1082,23 @@ class TimeSeriesService {
 
       const eRow = ewsvRowsMap.get(fmt.dt) || null;
       const aRow = advmRowsMap.get(fmt.dt) || null;
-      const received = Boolean(eRow || aRow);
+      const wlRow = liveWlMap ? liveWlMap.get(fmt.dt) : null;
+      const isArchiveReceived = Boolean(eRow || aRow);
+      const isWlReceived = Boolean(wlRow && wlRow.waterLevel !== null);
+      const received = isArchiveReceived || isWlReceived;
+      const isPendingArchive = !isArchiveReceived && Boolean(latestArchiveDT && fmt.dt > latestArchiveDT);
 
       if (isDual) {
-        const waterLevel = isWirelessEwsv
+        let waterLevel = isWirelessEwsv
           ? (aRow?.waterLevel ?? eRow?.waterLevel ?? null)
           : (eRow?.waterLevel ?? aRow?.waterLevel ?? null);
+
+        let isLiveBackfill = false;
+        if (waterLevel === null && wlRow?.waterLevel !== null && wlRow?.waterLevel !== undefined) {
+          waterLevel = wlRow.waterLevel;
+          isLiveBackfill = true;
+          waterLevelBackfilledCount++;
+        }
 
         const ac = (eRow?.ac !== null && eRow?.ac !== undefined && !(eRow.ac === 0 && (aRow?.ac ?? 0) > 0))
           ? eRow.ac
@@ -951,6 +1150,12 @@ class TimeSeriesService {
           time: fmt.full,
           timeShort: fmt.short,
           received,
+          isArchiveReceived,
+          isLiveBackfill,
+          isPendingArchive,
+          waterLevelSource: isLiveBackfill ? "realtime_api" : (waterLevel !== null ? "archive" : null),
+          refWaterLevel: wlRow?.refWaterLevel ?? null,
+          waterLevelDiff: wlRow?.diff ?? null,
           waterLevel,
           velocity: ewsvVelocity ?? advmVelocity ?? null,
           snr: ewsvSnr ?? advmSnr ?? null,
@@ -971,6 +1176,14 @@ class TimeSeriesService {
         });
       } else {
         const row = isAdvmSingle ? aRow : eRow;
+        let waterLevel = row?.waterLevel ?? null;
+        let isLiveBackfill = false;
+        if (waterLevel === null && wlRow?.waterLevel !== null && wlRow?.waterLevel !== undefined) {
+          waterLevel = wlRow.waterLevel;
+          isLiveBackfill = true;
+          waterLevelBackfilledCount++;
+        }
+
         const curSensorVs = [];
         const curSensorSnrs = [];
 
@@ -987,7 +1200,13 @@ class TimeSeriesService {
           time: fmt.full,
           timeShort: fmt.short,
           received,
-          waterLevel: row?.waterLevel ?? null,
+          isArchiveReceived,
+          isLiveBackfill,
+          isPendingArchive,
+          waterLevelSource: isLiveBackfill ? "realtime_api" : (waterLevel !== null ? "archive" : null),
+          refWaterLevel: wlRow?.refWaterLevel ?? null,
+          waterLevelDiff: wlRow?.diff ?? null,
+          waterLevel,
           velocity: row?.velocity ?? null,
           snr: row?.snr ?? null,
           windSpeed: row?.windSpeed ?? null,
@@ -1006,6 +1225,13 @@ class TimeSeriesService {
       code,
       gaugeMode: isDual ? "DUAL" : (isAdvmSingle ? "ADVM" : "EWSV"),
       period: "24h",
+      windowMode: effectiveMode,
+      latestArchiveTime,
+      latestArchiveDT,
+      archiveLagHours,
+      isArchiveLagging,
+      waterLevelBackfilledCount,
+      rawReceivedCount,
       lagMinutes: 20,
       startTime: startFmt.full,
       endTime: endFmt.full,
@@ -1018,6 +1244,10 @@ class TimeSeriesService {
       sensorLabels,
       labels,
       timeLabels,
+      hasWindSensor: !isAdvmSingle && points.some((p) => p.windSpeed !== null && p.windSpeed > 0),
+      hasAcPower: !stMeta?.solarInstall && points.some((p) => p.ac !== null && p.ac > 0),
+      isSolarStation: Boolean(stMeta?.solarInstall || (stMeta?.mountType && stMeta.mountType.includes("태양광"))),
+      memo: stMeta?.memo || "",
       points,
       series: {
         waterLevel: points.map((p) => p.waterLevel),
@@ -1073,10 +1303,10 @@ class TimeSeriesService {
 
     const endEwsvOk = !availableTypes.has("EWSV") || ewsvRowsMap.has(endFmt.dt);
     const endAdvmOk = !availableTypes.has("ADVM") || advmRowsMap.has(endFmt.dt);
-    const isCompleteEndSlot = Boolean(endEwsvOk && endAdvmOk);
+    const isCompleteEndSlot = Boolean((endEwsvOk && endAdvmOk) || requestedMode === "latest");
 
-    this.payloadCache.set(code, {
-      endDT: endFmt.dt,
+    this.payloadCache.set(cacheKey, {
+      endDT: rtEndFmt.dt,
       builtAtMs: Date.now(),
       isCompleteEndSlot,
       data: payload

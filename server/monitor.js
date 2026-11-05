@@ -52,11 +52,33 @@ class LiveMonitorService {
     });
   }
 
+  fetchJson(path) {
+    return new Promise((resolve, reject) => {
+      const url = this.targetUrl.replace(/\/$/, "") + path;
+      http.get(url, { timeout: 8000 }, (res) => {
+        if (res.statusCode !== 200) {
+          res.resume();
+          return reject(new Error(`HTTP Status ${res.statusCode} for ${path}`));
+        }
+        let data = "";
+        res.setEncoding("utf-8");
+        res.on("data", (chunk) => { data += chunk; });
+        res.on("end", () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(new Error(`Invalid JSON from ${path}: ${e.message}`));
+          }
+        });
+      }).on("error", (err) => reject(err));
+    });
+  }
+
   /**
-   * Main Sync Dispatcher with Automatic Dual-Source Failover.
+   * Main Sync Dispatcher with Automatic Multi-Source Failover.
    * 1. Tries Native SFTP Collector & Rule Engine
-   * 2. Falls back to HTTP Scraper if SFTP is unreachable
-   * 3. Retains last known state if both fail
+   * 2. Falls back to HydroMonitor JSON API (/api/runs + /api/issues) or HTML Scraper
+   * 3. Retains last known state if all fail
    */
   async sync() {
     const targetDT = sftpCollector.getLatestTargetDT();
@@ -115,19 +137,41 @@ class LiveMonitorService {
     }
 
     // -------------------------------------------------------------
-    // 2. Secondary Source: HTTP Fallback Scraper (183.96.156.168:8080)
+    // 2. Secondary Source: HydroMonitor JSON API + HTML Fallback
     // -------------------------------------------------------------
     try {
-      console.log("🔄 [LiveMonitor] Switching to Secondary HTTP Fallback scraper...");
-      const html = await this.fetchHtml();
-      this.parseAndCacheHttp(html);
+      console.log("🔄 [LiveMonitor] Switching to Secondary HydroMonitor API / Fallback...");
+      let parsedFromApi = false;
+      try {
+        const [runs, rawIssues] = await Promise.all([
+          this.fetchJson("/api/runs?limit=5"),
+          this.fetchJson("/api/issues")
+        ]);
+        const latestSuccessRun = Array.isArray(runs)
+          ? (runs.find(r => r.status === "SUCCESS" && r.completed_at) || runs[0])
+          : null;
+        if (latestSuccessRun && Array.isArray(rawIssues) && rawIssues.length > 0) {
+          this.parseAndCacheApi(latestSuccessRun, rawIssues);
+          parsedFromApi = true;
+        }
+      } catch (apiErr) {
+        console.warn("⚠️ [LiveMonitor] JSON API fallback warning, trying HTML:", apiErr.message);
+      }
+
+      if (!parsedFromApi) {
+        const html = await this.fetchHtml();
+        this.parseAndCacheHttp(html);
+      }
+
       this.cache.source = "HTTP_FALLBACK";
       this.cache.lastSyncTime = new Date().toISOString();
 
-      // Trigger Smart Email Notifier
-      notifier.checkAndNotify(this.cache.issues, this.cache.targetTime).catch(err => {
-        console.warn("⚠️ [LiveMonitor] Notifier error:", err.message);
-      });
+      // Trigger Smart Email Notifier only when valid issues list is present
+      if (this.cache.issues && this.cache.issues.length > 0) {
+        notifier.checkAndNotify(this.cache.issues, this.cache.targetTime).catch(err => {
+          console.warn("⚠️ [LiveMonitor] Notifier error:", err.message);
+        });
+      }
 
       console.log(`✓ [LiveMonitor] HTTP Fallback Sync success at ${this.cache.lastSyncTime} (${this.cache.issues.length} issues, source: HTTP_FALLBACK)`);
       return { success: true, source: "HTTP_FALLBACK", count: this.cache.issues.length };
@@ -138,6 +182,99 @@ class LiveMonitorService {
       }
       return { success: false, error: httpErr.message, source: this.cache.source };
     }
+  }
+
+  /**
+   * Parses structured JSON from /api/runs and /api/issues on HydroMonitor (immune to mid-run HTML empty states).
+   */
+  parseAndCacheApi(run, rawIssues) {
+    const dt = String(run.target_dt || "");
+    const targetTime = dt.length === 12
+      ? `${dt.slice(0, 4)}년 ${Number(dt.slice(4, 6))}월 ${Number(dt.slice(6, 8))}일 ${dt.slice(8, 10)}시 ${dt.slice(10, 12)}분`
+      : (this.cache.targetTime || "");
+
+    const totalTarget = run.total_target || 187;
+    const received = run.received || 183;
+    const newCount = run.new_count || 0;
+    const ongoingCount = run.ongoing_count || 0;
+    const reopenedCount = run.reopened_count || 0;
+    const resolvedCount = run.resolved_count || 0;
+    const rxRate = totalTarget > 0 ? Number(((received / totalTarget) * 100).toFixed(1)) : 0;
+
+    const issues = [];
+    const stationIssuesMap = {};
+
+    rawIssues.forEach(raw => {
+      if (raw.state && raw.state !== "OPEN") return;
+      let statusType = "ongoing";
+      let statusLabel = "지속";
+      if (raw.first_seen_run_id === run.id) {
+        statusType = "new";
+        statusLabel = "신규";
+      } else if (raw.consecutive_count === 1 && raw.occurrence_count > 1) {
+        statusType = "reopened";
+        statusLabel = "재발";
+      }
+
+      const issueItem = {
+        statusType,
+        statusLabel,
+        method: raw.method || "",
+        basin: raw.basin || "",
+        stationName: raw.station_name || "",
+        stCode: String(raw.station_code || "").trim(),
+        sensorNo: raw.sensor_id ? String(raw.sensor_id).trim() : "",
+        ruleId: raw.rule_id || "",
+        problem: raw.title || "",
+        detail: raw.last_detail || "",
+        continuousCount: Number(raw.consecutive_count || 0)
+      };
+
+      issues.push(issueItem);
+
+      const addMap = (k) => {
+        if (!k) return;
+        const keyStr = String(k).trim();
+        if (!stationIssuesMap[keyStr]) stationIssuesMap[keyStr] = [];
+        stationIssuesMap[keyStr].push(issueItem);
+      };
+
+      addMap(issueItem.stCode);
+      addMap(issueItem.stationName);
+      addMap(issueItem.stationName.replace(/[\(\)\s]/g, ""));
+    });
+
+    const uniqueCodes = new Set();
+    issues.forEach(i => {
+      if (i.stCode) uniqueCodes.add(i.stCode);
+      else if (i.stationName) uniqueCodes.add(i.stationName);
+    });
+    const actionRequiredStations = uniqueCodes.size;
+    const totalIssuesCount = issues.length;
+    const normalStations = Math.max(0, totalTarget - actionRequiredStations);
+
+    this.cache = {
+      targetTime,
+      targetDT: dt,
+      source: "HTTP_FALLBACK",
+      summary: {
+        totalTarget,
+        received,
+        newCount,
+        ongoingCount,
+        reopenedCount,
+        resolvedCount,
+        actionRequired: actionRequiredStations,
+        actionRequiredStations,
+        totalIssuesCount,
+        normalStations,
+        rxRate
+      },
+      issues,
+      stationIssuesMap,
+      latestMetricsMap: this.cache.latestMetricsMap || {},
+      lastSyncTime: new Date().toISOString()
+    };
   }
 
   /**
