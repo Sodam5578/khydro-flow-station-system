@@ -850,11 +850,10 @@ class TimeSeriesService {
       ? [rtEndFmt.month]
       : [rtStartFmt.month, rtEndFmt.month];
 
-    // Concurrently fetch monthly archive indices and live 24h water level series
-    const [monthIndices, liveWlMap] = await Promise.all([
-      Promise.all(monthsNeeded.map((m) => this._getArchiveIndex(m, forceRefresh))),
-      this._getLiveWaterLevelSeries(code, stMeta, forceRefresh)
-    ]);
+    // Fetch monthly archive indices (strictly raw observation files only)
+    const monthIndices = await Promise.all(
+      monthsNeeded.map((m) => this._getArchiveIndex(m, forceRefresh))
+    );
 
     const availableTypes = new Set();
     monthIndices.forEach((idxObj) => {
@@ -917,30 +916,14 @@ class TimeSeriesService {
       if (dt > latestArchiveDT) latestArchiveDT = dt;
     }
 
-    // If archive has no rows within the 24h realtime window (e.g. 3301565 부여군 규암리 stuck at Nov 4 20:10),
-    // automatically use the latest archive window when requestedMode === "latest" or when realtime window has 0 archive + 0 WL rows
-    let effectiveMode = requestedMode;
-    if (effectiveMode === "realtime" && latestArchiveDT && latestArchiveDT < rtStartFmt.dt) {
-      let hasWlInRt = false;
-      if (liveWlMap) {
-        for (const dt of liveWlMap.keys()) {
-          if (dt >= rtStartFmt.dt && dt <= rtEndFmt.dt) { hasWlInRt = true; break; }
-        }
-      }
-      if (!hasWlInRt) {
-        effectiveMode = "latest";
-      }
-    }
-
-    // Calculate query window based on effectiveMode
+    // Strictly use the requested window (default: realtime [now - 20m - 24h] ~ [now - 20m])
     let startSlotMs, endSlotMs, startFmt, endFmt;
-    if (effectiveMode === "latest" && latestArchiveDT && parseKstDT(latestArchiveDT)) {
+    if (requestedMode === "latest" && latestArchiveDT && parseKstDT(latestArchiveDT)) {
       endSlotMs = parseKstDT(latestArchiveDT);
       startSlotMs = endSlotMs - WINDOW_STEPS * TEN_MIN_MS;
       startFmt = formatKstSlot(startSlotMs);
       endFmt = formatKstSlot(endSlotMs);
 
-      // If startFmt crosses into previous month or earlier than minKeepDT, ensure we have those rows
       const latestMinKeepDT = formatKstSlot(startSlotMs - 2 * TEN_MIN_MS).dt;
       if (latestMinKeepDT < minKeepDT) {
         const extraTasks = [];
@@ -981,6 +964,7 @@ class TimeSeriesService {
     const isArchiveLagging = archiveLagHours >= 1.0;
 
     // Build exact 145 timestamps from startSlotMs to endSlotMs (10-minute increments)
+    // Strictly count only actual raw observation packets (.esv / .adv) received
     const slotFormats = [];
     let observedEwsvSensors = 0;
     let observedAdvmSensors = 0;
@@ -988,7 +972,7 @@ class TimeSeriesService {
     let receivedCount = 0;
     let ewsvReceivedCount = 0;
     let advmReceivedCount = 0;
-    let waterLevelBackfilledCount = 0;
+    const waterLevelBackfilledCount = 0;
 
     for (let step = 0; step <= WINDOW_STEPS; step++) {
       const fmt = formatKstSlot(startSlotMs + step * TEN_MIN_MS);
@@ -996,7 +980,6 @@ class TimeSeriesService {
 
       const eRow = ewsvRowsMap.get(fmt.dt);
       const aRow = advmRowsMap.get(fmt.dt);
-      const wlRow = liveWlMap ? liveWlMap.get(fmt.dt) : null;
 
       if (eRow) {
         ewsvReceivedCount++;
@@ -1008,23 +991,22 @@ class TimeSeriesService {
       }
       if (eRow || aRow) {
         rawReceivedCount++;
-      }
-      if (eRow || aRow || (wlRow && wlRow.waterLevel !== null)) {
         receivedCount++;
       }
     }
 
-    if (receivedCount === 0 && rawReceivedCount === 0) {
+    if (receivedCount === 0) {
       const emptyWindowPayload = {
         success: true,
         hasData: false,
         code,
         startTime: startFmt.full,
         endTime: endFmt.full,
+        latestArchiveTime,
         receivedCount: 0,
         expectedCount: WINDOW_STEPS + 1,
         reason: "NO_RECENT_24H_DATA",
-        message: `조회 기준 구간(${startFmt.full} ~ ${endFmt.full}) 동안 수신된 10분 주기 원시 관측자료가 없습니다 (최근 24시간 수신 0 / ${WINDOW_STEPS + 1}건 · 연속 미수신 상태).`
+        message: `조회 기준 구간(${startFmt.full} ~ ${endFmt.full}) 동안 수신된 10분 주기 원시 관측자료가 없습니다 (최근 24시간 수신 0 / ${WINDOW_STEPS + 1}건 · 연속 미수신 상태${latestArchiveTime ? ` · 마지막 수신: ${latestArchiveTime}` : ""}).`
       };
       this.payloadCache.set(cacheKey, { endDT: rtEndFmt.dt, builtAtMs: Date.now(), data: emptyWindowPayload });
       return emptyWindowPayload;
@@ -1082,23 +1064,13 @@ class TimeSeriesService {
 
       const eRow = ewsvRowsMap.get(fmt.dt) || null;
       const aRow = advmRowsMap.get(fmt.dt) || null;
-      const wlRow = liveWlMap ? liveWlMap.get(fmt.dt) : null;
       const isArchiveReceived = Boolean(eRow || aRow);
-      const isWlReceived = Boolean(wlRow && wlRow.waterLevel !== null);
-      const received = isArchiveReceived || isWlReceived;
-      const isPendingArchive = !isArchiveReceived && Boolean(latestArchiveDT && fmt.dt > latestArchiveDT);
+      const received = isArchiveReceived;
 
       if (isDual) {
-        let waterLevel = isWirelessEwsv
+        const waterLevel = isWirelessEwsv
           ? (aRow?.waterLevel ?? eRow?.waterLevel ?? null)
           : (eRow?.waterLevel ?? aRow?.waterLevel ?? null);
-
-        let isLiveBackfill = false;
-        if (waterLevel === null && wlRow?.waterLevel !== null && wlRow?.waterLevel !== undefined) {
-          waterLevel = wlRow.waterLevel;
-          isLiveBackfill = true;
-          waterLevelBackfilledCount++;
-        }
 
         const ac = (eRow?.ac !== null && eRow?.ac !== undefined && !(eRow.ac === 0 && (aRow?.ac ?? 0) > 0))
           ? eRow.ac
@@ -1151,11 +1123,9 @@ class TimeSeriesService {
           timeShort: fmt.short,
           received,
           isArchiveReceived,
-          isLiveBackfill,
-          isPendingArchive,
-          waterLevelSource: isLiveBackfill ? "realtime_api" : (waterLevel !== null ? "archive" : null),
-          refWaterLevel: wlRow?.refWaterLevel ?? null,
-          waterLevelDiff: wlRow?.diff ?? null,
+          isLiveBackfill: false,
+          isPendingArchive: false,
+          waterLevelSource: waterLevel !== null ? "archive" : null,
           waterLevel,
           velocity: ewsvVelocity ?? advmVelocity ?? null,
           snr: ewsvSnr ?? advmSnr ?? null,
@@ -1176,13 +1146,7 @@ class TimeSeriesService {
         });
       } else {
         const row = isAdvmSingle ? aRow : eRow;
-        let waterLevel = row?.waterLevel ?? null;
-        let isLiveBackfill = false;
-        if (waterLevel === null && wlRow?.waterLevel !== null && wlRow?.waterLevel !== undefined) {
-          waterLevel = wlRow.waterLevel;
-          isLiveBackfill = true;
-          waterLevelBackfilledCount++;
-        }
+        const waterLevel = row?.waterLevel ?? null;
 
         const curSensorVs = [];
         const curSensorSnrs = [];
@@ -1201,11 +1165,9 @@ class TimeSeriesService {
           timeShort: fmt.short,
           received,
           isArchiveReceived,
-          isLiveBackfill,
-          isPendingArchive,
-          waterLevelSource: isLiveBackfill ? "realtime_api" : (waterLevel !== null ? "archive" : null),
-          refWaterLevel: wlRow?.refWaterLevel ?? null,
-          waterLevelDiff: wlRow?.diff ?? null,
+          isLiveBackfill: false,
+          isPendingArchive: false,
+          waterLevelSource: waterLevel !== null ? "archive" : null,
           waterLevel,
           velocity: row?.velocity ?? null,
           snr: row?.snr ?? null,
@@ -1225,12 +1187,12 @@ class TimeSeriesService {
       code,
       gaugeMode: isDual ? "DUAL" : (isAdvmSingle ? "ADVM" : "EWSV"),
       period: "24h",
-      windowMode: effectiveMode,
+      windowMode: requestedMode,
       latestArchiveTime,
       latestArchiveDT,
       archiveLagHours,
       isArchiveLagging,
-      waterLevelBackfilledCount,
+      waterLevelBackfilledCount: 0,
       rawReceivedCount,
       lagMinutes: 20,
       startTime: startFmt.full,

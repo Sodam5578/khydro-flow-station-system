@@ -557,14 +557,11 @@ class TimeSeriesMenuManager {
         const tot = json.pointCount ?? json.points.length;
         const isFull = rec >= tot;
         if (this.windowMode === "latest") {
-          statusBadge.innerHTML = `📊 최신 수신완료 기준 (${rec}/${tot}건 · 100% 가용)`;
-          statusBadge.style.background = "rgba(16, 185, 129, 0.3)";
-        } else if (json.isArchiveLagging) {
-          statusBadge.innerHTML = `🟢 실시간 수위 수신 정상 (${rec}/${tot}건 · 원시로그 ${json.latestArchiveTime ? json.latestArchiveTime.slice(11) : ""} 수신)`;
-          statusBadge.style.background = "rgba(16, 185, 129, 0.3)";
+          statusBadge.innerHTML = `📊 최근 수신완료 기준 (${rec}/${tot}건)`;
+          statusBadge.style.background = isFull ? "rgba(16, 185, 129, 0.3)" : "rgba(245, 158, 11, 0.35)";
         } else {
           statusBadge.innerHTML = isFull
-            ? `🟢 실시간 수집 정상 (${rec}/${tot}건)`
+            ? `🟢 원시자료 수신 정상 (${rec}/${tot}건)`
             : `🟡 부분 수신 (${rec}/${tot}건 · 미수신 ${tot - rec}건)`;
           statusBadge.style.background = isFull
             ? "rgba(16, 185, 129, 0.3)"
@@ -694,21 +691,20 @@ class TimeSeriesMenuManager {
         </div>
         <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
           <span class="badge ${missingCount === 0 ? 'badge-green' : 'badge-amber'}" style="font-size:0.78rem; padding:4px 10px; font-weight:700;">
-            수신 ${receivedCount} / ${pointCount}건${missingCount > 0 ? ` (미수신 ${missingCount}건)` : " (100%)"}
+            원시파일 수신 ${receivedCount} / ${pointCount}건${missingCount > 0 ? ` (미수신 ${missingCount}건)` : " (100%)"}
           </span>
           ${isDual ? `<span class="badge badge-blue" style="font-size:0.76rem; padding:4px 8px;">EWSV ${dualData?.ewsv?.receivedCount ?? 0}건 · ADVM ${dualData?.advm?.receivedCount ?? 0}건</span>` : ""}
-          ${this.cachedData.waterLevelBackfilledCount > 0 ? `<span class="badge badge-green" style="font-size:0.76rem; padding:4px 8px;">실시간 수위 ${this.cachedData.waterLevelBackfilledCount}건 연속 보충</span>` : ""}
         </div>
       </div>
 
       <!-- Archive Batch Lag Information Notice (if lagging & in realtime mode) -->
       ${this.cachedData.isArchiveLagging && this.windowMode === "realtime" ? `
-        <div style="padding:10px 14px; margin-bottom:1rem; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; font-size:0.83rem; color:#166534; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        <div style="padding:10px 14px; margin-bottom:1rem; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; font-size:0.83rem; color:#92400e; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
           <div>
-            <span>💡 <b>원시로그 아카이브 배치 수집 대기 안내</b>: 본 관측소의 원시 관측로그(유속·SNR·전압)는 <b>${this.cachedData.latestArchiveTime || "-"}</b>까지 수신 완료되었으며, 실시간 수위는 현재 시각까지 100% 정상 수집 중입니다.</span>
+            <span>ℹ️ <b>수집 서버 원시로그 최종 수신 시각 안내</b>: 현재 월별 보관함 서버에 적재된 본 관측소의 마지막 원시 패킷(.esv / .adv)은 <b>${this.cachedData.latestArchiveTime || "-"}</b>입니다. 이후 시간대는 실제 넘어온 원시파일이 아직 없어 미수신(결측)으로 표출됩니다.</span>
           </div>
-          <button class="btn btn-sm" onclick="window.timeSeriesMenuManager.setWindowMode('latest')" style="font-size:0.76rem; padding:4px 10px; background:#16a34a; color:#ffffff; border:none; border-radius:6px; font-weight:700; cursor:pointer;">
-            📊 100% 수신완료 구간 분석 보기
+          <button class="btn btn-sm" onclick="window.timeSeriesMenuManager.setWindowMode('latest')" style="font-size:0.76rem; padding:4px 10px; background:#d97706; color:#ffffff; border:none; border-radius:6px; font-weight:700; cursor:pointer;">
+            📊 마지막 수신 시각 기준 24시간 보기
           </button>
         </div>
       ` : ""}
@@ -719,7 +715,7 @@ class TimeSeriesMenuManager {
           <div class="kpi-icon blue">🌊</div>
           <div class="kpi-info">
             <div class="kpi-value">${this.formatValue('waterLevel', wlLatest.val)} <span style="font-size:1rem; font-weight:500;">${this.isValidNum(wlLatest.val) ? 'm' : ''}</span></div>
-            <div class="kpi-label">현재 수위 (${wlLatest.time ? wlLatest.time.slice(11) : '미수신'}${this.cachedData.waterLevelBackfilledCount > 0 && wlLatest.isLatestSlot ? ' · 실시간 갱신' : ''})</div>
+            <div class="kpi-label">원시 수위 (${wlLatest.time ? wlLatest.time.slice(11) : '미수신'})</div>
           </div>
         </div>
         <div class="kpi-card" style="border-left: 4px solid #059669;">
@@ -874,30 +870,22 @@ class TimeSeriesMenuManager {
               ${[...points].reverse().map((p, idx) => {
                 const isEven = idx % 2 === 0;
                 const isMissing = p.received === false;
-                const isPending = Boolean(p.isPendingArchive);
-                const isBackfill = Boolean(p.isLiveBackfill);
-                const baseBg = isMissing ? "#fff5f5" : (isPending ? "#f0fdf4" : (isEven ? "#ffffff" : "#f8fafc"));
-                let statusBadgeHtml = "";
-                if (isMissing) {
-                  statusBadgeHtml = ' <span class="badge badge-red" style="font-size:0.68rem; padding:1px 5px; margin-left:4px;">결측</span>';
-                } else if (isBackfill) {
-                  statusBadgeHtml = ' <span class="badge badge-green" style="font-size:0.68rem; padding:1px 5px; margin-left:4px;">실시간 수위</span>';
-                } else if (isPending) {
-                  statusBadgeHtml = ' <span class="badge badge-gray" style="font-size:0.68rem; padding:1px 5px; margin-left:4px;">아카이브 대기</span>';
-                }
+                const baseBg = isMissing ? "#fff5f5" : (isEven ? "#ffffff" : "#f8fafc");
+                const statusBadgeHtml = isMissing
+                  ? ' <span class="badge badge-red" style="font-size:0.68rem; padding:1px 5px; margin-left:4px;">미수신</span>'
+                  : "";
 
                 const renderCellVal = (val, fmtFunc) => {
                   if (this.isValidNum(val)) return fmtFunc(val);
-                  if (isPending) return '<span style="color:#94a3b8; font-size:0.75rem;">(대기)</span>';
                   return '-';
                 };
 
                 return `
                   <tr style="background:${baseBg}; border-bottom:1px solid #e2e8f0; transition:background 0.15s ease;" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='${baseBg}'">
-                    <td style="padding:10px 14px; font-weight:600; color:${isMissing ? '#dc2626' : (isPending ? '#166534' : '#1e3a8a')}; font-family:monospace; font-size:0.88rem; white-space:nowrap;">
+                    <td style="padding:10px 14px; font-weight:600; color:${isMissing ? '#dc2626' : '#1e3a8a'}; font-family:monospace; font-size:0.88rem; white-space:nowrap;">
                       ${p.time}${statusBadgeHtml}
                     </td>
-                    <td style="padding:10px 14px; font-weight:700; color:${isBackfill ? '#16a34a' : '#2563eb'}; font-family:monospace; font-size:0.9rem;">
+                    <td style="padding:10px 14px; font-weight:700; color:#2563eb; font-family:monospace; font-size:0.9rem;">
                       ${this.formatValue('waterLevel', p.waterLevel)}
                     </td>
                     
@@ -912,25 +900,25 @@ class TimeSeriesMenuManager {
                         const sv = Array.isArray(p.advmSensorVelocities) ? p.advmSensorVelocities[k] : null;
                         return `<td style="padding:10px 10px; font-weight:600; color:#3b82f6; font-family:monospace; background:${isMissing ? '#fff5f5' : (isEven ? '#eff6ff' : '#ebf5ff')};">${renderCellVal(sv, v => this.formatValue('velocity', v))}</td>`;
                       }).join("")}
-                      <td style="padding:10px 10px; background:${isMissing ? '#fff5f5' : (isEven ? '#faf5ff' : '#f5f3ff')};">${this.isValidNum(p.ewsvSnr) ? this.renderSnrBadge(p.ewsvSnr, false, true) : (isPending ? '<span style="color:#94a3b8; font-size:0.75rem;">(대기)</span>' : '-')}</td>
-                      <td style="padding:10px 10px; background:${isMissing ? '#fff5f5' : (isEven ? '#f0f9ff' : '#e0f2fe')};">${this.isValidNum(p.advmSnr) ? this.renderSnrBadge(p.advmSnr, false, false) : (isPending ? '<span style="color:#94a3b8; font-size:0.75rem;">(대기)</span>' : '-')}</td>
+                      <td style="padding:10px 10px; background:${isMissing ? '#fff5f5' : (isEven ? '#faf5ff' : '#f5f3ff')};">${this.isValidNum(p.ewsvSnr) ? this.renderSnrBadge(p.ewsvSnr, false, true) : '-'}</td>
+                      <td style="padding:10px 10px; background:${isMissing ? '#fff5f5' : (isEven ? '#f0f9ff' : '#e0f2fe')};">${this.isValidNum(p.advmSnr) ? this.renderSnrBadge(p.advmSnr, false, false) : '-'}</td>
                     ` : `
                       <td style="padding:10px 14px; font-weight:700; color:#059669; font-family:monospace; font-size:0.9rem;">${renderCellVal(p.velocity, v => this.formatValue('velocity', v))}</td>
                       ${isMultiSensor ? sensorLabels.map((_, k) => {
                         const sv = Array.isArray(p.sensorVelocities) ? p.sensorVelocities[k] : null;
                         return `<td style="padding:10px 10px; font-weight:600; color:#0d9488; font-family:monospace;">${renderCellVal(sv, v => this.formatValue('velocity', v))}</td>`;
                       }).join("") : ""}
-                      <td style="padding:10px 14px;">${this.isValidNum(p.snr) ? this.renderSnrBadge(p.snr, false, this.cachedData.gaugeMode === 'EWSV') : (isPending ? '<span style="color:#94a3b8; font-size:0.75rem;">(대기)</span>' : '-')}</td>
+                      <td style="padding:10px 14px;">${this.isValidNum(p.snr) ? this.renderSnrBadge(p.snr, false, this.cachedData.gaugeMode === 'EWSV') : '-'}</td>
                       ${isMultiSensor ? sensorLabels.map((_, k) => {
                         const ssnr = Array.isArray(p.sensorSnrs) ? p.sensorSnrs[k] : null;
-                        return `<td style="padding:10px 10px;">${this.isValidNum(ssnr) ? this.renderSnrBadge(ssnr, true, this.cachedData.gaugeMode === 'EWSV') : (isPending ? '<span style="color:#94a3b8; font-size:0.75rem;">(대기)</span>' : '-')}</td>`;
+                        return `<td style="padding:10px 10px;">${this.isValidNum(ssnr) ? this.renderSnrBadge(ssnr, true, this.cachedData.gaugeMode === 'EWSV') : '-'}</td>`;
                       }).join("") : ""}
                     `}
 
                     <td style="padding:10px 14px; color:#334155; font-family:monospace;">${renderCellVal(p.windSpeed, v => this.formatValue('windSpeed', v))}</td>
                     <td style="padding:10px 14px; color:#64748b;">${renderCellVal(p.windDeg, v => this.renderWindDeg(v))}</td>
-                    <td style="padding:10px 14px;">${this.isValidNum(p.ac) ? this.renderAcBadge(p.ac) : (isPending ? '<span style="color:#94a3b8; font-size:0.75rem;">(대기)</span>' : (this.cachedData.isSolarStation ? '<span style="color:#94a3b8; font-size:0.75rem;">(태양광)</span>' : '-'))}</td>
-                    <td style="padding:10px 14px;">${this.isValidNum(p.dc) ? this.renderDcBadge(p.dc) : (isPending ? '<span style="color:#94a3b8; font-size:0.75rem;">(대기)</span>' : '-')}</td>
+                    <td style="padding:10px 14px;">${this.isValidNum(p.ac) ? this.renderAcBadge(p.ac) : (this.cachedData.isSolarStation ? '<span style="color:#94a3b8; font-size:0.75rem;">(태양광)</span>' : '-')}</td>
+                    <td style="padding:10px 14px;">${this.isValidNum(p.dc) ? this.renderDcBadge(p.dc) : '-'}</td>
                   </tr>
                 `;
               }).join("")}
