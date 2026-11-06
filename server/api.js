@@ -1141,15 +1141,38 @@ router.post("/equipment/devices", verifyToken, async (req, res) => {
   }
 });
 
-// 20-5. Update Equipment Status & Location
-router.patch("/equipment/devices/:id/status", verifyToken, async (req, res) => {
+// 20-4a. Get Single Equipment Detail & Audit History
+router.get("/equipment/devices/:id", verifyToken, async (req, res) => {
   try {
-    const { status, location, reason } = req.body;
-    const result = await equipmentService.updateDeviceStatus(req.params.id, status, location, reason, req.user);
-    logActivity(req.user, "장비상태변경", req.params.id, `상태 변경: ${status} (${location || ""})`, req.ip);
-    res.json(result);
+    const data = await equipmentService.getDeviceById(req.params.id);
+    if (!data) return res.status(404).json({ success: false, message: "장비를 찾을 수 없습니다." });
+    res.json({ success: true, ...data });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 20-4b. Update Single Equipment Full Details (Model, S/N, Asset No, Station, Status, Location, Memo)
+router.put("/equipment/devices/:id", verifyToken, async (req, res) => {
+  try {
+    const result = await equipmentService.updateDevice(req.params.id, req.body, req.user);
+    const summaryText = (result.changes || []).map(c => `${c.label}:${c.before || "-"}→${c.after || "-"}`).join(", ") || "정보 수정";
+    logActivity(req.user, "장비정보수정", req.params.id, `장비 수정 (${summaryText})`, req.ip);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message, message: e.message });
+  }
+});
+
+// 20-5. Update Equipment Status & Location (& Optional Station)
+router.patch("/equipment/devices/:id/status", verifyToken, async (req, res) => {
+  try {
+    const { status, location, reason, station_id } = req.body;
+    const result = await equipmentService.updateDeviceStatus(req.params.id, status, location, reason, req.user, station_id);
+    logActivity(req.user, "장비상태변경", req.params.id, `상태 변경: ${result.statusLabel || status} (${result.stationName || "미배정"} / ${location || ""})`, req.ip);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message, message: e.message });
   }
 });
 

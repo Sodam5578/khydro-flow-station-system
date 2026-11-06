@@ -197,6 +197,8 @@ class EquipmentService {
       rows = rows.filter(r => (r.waterlevel_count || 0) > 0);
     } else if (filterType === "repair" || filterType === "inRepair") {
       rows = rows.filter(r => (r.repairing_count || 0) > 0);
+    } else if (filterType === "spare") {
+      rows = rows.filter(r => (r.spare_count || 0) > 0);
     } else if (filterType === "operating") {
       rows = rows.filter(r => (r.total_devices || 0) > 0);
     } else if (filterType === "planned" || filterType === "new2026") {
@@ -281,8 +283,12 @@ class EquipmentService {
     }
 
     if (status && String(status).toLowerCase() !== "all") {
-      whereClause += " AND status = ?";
-      params.push(status);
+      if (status === "UNASSIGNED") {
+        whereClause += " AND (station_id IS NULL OR station_name IS NULL OR TRIM(station_name) = '')";
+      } else {
+        whereClause += " AND status = ?";
+        params.push(status);
+      }
     }
 
     if (calibOnly === "1" || calibOnly === "true" || calibOnly === true) {
@@ -292,14 +298,16 @@ class EquipmentService {
     if (search) {
       const q = `%${search.toLowerCase()}%`;
       whereClause += ` AND (
-        LOWER(station_name) LIKE ? OR 
-        LOWER(model_name) LIKE ? OR 
-        LOWER(serial_no) LIKE ? OR 
-        LOWER(asset_no) LIKE ? OR 
-        LOWER(manage_no) LIKE ? OR 
-        LOWER(location) LIKE ?
+        LOWER(COALESCE(station_name, '')) LIKE ? OR 
+        LOWER(COALESCE(model_name, '')) LIKE ? OR 
+        LOWER(COALESCE(serial_no, '')) LIKE ? OR 
+        LOWER(COALESCE(asset_no, '')) LIKE ? OR 
+        LOWER(COALESCE(manage_no, '')) LIKE ? OR 
+        LOWER(COALESCE(location, '')) LIKE ? OR
+        LOWER(COALESCE(equipment_id, '')) LIKE ? OR
+        LOWER(COALESCE(memo, '')) LIKE ?
       )`;
-      params.push(q, q, q, q, q, q);
+      params.push(q, q, q, q, q, q, q, q);
     }
 
     const countRow = await this.get(`SELECT COUNT(*) as total FROM equipment_master ${whereClause}`, params);
@@ -402,9 +410,148 @@ class EquipmentService {
   }
 
   /**
-   * 5. Update Equipment Status & Location with Audit Log
+   * 4-1. Get Single Equipment Detail with Audit History & Active Repair
    */
-  async updateDeviceStatus(equipmentId, newStatus, newLocation, reason = "", user = {}) {
+  async getDeviceById(equipmentId) {
+    const device = await this.get(`SELECT * FROM equipment_master WHERE equipment_id = ?`, [equipmentId]);
+    if (!device) return null;
+
+    const auditLogs = await this.all(
+      `SELECT * FROM equipment_audit_log WHERE equipment_id = ? ORDER BY id DESC LIMIT 15`,
+      [equipmentId]
+    );
+    const activeRepair = await this.get(
+      `SELECT * FROM equipment_repair WHERE equipment_id = ? ORDER BY id DESC LIMIT 1`,
+      [equipmentId]
+    );
+
+    return {
+      device,
+      auditLogs,
+      activeRepair
+    };
+  }
+
+  /**
+   * 4-2. Update Single Equipment Full Details (Model, S/N, Asset No, Station, Status, Location, Memo)
+   */
+  async updateDevice(equipmentId, data = {}, user = {}) {
+    const current = await this.get(`SELECT * FROM equipment_master WHERE equipment_id = ?`, [equipmentId]);
+    if (!current) throw new Error("장비를 찾을 수 없습니다.");
+
+    const catNameMap = {
+      FLOWMETER: "유속계",
+      WATER_LEVEL: "수위계",
+      CONTROL: "제어시스템",
+      MOUNT: "센서지지대",
+      SHELTER: "관측국사",
+      UNDERWATER: "수중센서보호장치",
+      LIGHTNING: "낙뢰보호장치",
+      CCTV: "영상정보처리기기",
+      ANCILLARY: "부대시설",
+      ETC: "기타"
+    };
+
+    const statusLabelMap = {
+      OPERATING: "운영중",
+      SPARE: "예비품",
+      REPAIRING: "수리중",
+      DISPOSAL: "폐품",
+      RETURN: "반납예정"
+    };
+
+    // Resolve station assignment
+    let stationId = current.station_id;
+    let stationName = current.station_name || "";
+    let stationCode = current.station_code || "";
+
+    if (data.station_id !== undefined) {
+      if (data.station_id === null || data.station_id === "" || data.station_id === "null") {
+        stationId = null;
+        stationName = "";
+        stationCode = "";
+      } else {
+        const parsedStId = parseInt(data.station_id, 10);
+        const st = await this.get(`SELECT id, name, code FROM stations WHERE id = ?`, [parsedStId]);
+        if (st) {
+          stationId = st.id;
+          stationName = st.name;
+          stationCode = st.code;
+        }
+      }
+    }
+
+    const newCategory = data.category || current.category || "FLOWMETER";
+    const newCategoryName = data.category_name || catNameMap[newCategory] || current.category_name || "유속계";
+    const newModel = data.model_name !== undefined ? String(data.model_name).trim() : (current.model_name || "");
+    const newSerial = data.serial_no !== undefined ? String(data.serial_no).trim() : (current.serial_no || "");
+    const newAsset = data.asset_no !== undefined ? String(data.asset_no).trim() : (current.asset_no || "");
+    const newStatus = data.status || current.status || "OPERATING";
+    const newStatusLabel = statusLabelMap[newStatus] || "운영중";
+    const newLocation = data.location !== undefined ? String(data.location).trim() : (current.location || "");
+    const newAcqDate = data.acquisition_date !== undefined ? String(data.acquisition_date).trim() : (current.acquisition_date || "");
+    const newMemo = data.memo !== undefined ? String(data.memo).trim() : (current.memo || "");
+    const reason = data.reason ? String(data.reason).trim() : "장비 정보/상태 직접 수정";
+
+    // Track changes for audit log
+    const changes = [];
+    const comparePairs = [
+      ["category_name", "설비구분", current.category_name || "", newCategoryName],
+      ["model_name", "모델명", current.model_name || "", newModel],
+      ["serial_no", "제조번호(S/N)", current.serial_no || "", newSerial],
+      ["asset_no", "자산번호", current.asset_no || "", newAsset],
+      ["station_name", "배정관측소", current.station_name || "미배정(보관)", stationName || "미배정(보관)"],
+      ["status", "운영상태", `${current.status_label || current.status}`, `${newStatusLabel}(${newStatus})`],
+      ["location", "보관/설치위치", current.location || "", newLocation],
+      ["acquisition_date", "취득년도", current.acquisition_date || "", newAcqDate],
+      ["memo", "비고", current.memo || "", newMemo]
+    ];
+
+    for (const [field, label, beforeVal, afterVal] of comparePairs) {
+      if (String(beforeVal).trim() !== String(afterVal).trim()) {
+        changes.push({ field, label, before: String(beforeVal).trim(), after: String(afterVal).trim() });
+      }
+    }
+
+    await this.run(`
+      UPDATE equipment_master
+      SET station_id = ?, station_name = ?, station_code = ?,
+          category = ?, category_name = ?,
+          model_name = ?, serial_no = ?, asset_no = ?,
+          status = ?, status_label = ?, location = ?,
+          acquisition_date = ?, memo = ?,
+          version = version + 1, updated_at = CURRENT_TIMESTAMP
+      WHERE equipment_id = ?
+    `, [
+      stationId, stationName, stationCode,
+      newCategory, newCategoryName,
+      newModel, newSerial, newAsset,
+      newStatus, newStatusLabel, newLocation,
+      newAcqDate, newMemo,
+      equipmentId
+    ]);
+
+    for (const ch of changes) {
+      await this.run(`
+        INSERT INTO equipment_audit_log (equipment_id, field_name, before_value, after_value, changed_by, reason, source)
+        VALUES (?, ?, ?, ?, ?, ?, 'UI')
+      `, [equipmentId, ch.label, ch.before, ch.after, user.name || "사용자", reason]);
+    }
+
+    const updated = await this.get(`SELECT * FROM equipment_master WHERE equipment_id = ?`, [equipmentId]);
+    return {
+      success: true,
+      equipmentId,
+      changesCount: changes.length,
+      changes,
+      device: updated
+    };
+  }
+
+  /**
+   * 5. Update Equipment Status & Location (& Optional Station) with Audit Log
+   */
+  async updateDeviceStatus(equipmentId, newStatus, newLocation, reason = "", user = {}, stationId = undefined) {
     const current = await this.get(`SELECT * FROM equipment_master WHERE equipment_id = ?`, [equipmentId]);
     if (!current) throw new Error("장비를 찾을 수 없습니다.");
 
@@ -414,11 +561,40 @@ class EquipmentService {
     else if (newStatus === "DISPOSAL") statusLabel = "폐품";
     else if (newStatus === "RETURN") statusLabel = "반납예정";
 
+    let targetStationId = current.station_id;
+    let targetStationName = current.station_name || "";
+    let targetStationCode = current.station_code || "";
+
+    if (stationId !== undefined) {
+      if (stationId === null || stationId === "" || stationId === "null") {
+        targetStationId = null;
+        targetStationName = "";
+        targetStationCode = "";
+      } else {
+        const st = await this.get(`SELECT id, name, code FROM stations WHERE id = ?`, [parseInt(stationId, 10)]);
+        if (st) {
+          targetStationId = st.id;
+          targetStationName = st.name;
+          targetStationCode = st.code;
+        }
+      }
+    }
+
     await this.run(`
       UPDATE equipment_master 
-      SET status = ?, status_label = ?, location = ?, version = version + 1, updated_at = CURRENT_TIMESTAMP
+      SET station_id = ?, station_name = ?, station_code = ?,
+          status = ?, status_label = ?, location = ?,
+          version = version + 1, updated_at = CURRENT_TIMESTAMP
       WHERE equipment_id = ?
-    `, [newStatus, statusLabel, newLocation || current.location, equipmentId]);
+    `, [
+      targetStationId,
+      targetStationName,
+      targetStationCode,
+      newStatus,
+      statusLabel,
+      newLocation !== undefined ? newLocation : current.location,
+      equipmentId
+    ]);
 
     // Audit Log
     await this.run(`
@@ -426,13 +602,13 @@ class EquipmentService {
       VALUES (?, 'STATUS', ?, ?, ?, ?, 'UI')
     `, [
       equipmentId,
-      `${current.status} (${current.location})`,
-      `${newStatus} (${newLocation || current.location})`,
+      `${current.status_label || current.status} (${current.station_name || "미배정"} / ${current.location || "-"})`,
+      `${statusLabel} (${targetStationName || "미배정"} / ${newLocation || current.location || "-"})`,
       user.name || "사용자",
       reason || "상태 변경"
     ]);
 
-    return { success: true, equipmentId, newStatus, statusLabel };
+    return { success: true, equipmentId, newStatus, statusLabel, stationId: targetStationId, stationName: targetStationName };
   }
 
   /**

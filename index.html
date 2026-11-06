@@ -981,10 +981,12 @@
                 </div>
 
                 <!-- Station Filter Pills -->
-                <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px;">
+                <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; flex-wrap: wrap;">
                   <button class="eq-filter-pill active" data-filter="all" onclick="window.equipmentManager.setStationFilter('all')">전체 (223)</button>
                   <button class="eq-filter-pill" data-filter="operating" onclick="window.equipmentManager.setStationFilter('operating')">운영중 (176)</button>
+                  <button class="eq-filter-pill" data-filter="spare" onclick="window.equipmentManager.setStationFilter('spare')">📦 예비·보관</button>
                   <button class="eq-filter-pill" data-filter="repair" onclick="window.equipmentManager.setStationFilter('repair')">🚨 수리중</button>
+                  <button class="eq-filter-pill" style="background:#eff6ff; color:#1e40af; border-color:#bfdbfe;" onclick="window.equipmentManager.goToDevicesWithFilter({ status: 'UNASSIGNED', search: '' })" title="특정 관측소에 배정되지 않은 본원·창고 보관 예비품/수리품 관리로 이동">🏢 본원보관품 관리 ➔</button>
                 </div>
               </div>
 
@@ -1054,10 +1056,11 @@
 
                   <select id="eq-dev-status" class="filter-select" onchange="window.equipmentManager.deviceStatus = this.value; window.equipmentManager.devicePage = 1; window.equipmentManager.loadDevices();">
                     <option value="ALL">전체 운영상태</option>
-                    <option value="OPERATING">운영중</option>
-                    <option value="SPARE">예비품</option>
-                    <option value="REPAIRING">수리중</option>
-                    <option value="DISPOSAL">폐품</option>
+                    <option value="OPERATING">🟢 운영중</option>
+                    <option value="SPARE">📦 예비품·보관품</option>
+                    <option value="REPAIRING">🚨 수리중</option>
+                    <option value="DISPOSAL">🗑️ 폐품·불용</option>
+                    <option value="UNASSIGNED">🏢 본원/미배정 보관설비</option>
                   </select>
 
                   <select id="eq-dev-page-size" class="filter-select" onchange="window.equipmentManager.setDeviceLimit(this.value);" title="페이지당 표시 건수">
@@ -1084,6 +1087,7 @@
                         <th>배정 관측소</th>
                         <th style="width: 90px; text-align: center;">상태</th>
                         <th>보관처 / 위치</th>
+                        <th style="width: 155px; text-align: center;">작업 관리</th>
                       </tr>
                     </thead>
                     <tbody id="eq-all-devices-tbody">
@@ -3258,37 +3262,186 @@
     </div>
   </div>
 
-  <!-- 3. Equipment Status Modal -->
+  <!-- 3. Equipment Status & Quick Location Modal -->
   <div class="modal-backdrop" id="eq-status-modal">
-    <div class="modal-dialog" style="max-width: 480px;">
+    <div class="modal-dialog" style="max-width: 520px;">
       <div class="modal-header">
-        <div class="modal-title"><span>🔄</span> 장비 상태 및 보관위치 변경</div>
+        <div class="modal-title"><span>🔄</span> 장비 상태·배치지점 및 보관위치 변경</div>
         <button class="modal-close" onclick="window.equipmentManager.closeStatusModal()">✕</button>
       </div>
       <form onsubmit="window.equipmentManager.submitStatusChange(event)">
         <div class="modal-body">
           <input type="hidden" id="eq-status-id">
+          <div id="eq-status-device-summary" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.75rem 0.9rem; margin-bottom:0.9rem; font-size:0.83rem; color:#334155;">
+            대상 장비: <b id="eq-status-device-label" style="color:#1e40af;">-</b>
+          </div>
           <div class="form-group" style="margin-bottom: 0.8rem;">
-            <label class="form-label">변경할 상태 *</label>
-            <select id="eq-status-select" class="filter-select" style="width: 100%;" required>
-              <option value="OPERATING">운영중 (현장 정상 계측)</option>
-              <option value="SPARE">예비품 (창고/차량 보관)</option>
-              <option value="REPAIRING">수리중 (점검/정비 의뢰)</option>
-              <option value="DISPOSAL">폐품 (불용/폐기 대상)</option>
+            <label class="form-label" style="font-weight:700;">변경할 운영상태 *</label>
+            <select id="eq-status-select" class="filter-select" style="width: 100%; font-weight:700;" onchange="window.equipmentManager.onStatusModalSelectChange(this.value)" required>
+              <option value="OPERATING">🟢 운영중 (현장 정상 계측)</option>
+              <option value="SPARE">📦 예비품·보관품 (창고/차량/지점 보관)</option>
+              <option value="REPAIRING">🚨 수리중 (점검/정비업체 의뢰)</option>
+              <option value="DISPOSAL">🗑️ 폐품 (불용/폐기 대상)</option>
             </select>
           </div>
           <div class="form-group" style="margin-bottom: 0.8rem;">
-            <label class="form-label">보관 / 설치 위치 *</label>
-            <input type="text" id="eq-status-location" class="form-input" placeholder="예: 현장교각, 기술원 창고, 리버앤씨 공장" required>
+            <label class="form-label" style="font-weight:700;">배정 관측소 (현장 배치 또는 본원 보관 전환)</label>
+            <select id="eq-status-station-id" class="filter-select" style="width: 100%; font-weight:600;">
+              <option value="">🏢 미배정 (기술원 본원 / 중앙 창고 보관)</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 0.8rem;">
+            <label class="form-label" style="font-weight:700;">보관처 / 설치 위치 *</label>
+            <input type="text" id="eq-status-location" class="form-input" placeholder="예: 현장설치, 기술원 창고, 차량 보관, 리버앤씨(수리)" required>
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">
+              <button type="button" class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem;" onclick="document.getElementById('eq-status-location').value='현장설치'">📍 현장설치</button>
+              <button type="button" class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem;" onclick="document.getElementById('eq-status-location').value='기술원보관(예비품)'">🏢 기술원보관(예비품)</button>
+              <button type="button" class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem;" onclick="document.getElementById('eq-status-location').value='권역 점검차량 보관'">🚐 차량보관</button>
+              <button type="button" class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem;" onclick="document.getElementById('eq-status-location').value='리버앤씨(수리점검)'">🛠️ 리버앤씨(수리)</button>
+              <button type="button" class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem;" onclick="document.getElementById('eq-status-location').value='불용창고(폐기대기)'">🗑️ 불용창고</button>
+            </div>
           </div>
           <div class="form-group">
-            <label class="form-label">변경 사유</label>
-            <input type="text" id="eq-status-reason" class="form-input" placeholder="예: 현장 계측 이상으로 인한 수리의뢰 반출">
+            <label class="form-label" style="font-weight:700;">변경 사유</label>
+            <input type="text" id="eq-status-reason" class="form-input" placeholder="예: 수리 완료 후 예비품 전환 / 현장 정상 배치 등">
           </div>
         </div>
-        <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
-          <button type="button" class="btn btn-outline" onclick="window.equipmentManager.closeStatusModal()">취소</button>
-          <button type="submit" class="btn btn-primary">상태 변경 반영</button>
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items:center; gap: 0.5rem;">
+          <button type="button" class="btn btn-outline btn-sm" style="color:#1e40af; border-color:#bfdbfe;" onclick="const id=document.getElementById('eq-status-id').value; window.equipmentManager.closeStatusModal(); window.equipmentManager.openEditDeviceModal(id);">
+            ✏️ 상세 제원(모델/S/N)까지 전체 수정하기
+          </button>
+          <div style="display:flex; gap:0.5rem;">
+            <button type="button" class="btn btn-outline" onclick="window.equipmentManager.closeStatusModal()">취소</button>
+            <button type="submit" class="btn btn-primary" style="font-weight:700;">상태 변경 저장</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3-1. Equipment Full Detail Edit Modal (예비품/보관품/수리품/운영장비 통합 정보 수정) -->
+  <div class="modal-backdrop" id="eq-edit-modal">
+    <div class="modal-dialog" style="max-width: 620px;">
+      <div class="modal-header">
+        <div class="modal-title" style="display:flex; align-items:center; gap:8px;">
+          <span>✏️</span>
+          <span>장비 상세 제원 및 상태·보관처 수정</span>
+          <code id="eq-edit-id-badge" style="font-size:0.82rem; background:#eff6ff; color:#1e40af; padding:2px 8px; border-radius:6px; font-weight:700;">EQ-00000</code>
+        </div>
+        <button class="modal-close" onclick="window.equipmentManager.closeEditDeviceModal()">✕</button>
+      </div>
+      <form onsubmit="window.equipmentManager.submitEditDevice(event)">
+        <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
+          <input type="hidden" id="eq-edit-id">
+
+          <!-- Section 1: 운영상태 및 배치/보관처 -->
+          <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:0.9rem 1rem; margin-bottom:1rem;">
+            <div style="font-size:0.84rem; font-weight:800; color:#1e3a8a; margin-bottom:0.65rem; display:flex; justify-content:space-between; align-items:center;">
+              <span>📦 1. 운영상태 및 배정 관측소 / 보관처 설정</span>
+              <span id="eq-edit-version-badge" style="font-size:0.74rem; color:#64748b; font-weight:600;">버전 v1</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1.3fr; gap: 0.8rem; margin-bottom: 0.75rem;">
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700;">운영상태 *</label>
+                <select id="eq-edit-status" class="filter-select" style="width: 100%; font-weight:700;" onchange="window.equipmentManager.onEditModalStatusChange(this.value)" required>
+                  <option value="OPERATING">🟢 운영중 (현장 가동)</option>
+                  <option value="SPARE">📦 예비품·보관품 (대기/보관)</option>
+                  <option value="REPAIRING">🚨 수리중 (점검/수리중)</option>
+                  <option value="DISPOSAL">🗑️ 폐품 (불용/폐기)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700;">배정 관측소 (또는 본원 보관)</label>
+                <select id="eq-edit-station-id" class="filter-select" style="width: 100%; font-weight:600;">
+                  <option value="">🏢 미배정 (기술원 본원 / 중앙 창고 보관)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight:700;">보관처 / 설치 위치 *</label>
+              <input type="text" id="eq-edit-location" class="form-input" placeholder="예: 현장설치, 기술원보관(예비품), 차량보관, 리버앤씨(수리)" required>
+              <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">
+                <button type="button" class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem; background:#fff;" onclick="document.getElementById('eq-edit-location').value='현장설치'">📍 현장설치</button>
+                <button type="button" class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem; background:#fff;" onclick="document.getElementById('eq-edit-location').value='기술원보관(예비품)'">🏢 기술원보관(예비품)</button>
+                <button type="button" class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem; background:#fff;" onclick="document.getElementById('eq-edit-location').value='권역 점검차량 보관'">🚐 차량보관</button>
+                <button type="button" class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem; background:#fff;" onclick="document.getElementById('eq-edit-location').value='리버앤씨(수리점검)'">🛠️ 리버앤씨(수리)</button>
+                <button type="button" class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem; background:#fff;" onclick="document.getElementById('eq-edit-location').value='불용창고(폐기대기)'">🗑️ 불용창고</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: 장비 고유 제원 (모델명, S/N, 자산번호, 구분) -->
+          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:0.9rem 1rem; margin-bottom:1rem;">
+            <div style="font-size:0.84rem; font-weight:800; color:#0f172a; margin-bottom:0.65rem;">
+              🔧 2. 장비 기본 제원 (구분 / 모델명 / S/N / 자산번호)
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 0.75rem;">
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700;">설비 구분 (카테고리) *</label>
+                <select id="eq-edit-category" class="filter-select" style="width: 100%;" required>
+                  <option value="FLOWMETER">1. 유속계</option>
+                  <option value="WATER_LEVEL">2. 수위계</option>
+                  <option value="MOUNT">3. 센서지지대</option>
+                  <option value="CONTROL">4. 제어시스템</option>
+                  <option value="SHELTER">5. 관측국사</option>
+                  <option value="UNDERWATER">6. 수중센서보호장치</option>
+                  <option value="LIGHTNING">7. 낙뢰보호장치</option>
+                  <option value="CCTV">8. 영상정보처리기기</option>
+                  <option value="ANCILLARY">9. 부대시설</option>
+                  <option value="ETC">기타</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700;">모델명 / 규격 *</label>
+                <input type="text" id="eq-edit-model" class="form-input" placeholder="예: RQ-30D, CM300, SL-3000" required>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 110px; gap: 0.8rem; margin-bottom: 0.75rem;">
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700;">제조번호 (S/N)</label>
+                <input type="text" id="eq-edit-sn" class="form-input" placeholder="예: 24258648">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700;">자산번호</label>
+                <input type="text" id="eq-edit-asset" class="form-input" placeholder="예: 2024-FLOW-012">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700;">취득년도</label>
+                <input type="text" id="eq-edit-acq-date" class="form-input" placeholder="예: 2023">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0.75rem;">
+              <label class="form-label" style="font-weight:700;">비고 / 특이사항 메모</label>
+              <textarea id="eq-edit-memo" class="form-input" rows="2" placeholder="예비품 보관 상태, 수리 내역, 현장 특이사항 등 자유 입력..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight:700; color:#1e40af;">변경 사유 (감사 이력 기록용)</label>
+              <input type="text" id="eq-edit-reason" class="form-input" placeholder="예: 예비품 현장 배치 / S/N 실물 대조 수정 / 수리 완료 후 보관처 변경">
+            </div>
+          </div>
+
+          <!-- Section 3: 최근 변경 이력 (Audit Logs) -->
+          <div id="eq-edit-audit-section" style="display:none; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.75rem 0.9rem;">
+            <div style="font-size:0.78rem; font-weight:700; color:#475569; margin-bottom:6px;">
+              📜 이 장비의 최근 변경 이력
+            </div>
+            <div id="eq-edit-audit-list" style="max-height:110px; overflow-y:auto; font-size:0.75rem; color:#334155;"></div>
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+          <button type="button" class="btn btn-outline btn-sm" style="color:#b91c1c; border-color:#fecaca;" onclick="const id=document.getElementById('eq-edit-id').value; window.equipmentManager.closeEditDeviceModal(); window.equipmentManager.openRepairModal(id);">
+            🚨 이 장비 수리 접수/단계변경
+          </button>
+          <div style="display:flex; gap: 0.5rem;">
+            <button type="button" class="btn btn-outline" onclick="window.equipmentManager.closeEditDeviceModal()">취소</button>
+            <button type="submit" class="btn btn-primary" style="font-weight:700;">💾 수정 내용 저장</button>
+          </div>
         </div>
       </form>
     </div>
@@ -3341,7 +3494,7 @@
   <script src="data/real_standard_basins.js?v=3.7"></script>
 
   <!-- Application Modules -->
-  <script src="js/api.js?v=4.4"></script>
+  <script src="js/api.js?v=4.5"></script>
   <script src="js/data.js?v=4.4"></script>
   <script src="js/gis.js?v=3.8"></script>
   <script src="js/table.js?v=3.7"></script>
@@ -3349,7 +3502,7 @@
   <script src="js/maintenance.js?v=3.7"></script>
   <script src="js/history.js?v=3.7"></script>
   <script src="js/calibration.js?v=3.7"></script>
-  <script src="js/equipment.js?v=1.0"></script>
+  <script src="js/equipment.js?v=1.2"></script>
   <script src="js/schedule.js?v=3.7"></script>
   <script src="js/monitor.js?v=3.8"></script>
   <script src="js/waterlevel.js?v=3.7"></script>

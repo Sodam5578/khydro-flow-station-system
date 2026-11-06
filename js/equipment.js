@@ -517,7 +517,7 @@ class EquipmentManager {
       window.app.switchTab("equipment");
     }
     if (region.includes("본원") || region.includes("미배정")) {
-      this.goToDevicesWithFilter({ category: "all", search: "기술원" });
+      this.goToDevicesWithFilter({ category: "all", status: "UNASSIGNED", search: "" });
       return;
     }
     this.switchSubTab("stations");
@@ -676,9 +676,11 @@ class EquipmentManager {
           const isSelected = this.selectedStationId === st.id;
           const isCalib = st.calib_2026 === 1;
           const isRepair = (st.repairing_count || 0) > 0;
+          const isSpare = (st.spare_count || 0) > 0;
           const isPlanned2026 = (st.total_devices || 0) === 0 || st.install_year === "2026";
 
           let calibBadge = isCalib ? `<span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.7rem; font-weight:700;">🎯 검정대상</span>` : "";
+          let spareBadge = isSpare ? `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.7rem; font-weight:700;">📦 예비·보관 (${st.spare_count})</span>` : "";
           let repairBadge = isRepair ? `<span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.7rem; font-weight:700;">🚨 수리중 (${st.repairing_count})</span>` : "";
 
           let equipBadges = "";
@@ -703,6 +705,7 @@ class EquipmentManager {
               <div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
                 ${equipBadges}
                 ${calibBadge}
+                ${spareBadge}
                 ${repairBadge}
               </div>
             </div>
@@ -813,9 +816,7 @@ class EquipmentManager {
           else if (d.category === "LIGHTNING") catBadge = `<span class="badge badge-purple">⚡ 낙뢰SPD</span>`;
           else if (d.category === "CCTV") catBadge = `<span class="badge badge-green">📹 영상CCTV</span>`;
 
-          const calibInfo = d.recent_calib_date 
-            ? `<div style="font-size:0.75rem; color:#059669;">완료: ${d.recent_calib_date}</div>` 
-            : `<div style="font-size:0.75rem; color:#94a3b8;">-</div>`;
+          const safeLoc = (d.location || "").replace(/'/g, "\\'");
 
           return `
             <tr>
@@ -831,15 +832,18 @@ class EquipmentManager {
               <td><span style="font-size:0.8rem; color:#475569;">${d.asset_no || d.asset_no_temp || "-"}</span></td>
               <td style="text-align:center;"><span class="badge badge-green">● 운영중</span></td>
               <td style="text-align:center;">
-                <div style="display:flex; gap:4px; justify-content:center;">
+                <div style="display:flex; gap:4px; justify-content:center; flex-wrap:wrap;">
+                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:#1e40af; border-color:#bfdbfe;" onclick="window.equipmentManager.openEditDeviceModal('${d.equipment_id}')" title="모델명, S/N, 상태, 배치지점 등 상세 수정">
+                    ✏️ 수정
+                  </button>
+                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem;" onclick="window.equipmentManager.openStatusModal('${d.equipment_id}', '${d.status}', '${safeLoc}', ${d.station_id || 'null'})" title="상태/보관위치 변경">
+                    🔄 상태
+                  </button>
                   <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem;" onclick="window.equipmentManager.openWorkModal(${station.id}, '${d.equipment_id}')" title="이 장비에 대한 조치 등록">
                     🛠️ 조치
                   </button>
-                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem;" onclick="window.equipmentManager.openRepairModal('${d.equipment_id}')" title="수리 접수">
+                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem;" onclick="window.equipmentManager.openRepairModal('${d.equipment_id}')" title="수리 접수/단계변경">
                     🚨 수리
-                  </button>
-                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem;" onclick="window.equipmentManager.openStatusModal('${d.equipment_id}', '${d.status}', '${d.location}')" title="상태/보관위치 변경">
-                    🔄 상태
                   </button>
                 </div>
               </td>
@@ -847,23 +851,44 @@ class EquipmentManager {
           `;
         }).join("");
 
-    // Other devices (spares, repairing)
+    // Other devices (spares, stored, repairing, disposal)
     const otherRowsHtml = otherDevices.length === 0
-      ? `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:#94a3b8;">해당 지점에 연계된 예비·수리·철거 장비가 없습니다.</td></tr>`
+      ? `<tr><td colspan="7" style="text-align:center; padding:1.5rem; color:#94a3b8;">해당 지점에 연계된 예비·보관·수리·철거 장비가 없습니다.</td></tr>`
       : otherDevices.map((d, idx) => {
           let stBadge = `<span class="badge badge-gray">${d.status_label || d.status}</span>`;
           if (d.status === "SPARE") stBadge = `<span class="badge badge-amber">📦 예비품</span>`;
           else if (d.status === "REPAIRING") stBadge = `<span class="badge badge-red">🚨 수리중</span>`;
           else if (d.status === "DISPOSAL") stBadge = `<span class="badge badge-gray">🗑️ 폐품</span>`;
 
+          const safeLoc = (d.location || "").replace(/'/g, "\\'");
+
           return `
             <tr>
-              <td style="text-align:center;">${idx + 1}</td>
-              <td style="text-align:center;">${d.category_name}</td>
-              <td><b>${d.model_name}</b> (<code>${d.equipment_id}</code>)</td>
-              <td><code>${d.serial_no || "-"}</code></td>
+              <td style="text-align:center;"><b>${idx + 1}</b></td>
+              <td style="text-align:center;"><span class="badge badge-gray">${d.category_name}</span></td>
+              <td>
+                <b style="color:#0f172a;">${d.model_name || "-"}</b>
+                <div style="font-size:0.73rem; color:#64748b;">ID: <code>${d.equipment_id}</code> ${d.asset_no ? `| 자산: ${d.asset_no}` : ""}</div>
+              </td>
+              <td><code style="font-weight:700; color:#1e40af; background:#f8fafc; padding:2px 6px; border-radius:4px;">${d.serial_no || "-"}</code></td>
               <td style="text-align:center;">${stBadge}</td>
-              <td><span style="font-size:0.8rem; color:#475569;">${d.location || "-"}</span></td>
+              <td>
+                <span style="font-size:0.8rem; color:#475569; font-weight:600;">${d.location || "-"}</span>
+                ${d.memo ? `<div style="font-size:0.72rem; color:#64748b;">${d.memo}</div>` : ""}
+              </td>
+              <td style="text-align:center;">
+                <div style="display:flex; gap:4px; justify-content:center; flex-wrap:wrap;">
+                  <button class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.72rem; color:#1e40af; border-color:#bfdbfe; font-weight:700;" onclick="window.equipmentManager.openEditDeviceModal('${d.equipment_id}')" title="예비품/보관품/수리품 제원·상태·보관처 직접 수정">
+                    ✏️ 수정
+                  </button>
+                  <button class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.72rem;" onclick="window.equipmentManager.openStatusModal('${d.equipment_id}', '${d.status}', '${safeLoc}', ${d.station_id || 'null'})" title="운영중 전환 또는 상태·보관위치 변경">
+                    🔄 상태
+                  </button>
+                  <button class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.72rem;" onclick="window.equipmentManager.openRepairModal('${d.equipment_id}')" title="수리 접수 또는 진행단계 변경">
+                    🚨 수리
+                  </button>
+                </div>
+              </td>
             </tr>
           `;
         }).join("");
@@ -1018,7 +1043,7 @@ class EquipmentManager {
                   <th>제조번호 (S/N)</th>
                   <th>자산번호</th>
                   <th style="width:80px; text-align:center;">상태</th>
-                  <th style="width:140px; text-align:center;">작업 관리</th>
+                  <th style="width:185px; text-align:center;">작업 관리</th>
                 </tr>
               </thead>
               <tbody>
@@ -1031,22 +1056,28 @@ class EquipmentManager {
 
       <!-- 2. Other Equipment (Spares, Repairs) -->
       <div class="card" id="eq-station-repairs-card" style="margin-bottom:1rem;">
-        <div class="card-header">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
           <div class="card-title" style="font-size:0.9rem; color:#475569;">
             <span>📦</span> 해당 지점 연계 예비품 / 보관품 / 수리중 설비 (${otherDevices.length}건)
           </div>
+          <div style="display:flex; gap:0.4rem;">
+            <button class="btn btn-outline btn-sm" style="padding:3px 9px; font-size:0.76rem;" onclick="window.equipmentManager.openAddDeviceModal(${station.id}, 'SPARE')">
+              ➕ 이 지점에 예비·보관품 등록
+            </button>
+          </div>
         </div>
         <div class="card-body" style="padding:0;">
-          <div class="table-responsive" style="max-height:220px;">
-            <table class="custom-table" style="width:100%; font-size:0.8rem;">
+          <div class="table-responsive" style="max-height:320px;">
+            <table class="custom-table" style="width:100%; font-size:0.82rem;">
               <thead>
                 <tr>
-                  <th style="width:40px; text-align:center;">No.</th>
-                  <th style="width:90px; text-align:center;">구분</th>
-                  <th>모델명 (ID)</th>
-                  <th>S/N</th>
-                  <th style="width:80px; text-align:center;">상태</th>
+                  <th style="width:45px; text-align:center;">No.</th>
+                  <th style="width:95px; text-align:center;">구분</th>
+                  <th>모델명 (장비 ID / 자산번호)</th>
+                  <th>제조번호 (S/N)</th>
+                  <th style="width:85px; text-align:center;">상태</th>
                   <th>보관처 / 위치</th>
+                  <th style="width:170px; text-align:center;">작업 관리</th>
                 </tr>
               </thead>
               <tbody>
@@ -1082,7 +1113,7 @@ class EquipmentManager {
     const countEl = document.getElementById("eq-all-devices-count");
     if (!tbody) return;
 
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:3rem; color:#64748b;">장비 목록을 조회하는 중...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:3rem; color:#64748b;">장비 목록을 조회하는 중...</td></tr>`;
 
     try {
       const params = {
@@ -1102,7 +1133,7 @@ class EquipmentManager {
         if (countEl) countEl.textContent = `${(res.total || 0).toLocaleString()}대/식`;
 
         if (!res.devices || res.devices.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:3rem; color:#94a3b8;">조건에 해당하는 장비가 없습니다.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:3rem; color:#94a3b8;">조건에 해당하는 장비가 없습니다.</td></tr>`;
           this.renderDevicePagination(res);
           return;
         }
@@ -1118,17 +1149,44 @@ class EquipmentManager {
           else if (d.status === "REPAIRING") stBadge = `<span class="badge badge-red">수리중</span>`;
           else if (d.status === "DISPOSAL") stBadge = `<span class="badge badge-gray">폐품</span>`;
 
+          const safeStName = (d.station_name || "").replace(/'/g, "\\'");
+          const safeLoc = (d.location || "").replace(/'/g, "\\'");
+          const targetSection = d.status === "OPERATING" ? "devices" : "repairs";
+          const rowClickHandler = d.station_id
+            ? `window.equipmentManager.navigateToStation(${d.station_id}, '${safeStName}', '${targetSection}')`
+            : `window.equipmentManager.openEditDeviceModal('${d.equipment_id}')`;
+          const rowTitle = d.station_id
+            ? `클릭 시 [${d.station_name}] 장비 현황으로 이동`
+            : `클릭 시 [${d.equipment_id}] 보관/예비품 상세 정보 및 배치지점 수정`;
+
+          const stationDisplay = d.station_name
+            ? `<b style="color:#1e40af;">📍 ${d.station_name}</b>`
+            : `<span class="badge badge-amber" style="background:#fef3c7; color:#92400e; font-weight:700;">🏢 미배정(본원/보관)</span>`;
+
           return `
-            <tr style="cursor:pointer;" onclick="window.equipmentManager.navigateToStation(${d.station_id || 'null'}, '${(d.station_name || '').replace(/'/g, "\\'")}', 'devices')" title="클릭 시 [${d.station_name || '이 지점'}] 장비 현황으로 이동">
+            <tr style="cursor:pointer;" onclick="${rowClickHandler}" title="${rowTitle}">
               <td style="text-align:center;"><b>${rowNo}</b></td>
               <td><code>${d.equipment_id}</code></td>
               <td><span class="badge badge-gray">${d.category_name}</span></td>
               <td><b>${d.model_name || "-"}</b></td>
               <td><code style="font-weight:700; color:#1e40af;">${d.serial_no || "-"}</code></td>
               <td>${d.asset_no || d.asset_no_temp || "-"}</td>
-              <td><b style="color:#1e40af;">📍 ${d.station_name || "미배정(보관)"}</b></td>
+              <td>${stationDisplay}</td>
               <td style="text-align:center;">${stBadge}</td>
               <td>${d.location || "-"}</td>
+              <td style="text-align:center;" onclick="event.stopPropagation();">
+                <div style="display:flex; gap:4px; justify-content:center;">
+                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:#1e40af; border-color:#bfdbfe; font-weight:700;" onclick="window.equipmentManager.openEditDeviceModal('${d.equipment_id}')" title="장비 정보/상태/배치지점 통합 수정">
+                    ✏️ 수정
+                  </button>
+                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem;" onclick="window.equipmentManager.openStatusModal('${d.equipment_id}', '${d.status}', '${safeLoc}', ${d.station_id || 'null'})" title="상태 및 보관처 빠른 변경">
+                    🔄 상태
+                  </button>
+                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem;" onclick="window.equipmentManager.openRepairModal('${d.equipment_id}')" title="수리 접수 또는 단계 변경">
+                    🚨 수리
+                  </button>
+                </div>
+              </td>
             </tr>
           `;
         }).join("");
@@ -1141,7 +1199,7 @@ class EquipmentManager {
       }
     } catch (e) {
       console.error(e);
-      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:3rem; color:#dc2626;">조회 중 오류가 발생했습니다.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:3rem; color:#dc2626;">조회 중 오류가 발생했습니다.</td></tr>`;
     }
   }
 
@@ -1650,7 +1708,7 @@ class EquipmentManager {
   // MODALS & ACTIONS
   // ==========================================
 
-  openAddDeviceModal(stationId = null) {
+  openAddDeviceModal(stationId = null, defaultStatus = "OPERATING") {
     const modal = document.getElementById("eq-add-modal");
     if (!modal) return;
 
@@ -1659,8 +1717,8 @@ class EquipmentManager {
     document.getElementById("eq-add-model").value = "";
     document.getElementById("eq-add-sn").value = "";
     document.getElementById("eq-add-asset").value = "";
-    document.getElementById("eq-add-status").value = "OPERATING";
-    document.getElementById("eq-add-location").value = "현장설치";
+    document.getElementById("eq-add-status").value = defaultStatus || "OPERATING";
+    document.getElementById("eq-add-location").value = defaultStatus === "SPARE" ? "기술원보관(예비품)" : "현장설치";
     document.getElementById("eq-add-memo").value = "";
 
     modal.classList.add("active");
@@ -1943,7 +2001,19 @@ class EquipmentManager {
     }
   }
 
-  openStatusModal(equipmentId, curStatus, curLocation) {
+  populateStationDropdownForModal(selectEl, selectedStationId = null) {
+    if (!selectEl) return;
+    let list = this.allStations || this.stations || [];
+    if ((!list || list.length === 0) && window.dataManager) {
+      list = window.dataManager.getAll() || [];
+    }
+    const sorted = [...list].sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko-KR"));
+    selectEl.innerHTML = `<option value="">🏢 미배정 (기술원 본원 / 중앙 창고 보관)</option>` +
+      sorted.map(s => `<option value="${s.id}" ${String(s.id) === String(selectedStationId) ? "selected" : ""}>📍 ${s.name} (${s.region || "-"})</option>`).join("");
+    selectEl.value = (selectedStationId && selectedStationId !== "null") ? String(selectedStationId) : "";
+  }
+
+  async openStatusModal(equipmentId, curStatus, curLocation, curStationId = null) {
     const modal = document.getElementById("eq-status-modal");
     if (!modal) return;
 
@@ -1952,7 +2022,44 @@ class EquipmentManager {
     document.getElementById("eq-status-location").value = curLocation || "";
     document.getElementById("eq-status-reason").value = "";
 
+    const stSelect = document.getElementById("eq-status-station-id");
+    this.populateStationDropdownForModal(stSelect, curStationId);
+
+    const labelEl = document.getElementById("eq-status-device-label");
+    if (labelEl) labelEl.textContent = `${equipmentId}`;
+
+    // Load exact device info asynchronously to enrich modal header & station selection
+    try {
+      const res = await window.apiClient.getEquipmentDeviceDetail(equipmentId);
+      if (res && res.success && res.device) {
+        const d = res.device;
+        if (labelEl) {
+          labelEl.textContent = `[${d.category_name}] ${d.model_name || "-"} (S/N: ${d.serial_no || "-"} | ID: ${d.equipment_id})`;
+        }
+        this.populateStationDropdownForModal(stSelect, d.station_id);
+        document.getElementById("eq-status-select").value = d.status || curStatus || "OPERATING";
+        document.getElementById("eq-status-location").value = d.location || curLocation || "";
+      }
+    } catch (e) {
+      // Ignore detail fetch error, fallback values are already set
+    }
+
     modal.classList.add("active");
+  }
+
+  onStatusModalSelectChange(newStatus) {
+    const locInput = document.getElementById("eq-status-location");
+    if (!locInput) return;
+    const curVal = locInput.value.trim();
+    if (newStatus === "OPERATING" && (!curVal || curVal.includes("보관") || curVal.includes("수리") || curVal.includes("창고"))) {
+      locInput.value = "현장설치";
+    } else if (newStatus === "SPARE" && (!curVal || curVal === "현장설치")) {
+      locInput.value = "기술원보관(예비품)";
+    } else if (newStatus === "REPAIRING" && (!curVal || curVal === "현장설치" || curVal.includes("보관"))) {
+      locInput.value = "리버앤씨(수리점검)";
+    } else if (newStatus === "DISPOSAL") {
+      locInput.value = "불용창고(폐기대기)";
+    }
   }
 
   closeStatusModal() {
@@ -1966,23 +2073,161 @@ class EquipmentManager {
     const newStatus = document.getElementById("eq-status-select").value;
     const newLoc = document.getElementById("eq-status-location").value.trim();
     const reason = document.getElementById("eq-status-reason").value.trim();
+    const stSelect = document.getElementById("eq-status-station-id");
+    const stationId = stSelect ? stSelect.value : undefined;
 
     try {
-      const res = await window.apiClient.updateEquipmentStatus(eqId, newStatus, newLoc, reason);
+      const res = await window.apiClient.updateEquipmentStatus(eqId, newStatus, newLoc, reason, stationId);
       if (res.success) {
-        if (window.app) window.app.showToast("장비 상태가 성공적으로 변경되었습니다.", "success");
+        if (window.app) window.app.showToast(`장비 상태가 [${res.statusLabel || newStatus}](으)로 변경되었습니다.`, "success");
         this.closeStatusModal();
         if (this.selectedStationId) this.selectStation(this.selectedStationId);
+        this.loadStationsSummary();
         this.loadDevices();
+        this.loadDashboard();
+        this.loadKPIs();
       } else {
-        alert("상태 변경 실패: " + res.message);
+        alert("상태 변경 실패: " + (res.message || res.error));
       }
     } catch (err) {
       alert("오류: " + err.message);
     }
   }
 
-  openRepairModal(equipmentId, repairId = null, curStage = "접수") {
+  /**
+   * Full Equipment Detail & Status/Station Edit Modal (예비품/보관품/수리품/운영중 설비 통합 수정)
+   */
+  async openEditDeviceModal(equipmentId) {
+    const modal = document.getElementById("eq-edit-modal");
+    if (!modal || !equipmentId) return;
+
+    document.getElementById("eq-edit-id").value = equipmentId;
+    const idBadge = document.getElementById("eq-edit-id-badge");
+    if (idBadge) idBadge.textContent = equipmentId;
+    document.getElementById("eq-edit-reason").value = "";
+
+    const stSelect = document.getElementById("eq-edit-station-id");
+    this.populateStationDropdownForModal(stSelect, null);
+
+    try {
+      const res = await window.apiClient.getEquipmentDeviceDetail(equipmentId);
+      if (!res || !res.success || !res.device) {
+        alert("장비 상세 정보를 불러올 수 없습니다.");
+        return;
+      }
+
+      const d = res.device;
+      const verBadge = document.getElementById("eq-edit-version-badge");
+      if (verBadge) verBadge.textContent = `버전 v${d.version || 1} | 최근수정: ${(d.updated_at || "").split(" ")[0] || "-"}`;
+
+      document.getElementById("eq-edit-status").value = d.status || "OPERATING";
+      this.populateStationDropdownForModal(stSelect, d.station_id);
+      document.getElementById("eq-edit-location").value = d.location || "";
+      document.getElementById("eq-edit-category").value = d.category || "FLOWMETER";
+      document.getElementById("eq-edit-model").value = d.model_name || "";
+      document.getElementById("eq-edit-sn").value = d.serial_no || "";
+      document.getElementById("eq-edit-asset").value = d.asset_no || d.asset_no_temp || "";
+      document.getElementById("eq-edit-acq-date").value = d.acquisition_date || "";
+      document.getElementById("eq-edit-memo").value = d.memo || "";
+
+      // Render audit history
+      const auditSec = document.getElementById("eq-edit-audit-section");
+      const auditList = document.getElementById("eq-edit-audit-list");
+      const logs = res.auditLogs || [];
+      if (auditSec && auditList) {
+        if (logs.length > 0) {
+          auditSec.style.display = "block";
+          auditList.innerHTML = logs.map(l => `
+            <div style="padding:4px 0; border-bottom:1px dashed #e2e8f0; display:flex; justify-content:space-between; gap:8px;">
+              <div>
+                <span class="badge badge-gray" style="font-size:0.68rem;">${l.field_name}</span>
+                <span>${l.before_value ? `<s style="color:#94a3b8;">${l.before_value}</s> ➔ ` : ""}<b style="color:#1e40af;">${l.after_value || "-"}</b></span>
+                ${l.reason ? `<span style="color:#64748b;">(${l.reason})</span>` : ""}
+              </div>
+              <div style="color:#94a3b8; white-space:nowrap;">${(l.changed_at || "").slice(0, 16)} · ${l.changed_by || "-"}</div>
+            </div>
+          `).join("");
+        } else {
+          auditSec.style.display = "none";
+          auditList.innerHTML = "";
+        }
+      }
+
+      modal.classList.add("active");
+    } catch (err) {
+      console.error(err);
+      alert("장비 정보 조회 오류: " + err.message);
+    }
+  }
+
+  onEditModalStatusChange(newStatus) {
+    const locInput = document.getElementById("eq-edit-location");
+    if (!locInput) return;
+    const curVal = locInput.value.trim();
+    if (newStatus === "OPERATING" && (!curVal || curVal.includes("보관") || curVal.includes("수리") || curVal.includes("창고"))) {
+      locInput.value = "현장설치";
+    } else if (newStatus === "SPARE" && (!curVal || curVal === "현장설치")) {
+      locInput.value = "기술원보관(예비품)";
+    } else if (newStatus === "REPAIRING" && (!curVal || curVal === "현장설치" || curVal.includes("보관"))) {
+      locInput.value = "리버앤씨(수리점검)";
+    } else if (newStatus === "DISPOSAL") {
+      locInput.value = "불용창고(폐기대기)";
+    }
+  }
+
+  closeEditDeviceModal() {
+    const modal = document.getElementById("eq-edit-modal");
+    if (modal) modal.classList.remove("active");
+  }
+
+  async submitEditDevice(e) {
+    e.preventDefault();
+    const eqId = document.getElementById("eq-edit-id").value;
+    const status = document.getElementById("eq-edit-status").value;
+    const stationId = document.getElementById("eq-edit-station-id").value;
+    const location = document.getElementById("eq-edit-location").value.trim();
+    const category = document.getElementById("eq-edit-category").value;
+    const model_name = document.getElementById("eq-edit-model").value.trim();
+    const serial_no = document.getElementById("eq-edit-sn").value.trim();
+    const asset_no = document.getElementById("eq-edit-asset").value.trim();
+    const acquisition_date = document.getElementById("eq-edit-acq-date").value.trim();
+    const memo = document.getElementById("eq-edit-memo").value.trim();
+    const reason = document.getElementById("eq-edit-reason").value.trim();
+
+    const payload = {
+      status,
+      station_id: stationId ? parseInt(stationId, 10) : null,
+      location,
+      category,
+      model_name,
+      serial_no,
+      asset_no,
+      acquisition_date,
+      memo,
+      reason: reason || "웹 시스템 장비 상세 수정"
+    };
+
+    try {
+      const res = await window.apiClient.updateEquipmentDevice(eqId, payload);
+      if (res.success) {
+        if (window.app) {
+          window.app.showToast(`장비(${eqId}) 정보가 저장되었습니다. (${res.changesCount || 0}개 항목 반영)`, "success");
+        }
+        this.closeEditDeviceModal();
+        if (this.selectedStationId) this.selectStation(this.selectedStationId);
+        this.loadStationsSummary();
+        this.loadDevices();
+        this.loadDashboard();
+        this.loadKPIs();
+      } else {
+        alert("수정 실패: " + (res.message || res.error));
+      }
+    } catch (err) {
+      alert("오류: " + err.message);
+    }
+  }
+
+  async openRepairModal(equipmentId, repairId = null, curStage = "접수") {
     const modal = document.getElementById("eq-repair-modal");
     if (!modal) return;
 
@@ -1991,6 +2236,22 @@ class EquipmentManager {
     document.getElementById("eq-repair-stage").value = curStage || "접수";
     document.getElementById("eq-repair-vendor").value = "리버앤씨";
     document.getElementById("eq-repair-memo").value = "";
+
+    // If repairId was not passed, check if this device already has an active repair record
+    if (!repairId && equipmentId) {
+      try {
+        const res = await window.apiClient.getEquipmentDeviceDetail(equipmentId);
+        if (res && res.success && res.activeRepair && res.activeRepair.stage !== "반입·재설치") {
+          const rep = res.activeRepair;
+          document.getElementById("eq-repair-id").value = rep.id;
+          document.getElementById("eq-repair-stage").value = rep.stage || "수리중";
+          document.getElementById("eq-repair-vendor").value = rep.vendor || "리버앤씨";
+          document.getElementById("eq-repair-memo").value = rep.action_memo || rep.issue_desc || "";
+        }
+      } catch (e) {
+        // Ignore
+      }
+    }
 
     modal.classList.add("active");
   }

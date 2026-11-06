@@ -427,6 +427,13 @@ class ApiClient {
     return await res.json();
   }
 
+  async getEquipmentDeviceDetail(equipmentId) {
+    const res = await fetch(`${this.baseUrl}/equipment/devices/${encodeURIComponent(equipmentId)}`, {
+      headers: this.getHeaders()
+    });
+    return await res.json();
+  }
+
   async createEquipmentDevice(data) {
     const res = await fetch(`${this.baseUrl}/equipment/devices`, {
       method: "POST",
@@ -436,11 +443,22 @@ class ApiClient {
     return await res.json();
   }
 
-  async updateEquipmentStatus(equipmentId, status, location, reason) {
+  async updateEquipmentDevice(equipmentId, data) {
+    const res = await fetch(`${this.baseUrl}/equipment/devices/${encodeURIComponent(equipmentId)}`, {
+      method: "PUT",
+      headers: this.getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return await res.json();
+  }
+
+  async updateEquipmentStatus(equipmentId, status, location, reason, station_id = undefined) {
+    const payload = { status, location, reason };
+    if (station_id !== undefined) payload.station_id = station_id;
     const res = await fetch(`${this.baseUrl}/equipment/devices/${encodeURIComponent(equipmentId)}/status`, {
       method: "PATCH",
       headers: this.getHeaders(),
-      body: JSON.stringify({ status, location, reason })
+      body: JSON.stringify(payload)
     });
     return await res.json();
   }
