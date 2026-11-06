@@ -119,6 +119,19 @@ class EquipmentManager {
         this.loadActions();
       });
     }
+
+    // Close modal station search results when clicking outside
+    document.addEventListener("click", (e) => {
+      ["eq-add", "eq-status", "eq-edit"].forEach(prefix => {
+        const searchEl = document.getElementById(`${prefix}-station-search`);
+        const resultsEl = document.getElementById(`${prefix}-station-results`);
+        if (resultsEl && resultsEl.style.display !== "none") {
+          if (searchEl && !searchEl.contains(e.target) && !resultsEl.contains(e.target)) {
+            resultsEl.style.display = "none";
+          }
+        }
+      });
+    });
   }
 
   switchSubTab(tabKey) {
@@ -1712,7 +1725,7 @@ class EquipmentManager {
     const modal = document.getElementById("eq-add-modal");
     if (!modal) return;
 
-    document.getElementById("eq-add-station-id").value = stationId || "";
+    this.setModalStationSelection("eq-add", stationId);
     document.getElementById("eq-add-category").value = "FLOWMETER";
     document.getElementById("eq-add-model").value = "";
     document.getElementById("eq-add-sn").value = "";
@@ -2001,16 +2014,125 @@ class EquipmentManager {
     }
   }
 
-  populateStationDropdownForModal(selectEl, selectedStationId = null) {
-    if (!selectEl) return;
+  getStationMasterList() {
     let list = this.allStations || this.stations || [];
     if ((!list || list.length === 0) && window.dataManager) {
       list = window.dataManager.getAll() || [];
     }
-    const sorted = [...list].sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko-KR"));
-    selectEl.innerHTML = `<option value="">🏢 미배정 (기술원 본원 / 중앙 창고 보관)</option>` +
-      sorted.map(s => `<option value="${s.id}" ${String(s.id) === String(selectedStationId) ? "selected" : ""}>📍 ${s.name} (${s.region || "-"})</option>`).join("");
-    selectEl.value = (selectedStationId && selectedStationId !== "null") ? String(selectedStationId) : "";
+    return list;
+  }
+
+  setModalStationSelection(prefix, selectedStationId = null, fallbackStationName = "") {
+    const hiddenEl = document.getElementById(`${prefix}-station-id`);
+    const labelEl = document.getElementById(`${prefix}-station-selected-label`);
+    const boxEl = document.getElementById(`${prefix}-station-selected-box`);
+    const searchEl = document.getElementById(`${prefix}-station-search`);
+    const resultsEl = document.getElementById(`${prefix}-station-results`);
+
+    const list = this.getStationMasterList();
+    let matchedStation = null;
+    if (selectedStationId && selectedStationId !== "null" && selectedStationId !== "") {
+      matchedStation = list.find(s => String(s.id) === String(selectedStationId));
+    }
+
+    if (hiddenEl) {
+      hiddenEl.value = (selectedStationId && selectedStationId !== "null") ? String(selectedStationId) : "";
+    }
+
+    if (labelEl && boxEl) {
+      if (matchedStation) {
+        labelEl.innerHTML = `📍 <b>${matchedStation.name}</b> <span style="font-weight:500; color:#475569; font-size:0.76rem;">(${matchedStation.region || "-"} · ${matchedStation.river || "-"} · 코드:${matchedStation.code || "-"})</span>`;
+        boxEl.style.background = "#eff6ff";
+        boxEl.style.borderColor = "#bfdbfe";
+        labelEl.style.color = "#1e40af";
+      } else if (fallbackStationName && selectedStationId && selectedStationId !== "null") {
+        labelEl.innerHTML = `📍 <b>${fallbackStationName}</b>`;
+        boxEl.style.background = "#eff6ff";
+        boxEl.style.borderColor = "#bfdbfe";
+        labelEl.style.color = "#1e40af";
+      } else {
+        labelEl.innerHTML = `🏢 <b>미배정 (기술원 본원 / 중앙 창고 보관)</b>`;
+        boxEl.style.background = "#fffbeb";
+        boxEl.style.borderColor = "#fde68a";
+        labelEl.style.color = "#92400e";
+      }
+    }
+
+    if (searchEl) searchEl.value = "";
+    if (resultsEl) {
+      resultsEl.style.display = "none";
+      resultsEl.innerHTML = "";
+    }
+  }
+
+  onStationSearchInput(prefix, keyword = "") {
+    const resultsEl = document.getElementById(`${prefix}-station-results`);
+    if (!resultsEl) return;
+
+    const q = String(keyword || "").trim().toLowerCase();
+    // Only show matching stations when user actually enters a search term
+    if (!q) {
+      resultsEl.style.display = "none";
+      resultsEl.innerHTML = "";
+      return;
+    }
+
+    const list = this.getStationMasterList();
+    const matches = list.filter(s => {
+      const name = String(s.name || "").toLowerCase();
+      const river = String(s.river || "").toLowerCase();
+      const region = String(s.region || "").toLowerCase();
+      const code = String(s.code || "").toLowerCase();
+      const addr = String(s.address || "").toLowerCase();
+      return name.includes(q) || river.includes(q) || region.includes(q) || code.includes(q) || addr.includes(q);
+    });
+
+    const isUnassignedMatch = "미배정 본원 기술원 창고 보관".includes(q);
+
+    if (matches.length === 0 && !isUnassignedMatch) {
+      resultsEl.innerHTML = `
+        <div style="padding:10px 12px; font-size:0.8rem; color:#64748b; text-align:center;">
+          '<b>${keyword}</b>'에 해당하는 관측소가 없습니다.
+        </div>
+      `;
+      resultsEl.style.display = "block";
+      return;
+    }
+
+    let html = "";
+    if (isUnassignedMatch) {
+      html += `
+        <div style="padding:8px 12px; cursor:pointer; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; background:#fffbeb;"
+             onmouseover="this.style.background='#fef3c7'" onmouseout="this.style.background='#fffbeb'"
+             onclick="window.equipmentManager.selectStationFromSearch('${prefix}', '')">
+          <span style="font-size:0.82rem; font-weight:700; color:#92400e;">🏢 미배정 (기술원 본원 / 중앙 창고 보관)</span>
+          <span class="badge badge-amber" style="font-size:0.68rem;">본원보관</span>
+        </div>
+      `;
+    }
+
+    html += matches.slice(0, 30).map(s => `
+      <div style="padding:7px 12px; cursor:pointer; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;"
+           onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='#ffffff'"
+           onclick="window.equipmentManager.selectStationFromSearch('${prefix}', '${s.id}')">
+        <div>
+          <b style="font-size:0.83rem; color:#0f172a;">📍 ${s.name}</b>
+          <span style="font-size:0.75rem; color:#64748b; margin-left:6px;">${s.river || "-"} | 코드: <code>${s.code || "-"}</code></span>
+        </div>
+        <span class="badge badge-blue" style="font-size:0.7rem;">${s.region || "-"}</span>
+      </div>
+    `).join("");
+
+    if (matches.length > 30) {
+      html += `<div style="padding:6px 12px; font-size:0.74rem; color:#64748b; text-align:center; background:#f8fafc;">외 ${matches.length - 30}개소 더 있음 (검색어를 더 구체적으로 입력해주세요)</div>`;
+    }
+
+    resultsEl.innerHTML = html;
+    resultsEl.style.display = "block";
+  }
+
+  selectStationFromSearch(prefix, stationId = "") {
+    this.setModalStationSelection(prefix, stationId);
   }
 
   async openStatusModal(equipmentId, curStatus, curLocation, curStationId = null) {
@@ -2022,8 +2144,7 @@ class EquipmentManager {
     document.getElementById("eq-status-location").value = curLocation || "";
     document.getElementById("eq-status-reason").value = "";
 
-    const stSelect = document.getElementById("eq-status-station-id");
-    this.populateStationDropdownForModal(stSelect, curStationId);
+    this.setModalStationSelection("eq-status", curStationId);
 
     const labelEl = document.getElementById("eq-status-device-label");
     if (labelEl) labelEl.textContent = `${equipmentId}`;
@@ -2036,7 +2157,7 @@ class EquipmentManager {
         if (labelEl) {
           labelEl.textContent = `[${d.category_name}] ${d.model_name || "-"} (S/N: ${d.serial_no || "-"} | ID: ${d.equipment_id})`;
         }
-        this.populateStationDropdownForModal(stSelect, d.station_id);
+        this.setModalStationSelection("eq-status", d.station_id, d.station_name);
         document.getElementById("eq-status-select").value = d.status || curStatus || "OPERATING";
         document.getElementById("eq-status-location").value = d.location || curLocation || "";
       }
@@ -2106,8 +2227,7 @@ class EquipmentManager {
     if (idBadge) idBadge.textContent = equipmentId;
     document.getElementById("eq-edit-reason").value = "";
 
-    const stSelect = document.getElementById("eq-edit-station-id");
-    this.populateStationDropdownForModal(stSelect, null);
+    this.setModalStationSelection("eq-edit", null);
 
     try {
       const res = await window.apiClient.getEquipmentDeviceDetail(equipmentId);
@@ -2121,7 +2241,7 @@ class EquipmentManager {
       if (verBadge) verBadge.textContent = `버전 v${d.version || 1} | 최근수정: ${(d.updated_at || "").split(" ")[0] || "-"}`;
 
       document.getElementById("eq-edit-status").value = d.status || "OPERATING";
-      this.populateStationDropdownForModal(stSelect, d.station_id);
+      this.setModalStationSelection("eq-edit", d.station_id, d.station_name);
       document.getElementById("eq-edit-location").value = d.location || "";
       document.getElementById("eq-edit-category").value = d.category || "FLOWMETER";
       document.getElementById("eq-edit-model").value = d.model_name || "";
