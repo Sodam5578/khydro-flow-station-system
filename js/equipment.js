@@ -184,7 +184,7 @@ class EquipmentManager {
       await this.loadStationsSummary();
     }
 
-    await this.selectStation(Number(targetId));
+    await this.selectStation(Number(targetId), true);
 
     // Instant position without smooth scrolling animation
     const listEl = document.getElementById("eq-station-list");
@@ -199,10 +199,16 @@ class EquipmentManager {
   switchTab(tabKey) {
     this.activeTab = tabKey;
 
-    // Update tab button classes
+    // Update tab button classes & auto-scroll active tab into center on mobile
     document.querySelectorAll(".eq-tab-btn").forEach(btn => {
-      if (btn.dataset.tab === tabKey) btn.classList.add("active");
-      else btn.classList.remove("active");
+      if (btn.dataset.tab === tabKey) {
+        btn.classList.add("active");
+        if (typeof btn.scrollIntoView === "function") {
+          btn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        }
+      } else {
+        btn.classList.remove("active");
+      }
     });
 
     // Toggle sub-views (stations is a grid workbench!)
@@ -707,7 +713,7 @@ class EquipmentManager {
           }
 
           return `
-            <div class="eq-st-card ${isSelected ? "active" : ""}" data-station-id="${st.id}" onclick="window.equipmentManager.selectStation(${st.id})">
+            <div class="eq-st-card ${isSelected ? "active" : ""}" data-station-id="${st.id}" onclick="window.equipmentManager.selectStation(${st.id}, true)">
               <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
                 <b style="font-size:0.9rem; color:#0f172a;">${st.name}</b>
                 <span class="badge badge-gray" style="font-size:0.72rem;">${st.region || "-"}</span>
@@ -727,7 +733,7 @@ class EquipmentManager {
 
         // Auto select first station if none selected
         if (!this.selectedStationId && this.stations.length > 0) {
-          this.selectStation(this.stations[0].id);
+          this.selectStation(this.stations[0].id, false);
         }
       }
     } catch (e) {
@@ -738,14 +744,69 @@ class EquipmentManager {
   setStationFilter(filterType) {
     this.stationFilterType = filterType;
     document.querySelectorAll(".eq-filter-pill").forEach(pill => {
-      if (pill.dataset.filter === filterType) pill.classList.add("active");
-      else pill.classList.remove("active");
+      if (pill.dataset.filter === filterType) {
+        pill.classList.add("active");
+        if (typeof pill.scrollIntoView === "function") {
+          pill.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        }
+      } else {
+        pill.classList.remove("active");
+      }
     });
     this.loadStationsSummary();
   }
 
-  async selectStation(stationId) {
+  toggleMobileStationList() {
+    const wb = document.getElementById("eq-subview-stations");
+    if (!wb) return;
+    const isCollapsed = wb.classList.contains("mobile-list-collapsed");
+    this.setMobileStationListCollapsed(!isCollapsed, true);
+  }
+
+  setMobileStationListCollapsed(collapsed, scrollToTarget = false) {
+    const wb = document.getElementById("eq-subview-stations");
+    const btn = document.getElementById("eq-mobile-list-toggle-btn");
+    if (!wb) return;
+
+    if (collapsed) {
+      wb.classList.add("mobile-list-collapsed");
+      if (btn) btn.innerHTML = `🔍 다른 관측소 선택 (목록 열기 ▼)`;
+      if (scrollToTarget && window.innerWidth <= 1024) {
+        const barEl = document.getElementById("eq-mobile-station-bar") || document.getElementById("eq-station-detail-panel");
+        if (barEl && typeof barEl.scrollIntoView === "function") {
+          setTimeout(() => barEl.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+        }
+      }
+    } else {
+      wb.classList.remove("mobile-list-collapsed");
+      if (btn) btn.innerHTML = `🔍 관측소 목록 접기 ▲`;
+      if (scrollToTarget && window.innerWidth <= 1024) {
+        const searchEl = document.getElementById("eq-st-search");
+        const barEl = document.getElementById("eq-mobile-station-bar");
+        if (barEl && typeof barEl.scrollIntoView === "function") {
+          barEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        if (searchEl) {
+          setTimeout(() => searchEl.focus({ preventScroll: true }), 150);
+        }
+      }
+    }
+  }
+
+  async selectStation(stationId, isUserAction = false) {
     this.selectedStationId = stationId;
+
+    // Update mobile selected station label immediately if found in cached list
+    const matchedSt = (this.stations || []).find(s => String(s.id) === String(stationId)) || (this.allStations || []).find(s => String(s.id) === String(stationId));
+    const mobileNameEl = document.getElementById("eq-mobile-selected-name");
+    if (mobileNameEl && matchedSt) {
+      mobileNameEl.textContent = `${matchedSt.name} (${matchedSt.region || "-"})`;
+    }
+
+    // On mobile/tablet (<= 1024px), collapse the station list when user explicitly selects a station
+    if (isUserAction && window.innerWidth <= 1024) {
+      this.setMobileStationListCollapsed(true, true);
+    }
 
     // Update list card active state
     document.querySelectorAll(".eq-st-card").forEach(el => {
@@ -809,6 +870,11 @@ class EquipmentManager {
     if (!detailPanel || !data) return;
 
     const { station, operatingDevices, otherDevices, works, repairs } = data;
+
+    const mobileNameEl = document.getElementById("eq-mobile-selected-name");
+    if (mobileNameEl && station) {
+      mobileNameEl.textContent = `${station.name} (${station.region || "-"})`;
+    }
 
     const opFlowCount = operatingDevices.filter(d => d.category === "FLOWMETER").length;
     const opWaterCount = operatingDevices.filter(d => d.category === "WATER_LEVEL").length;
@@ -987,6 +1053,9 @@ class EquipmentManager {
             </div>
           </div>
           <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <button class="btn btn-sm eq-mobile-only-btn" onclick="window.equipmentManager.setMobileStationListCollapsed(false, true)" style="background:rgba(255,255,255,0.2); color:#ffffff; font-weight:700; border:1px solid rgba(255,255,255,0.6);">
+              📋 다른 지점 선택
+            </button>
             <button class="btn btn-sm" onclick="window.equipmentManager.openAddDeviceModal(${station.id})" style="background:#ffffff; color:#1e40af; font-weight:700; border:none;">
               ➕ 신규 장비 등록
             </button>
@@ -1221,8 +1290,14 @@ class EquipmentManager {
     this.devicePage = 1;
     document.querySelectorAll(".eq-cat-pill").forEach(p => {
       const pCat = p.dataset.cat || "";
-      if (pCat.toUpperCase() === String(cat).toUpperCase()) p.classList.add("active");
-      else p.classList.remove("active");
+      if (pCat.toUpperCase() === String(cat).toUpperCase()) {
+        p.classList.add("active");
+        if (typeof p.scrollIntoView === "function") {
+          p.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        }
+      } else {
+        p.classList.remove("active");
+      }
     });
     this.loadDevices();
   }
@@ -1606,8 +1681,14 @@ class EquipmentManager {
   setActionCodeFilter(code) {
     this.actionCode = code;
     document.querySelectorAll(".eq-act-pill").forEach(p => {
-      if (p.dataset.code === code) p.classList.add("active");
-      else p.classList.remove("active");
+      if (p.dataset.code === code) {
+        p.classList.add("active");
+        if (typeof p.scrollIntoView === "function") {
+          p.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        }
+      } else {
+        p.classList.remove("active");
+      }
     });
     this.loadActions();
   }

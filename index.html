@@ -429,11 +429,6 @@
 
                 <!-- 4. MAINTENANCE VIEW (ADMINISTRATOR OVERSIGHT) -->
         <section class="view-panel" id="view-maintenance">
-          <!-- Top KPI Summary Cards (Overall Project Progress & Overview) -->
-          <div class="kpi-grid">
-            <div class="kpi-card">
-              <div class="kpi-icon purple">📋</div>
-              <div class="kpi-content">
           <!-- Subtab Navigation for Maintenance Section -->
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.5rem;">
             <div style="display:flex; gap:6px; background:#e2e8f0; padding:4px; border-radius:8px;">
@@ -852,7 +847,7 @@
               <div class="card-body">
                 <!-- Measurement Method Visual Bar -->
                 <div style="margin-bottom: 1rem; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                  <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">
+                  <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">
                     <span style="color: #1e40af;">📡 비접촉식 전자파표면유속계: 446대 (69.1%) - RG-30D, RQ-30D, ESVFlow, RQ-30</span>
                     <span style="color: #6b21a8;">🌊 접촉식 초음파도플러(ADVM/다경로): 199대 (30.9%) - CM600, CM1200, CM300 등</span>
                   </div>
@@ -928,7 +923,7 @@
             </div>
 
             <!-- Row 4: 9대 설비 카테고리 종합 분포 & 4대 권역별 배치 비교 (2 Column Grid) -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 1.25rem;">
+            <div class="eq-dash-bottom-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 1.25rem;">
               <!-- Left: 9 Categories Distribution -->
               <div class="card">
                 <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
@@ -963,6 +958,18 @@
           <!-- SUB-VIEW 1: 지점별 현황 (Workbench Split Layout) -->
           <!-- ========================================================= -->
           <div id="eq-subview-stations" class="eq-workbench" style="display: none;">
+            <!-- Mobile Station Switcher Bar (Visible on <= 1024px) -->
+            <div id="eq-mobile-station-bar" class="eq-mobile-station-bar">
+              <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;">
+                <span style="font-size: 1rem;">📍</span>
+                <span style="font-size: 0.8rem; color: #64748b; font-weight: 600; white-space: nowrap;">선택 지점:</span>
+                <strong id="eq-mobile-selected-name" style="font-size: 0.9rem; color: #1e3a8a; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">지점을 선택하세요</strong>
+              </div>
+              <button type="button" id="eq-mobile-list-toggle-btn" class="btn btn-primary btn-sm" onclick="window.equipmentManager.toggleMobileStationList()" style="padding: 5px 10px; font-size: 0.78rem; font-weight: 700; white-space: nowrap; flex-shrink: 0;">
+                🔍 관측소 목록 접기 ▲
+              </button>
+            </div>
+
             <!-- Left Column: Station Selector & Filter List -->
             <div class="eq-sidebar-col" style="width: 100%; min-width: 360px; max-width: 440px; flex-shrink: 0; background: #ffffff; border-radius: 10px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; height: calc(100vh - 275px);">
               <div style="padding: 1rem 1rem 0.5rem 1rem; border-bottom: 1px solid #f1f5f9; background: #f8fafc;">
@@ -981,7 +988,7 @@
                 </div>
 
                 <!-- Station Filter Pills -->
-                <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; flex-wrap: wrap;">
+                <div class="eq-pill-scroll-row" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; flex-wrap: wrap;">
                   <button class="eq-filter-pill active" data-filter="all" onclick="window.equipmentManager.setStationFilter('all')">전체 (223)</button>
                   <button class="eq-filter-pill" data-filter="operating" onclick="window.equipmentManager.setStationFilter('operating')">운영중 (176)</button>
                   <button class="eq-filter-pill" data-filter="spare" onclick="window.equipmentManager.setStationFilter('spare')">📦 예비·보관</button>
@@ -992,7 +999,7 @@
 
               <!-- List Header -->
               <div style="padding: 0.5rem 1rem; background: #f1f5f9; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 700; color: #475569;">
-                <span>관측시설 목록</span>
+                <span>관측시설 목록 <span class="eq-mobile-tap-hint" style="font-weight: 600; color: #2563eb; font-size: 0.74rem; margin-left: 4px;">(지점 터치 시 상세화면 이동)</span></span>
                 <span class="badge badge-blue" id="eq-station-count-badge">176개소</span>
               </div>
 
@@ -1034,7 +1041,7 @@
                 </div>
 
                 <!-- Category Pills -->
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <div class="eq-pill-scroll-row" style="display: flex; gap: 6px; flex-wrap: wrap;">
                   <button class="eq-cat-pill active" data-cat="ALL" onclick="window.equipmentManager.setDeviceCategory('ALL')">전체 (2,113)</button>
                   <button class="eq-cat-pill" data-cat="FLOWMETER" onclick="window.equipmentManager.setDeviceCategory('FLOWMETER')">1. 유속계 (645)</button>
                   <button class="eq-cat-pill" data-cat="WATER_LEVEL" onclick="window.equipmentManager.setDeviceCategory('WATER_LEVEL')">2. 수위계 (233)</button>
@@ -1214,7 +1221,7 @@
                 </div>
 
                 <!-- Structured Action Taxonomy Filter Pills -->
-                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <div class="eq-pill-scroll-row" style="display: flex; gap: 6px; flex-wrap: wrap;">
                   <button class="eq-act-pill active" data-code="ALL" onclick="window.equipmentManager.setActionCodeFilter('ALL')">전체 이력</button>
                   <button class="eq-act-pill" data-code="REPLACE_FLOW" onclick="window.equipmentManager.setActionCodeFilter('REPLACE_FLOW')">🔄 유속계 본체 교체</button>
                   <button class="eq-act-pill" data-code="INSTALL_FLOW" onclick="window.equipmentManager.setActionCodeFilter('INSTALL_FLOW')">➕ 유속계 신규/설치</button>
@@ -2158,7 +2165,7 @@
           <!-- 2. Integrated Search & Multi-Filter Control Workbench -->
           <div class="card" style="margin-bottom: 1.25rem; padding: 1.1rem 1.25rem; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
             <!-- Top Row: Search & Filters -->
-            <div style="display:grid; grid-template-columns: minmax(260px, 1.8fr) 1fr 1fr 1.2fr auto; gap: 0.65rem; align-items: center; margin-bottom: 0.85rem;">
+            <div class="ts-filter-grid" style="display:grid; grid-template-columns: minmax(260px, 1.8fr) 1fr 1fr 1.2fr auto; gap: 0.65rem; align-items: center; margin-bottom: 0.85rem;">
               <!-- Real-time Text Search Input -->
               <div style="position:relative;">
                 <span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:0.9rem; color:#64748b;">🔍</span>
