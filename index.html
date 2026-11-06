@@ -21,8 +21,8 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="css/main.css?v=4.2">
-  <link rel="stylesheet" href="css/leaflet-custom.css?v=3.6">
+  <link rel="stylesheet" href="css/main.css?v=4.3">
+  <link rel="stylesheet" href="css/leaflet-custom.css?v=4.1">
 </head>
 <body>
 
@@ -272,9 +272,41 @@
                 <div class="filter-group">
                   <select id="gis-filter-monitor" class="filter-select" style="width:100%; border-color:#dc2626; font-weight:600;">
                     <option value="all">전체 관측상태 보기</option>
-                    <option value="abnormal" style="color:#b91c1c; font-weight:700;">🚨 이상 발생 지점만 보기 (조치 필요)</option>
-                    <option value="normal">✅ 정상 수신 지점만 보기</option>
+                    <option value="critical" style="color:#b91c1c; font-weight:700;">🔴 미수신·배터리 이상 (경고)</option>
+                    <option value="caution" style="color:#a16207; font-weight:700;">🟡 기타 이상 주의 지점</option>
+                    <option value="abnormal">🚨 전체 이상 발생 지점</option>
+                    <option value="normal" style="color:#15803d; font-weight:700;">🟢 정상 수신 지점</option>
                   </select>
+                </div>
+
+                <!-- GIS Station & Basin Color Legend -->
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.6rem 0.7rem; margin-bottom:0.85rem; font-size:0.75rem;">
+                  <div style="font-weight:700; color:#334155; margin-bottom:5px;">📍 지점 포인트 상태 범례</div>
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px 6px; margin-bottom:7px;">
+                    <div style="display:flex; align-items:center; gap:5px; color:#047857; font-weight:700;">
+                      <span style="width:12px; height:12px; border-radius:50%; background:#059669; border:1.5px solid #fff; box-shadow:0 1px 2px rgba(0,0,0,0.3); display:inline-block; flex-shrink:0;"></span>
+                      <span>정상 수신</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:5px; color:#6b21a8; font-weight:600;">
+                      <span style="width:12px; height:12px; border-radius:50%; background:linear-gradient(135deg,#7c3aed,#d97706); border:1.5px solid #fff; box-shadow:0 1px 2px rgba(0,0,0,0.25); display:inline-block; flex-shrink:0;"></span>
+                      <span>이중화(기본)</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:5px; color:#b45309; font-weight:700;">
+                      <span style="width:12px; height:12px; border-radius:50%; background:linear-gradient(135deg,#f59e0b,#eab308); border:1.5px solid #fff; box-shadow:0 1px 2px rgba(0,0,0,0.25); display:inline-block; flex-shrink:0;"></span>
+                      <span>기타이상(주의)</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:5px; color:#b91c1c; font-weight:700;">
+                      <span style="width:12px; height:12px; border-radius:50%; background:#dc2626; border:1.5px solid #fff; box-shadow:0 1px 2px rgba(0,0,0,0.25); display:inline-block; flex-shrink:0;"></span>
+                      <span>미수신·배터리🚨</span>
+                    </div>
+                  </div>
+                  <div style="font-weight:700; color:#475569; margin-bottom:4px; border-top:1px dashed #e2e8f0; padding-top:5px;">🗺️ 중권역 수계 경계 색상</div>
+                  <div style="display:flex; flex-wrap:wrap; gap:4px 8px; color:#475569; font-size:0.71rem;">
+                    <span style="display:inline-flex; align-items:center; gap:3px;"><span style="width:8px; height:8px; border-radius:2px; background:#2563eb; display:inline-block;"></span>한강(파랑)</span>
+                    <span style="display:inline-flex; align-items:center; gap:3px;"><span style="width:8px; height:8px; border-radius:2px; background:#9a3412; display:inline-block;"></span>낙동강(갈색)</span>
+                    <span style="display:inline-flex; align-items:center; gap:3px;"><span style="width:8px; height:8px; border-radius:2px; background:#9333ea; display:inline-block;"></span>금강(보라)</span>
+                    <span style="display:inline-flex; align-items:center; gap:3px;"><span style="width:8px; height:8px; border-radius:2px; background:#0891b2; display:inline-block;"></span>영산·섬진(청옥)</span>
+                  </div>
                 </div>
 
                 <div class="filter-section-title">지정 및 운영 구분</div>
@@ -3527,12 +3559,12 @@
 
   <!-- Initial Dataset Script -->
   <script src="data/stations_initial.js?v=4.5"></script>
-  <script src="data/real_standard_basins.js?v=3.7"></script>
+  <script src="data/real_standard_basins.js?v=4.0"></script>
 
   <!-- Application Modules -->
   <script src="js/api.js?v=4.5"></script>
   <script src="js/data.js?v=4.4"></script>
-  <script src="js/gis.js?v=3.8"></script>
+  <script src="js/gis.js?v=4.3"></script>
   <script src="js/table.js?v=3.7"></script>
   <script src="js/stats.js?v=4.1"></script>
   <script src="js/maintenance.js?v=3.7"></script>

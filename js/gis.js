@@ -82,6 +82,31 @@ class GISManager {
     this.renderMarkers();
   }
 
+  getBasinColor(props = {}) {
+    const major = String(props.majorBasin || props.region || "");
+    if (major.includes("한강")) return "#2563eb";   // 한강: 파란색 (Royal Blue)
+    if (major.includes("금강")) return "#9333ea";   // 금강: 보라색 (Vivid Purple - 초록색 배제, 한강·낙동강과 대비)
+    if (major.includes("낙동강")) return "#9a3412"; // 낙동강: 갈색 (Russet Brown)
+    if (major.includes("영산강") || major.includes("섬진강")) return "#0891b2"; // 영산강·섬진강: 시안/청옥색 (Deep Cyan)
+    return "#64748b"; // 제주·기타: 슬레이트 그레이
+  }
+
+  isCriticalIssue(item) {
+    if (!item) return false;
+    const r = (item.ruleId || "").toUpperCase();
+    const p = (item.problem || "").toLowerCase();
+    const d = (item.detail || "").toLowerCase();
+    const isMissing = r === "ADVM-R01" || r === "EWSV-R01" || p.includes("미수신") || d.includes("미수신");
+    const isBattery = r === "ADVM-R10" || r === "EWSV-R10" || p.includes("배터리") || p.includes("battery") || d.includes("배터리");
+    return isMissing || isBattery;
+  }
+
+  classifyStationIssues(issues = []) {
+    if (!issues || issues.length === 0) return "normal";
+    if (issues.some(iss => this.isCriticalIssue(iss))) return "critical";
+    return "caution";
+  }
+
   initBasinsLayer() {
     const geojsonData = window.REAL_STANDARD_BASINS_GEOJSON;
     if (!geojsonData) {
@@ -96,11 +121,11 @@ class GISManager {
     this.basinsLayer = L.geoJSON(geojsonData, {
       pane: "basinsPane",
       style: (feature) => {
-        const c = feature.properties.color || "#3b82f6";
+        const c = this.getBasinColor(feature.properties || {});
         return {
           color: c,
           weight: 1.5,
-          opacity: 0.9,
+          opacity: 0.85,
           fillColor: c,
           fillOpacity: 0.12
         };
@@ -215,13 +240,20 @@ class GISManager {
     }
 
     // 3. Monitor Status Counts
-    let abnormalCount = 0;
+    let criticalCount = 0, cautionCount = 0, abnormalCount = 0;
     allStations.forEach(st => {
       const stCodeStr = String(st.code || "").trim();
       const stNameStr = String(st.name || "").trim();
       const cleanName = stNameStr.replace(/[\(\)\s]/g, "");
-      const hasIssue = (stCodeStr && liveIssuesMap[stCodeStr]) || (stNameStr && liveIssuesMap[stNameStr]) || (cleanName && liveIssuesMap[cleanName]);
-      if (hasIssue) abnormalCount++;
+      const issues = (stCodeStr && liveIssuesMap[stCodeStr]) || (stNameStr && liveIssuesMap[stNameStr]) || (cleanName && liveIssuesMap[cleanName]) || [];
+      const statusType = this.classifyStationIssues(issues);
+      if (statusType === "critical") {
+        criticalCount++;
+        abnormalCount++;
+      } else if (statusType === "caution") {
+        cautionCount++;
+        abnormalCount++;
+      }
     });
     const normalCount = Math.max(0, totalCount - abnormalCount);
 
@@ -230,8 +262,10 @@ class GISManager {
       const cur = this.filters.monitorStatus;
       monitorSelect.innerHTML = `
         <option value="all" ${cur === "all" ? "selected" : ""}>전체 관측상태 보기 (${totalCount}개소)</option>
-        <option value="abnormal" ${cur === "abnormal" ? "selected" : ""} style="color:#b91c1c; font-weight:700;">🚨 이상 발생 지점만 보기 (${abnormalCount}개소)</option>
-        <option value="normal" ${cur === "normal" ? "selected" : ""}>✅ 정상 수신 지점만 보기 (${normalCount}개소)</option>
+        <option value="critical" ${cur === "critical" ? "selected" : ""} style="color:#b91c1c; font-weight:700;">🔴 미수신·배터리 이상 (${criticalCount}개소)</option>
+        <option value="caution" ${cur === "caution" ? "selected" : ""} style="color:#a16207; font-weight:700;">🟡 기타 이상 주의 (${cautionCount}개소)</option>
+        <option value="abnormal" ${cur === "abnormal" ? "selected" : ""}>🚨 전체 이상 발생 (${abnormalCount}개소)</option>
+        <option value="normal" ${cur === "normal" ? "selected" : ""} style="color:#15803d; font-weight:700;">🟢 정상 수신 지점 (${normalCount}개소)</option>
       `;
     }
 
@@ -320,7 +354,10 @@ class GISManager {
       } else if (cleanName && liveIssuesMap[cleanName]) {
         issues = liveIssuesMap[cleanName];
       }
-      const isAbnormal = issues.length > 0;
+      const statusType = this.classifyStationIssues(issues);
+      const isAbnormal = statusType !== "normal";
+      const isCritical = statusType === "critical";
+      const isCaution = statusType === "caution";
 
       // Filter: Region
       if (this.filters.region !== "all" && !st.region.includes(this.filters.region)) {
@@ -340,6 +377,8 @@ class GISManager {
       }
 
       // Filter: Real-time Monitor Status
+      if (this.filters.monitorStatus === "critical" && !isCritical) return;
+      if (this.filters.monitorStatus === "caution" && !isCaution) return;
       if (this.filters.monitorStatus === "abnormal" && !isAbnormal) return;
       if (this.filters.monitorStatus === "normal" && isAbnormal) return;
 
@@ -366,25 +405,29 @@ class GISManager {
 
       visibleCount++;
 
-      const regionClass = this.getRegionClass(st.region);
-      
+      const iconLetter = st.gaugeType?.includes("EWSV") ? "E" : (st.gaugeType?.includes("ADVM") ? "A" : "○");
       let markerHtml = "";
-      if (isAbnormal) {
+      if (isCritical) {
         markerHtml = `
-          <div class="station-pin pin-issue-abnormal" title="🚨 실시간 이상 감지: ${st.name} (${issues.length}건 이상)">
+          <div class="station-pin pin-issue-abnormal" title="🚨 [경고] 자료 미수신/배터리 이상: ${st.name} (${issues.length}건)">
             <span>🚨</span>
+          </div>
+        `;
+      } else if (isCaution) {
+        markerHtml = `
+          <div class="station-pin pin-issue-caution" title="⚠️ [주의] 기타 품질 이상: ${st.name} (${issues.length}건)">
+            ${isDual ? "⚡" : iconLetter}
           </div>
         `;
       } else if (isDual) {
         markerHtml = `
-          <div class="station-pin pin-gauge-dual" title="⚡ 이중화: ${st.name} (${st.gaugeType})">
+          <div class="station-pin pin-gauge-dual" title="⚡ 이중화(정상): ${st.name} (${st.gaugeType})">
             <span>⚡</span>
           </div>
         `;
       } else {
-        const iconLetter = st.gaugeType?.includes("EWSV") ? "E" : (st.gaugeType?.includes("ADVM") ? "A" : "○");
         markerHtml = `
-          <div class="station-pin ${regionClass}" title="${st.name} (${st.gaugeType})">
+          <div class="station-pin pin-status-normal" title="🟢 정상 수신: ${st.name} (${st.gaugeType})">
             ${iconLetter}
           </div>
         `;
@@ -393,25 +436,37 @@ class GISManager {
       const customIcon = L.divIcon({
         className: "custom-div-icon",
         html: markerHtml,
-        iconSize: [28, 28],
-        iconAnchor: [14, 14],
-        popupAnchor: [0, -14]
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+        popupAnchor: [0, -15]
       });
 
       const marker = L.marker([lat, lon], { icon: customIcon });
 
       // Real-time issues alert card in popup
       let warningBoxHtml = "";
-      if (isAbnormal) {
-        const firstIssue = issues[0];
+      if (isCritical) {
         warningBoxHtml = `
           <div class="popup-warning-box">
             <div class="popup-warning-header">
-              <span>🚨 실시간 관측 이상 감지 (${issues.length}건)</span>
+              <span>🚨 긴급 조치 필요 — 미수신/배터리 이상 (${issues.length}건)</span>
             </div>
             ${issues.slice(0, 3).map(iss => `
               <div class="popup-warning-item">
                 • <b>[${iss.ruleId}] ${iss.problem}</b>: ${iss.detail} <span style="color:#b91c1c; font-weight:700;">(연속 ${iss.continuousCount}회)</span>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      } else if (isCaution) {
+        warningBoxHtml = `
+          <div class="popup-caution-box">
+            <div class="popup-caution-header">
+              <span>⚠️ 주의 — 기타 관측 품질 이상 (${issues.length}건)</span>
+            </div>
+            ${issues.slice(0, 3).map(iss => `
+              <div class="popup-caution-item">
+                • <b>[${iss.ruleId}] ${iss.problem}</b>: ${iss.detail} <span style="color:#a16207; font-weight:700;">(연속 ${iss.continuousCount}회)</span>
               </div>
             `).join("")}
           </div>
@@ -424,18 +479,31 @@ class GISManager {
         ? `window.scheduleManager.openAddModalWithStation(${st.id}, '${safeName}', '[${primaryIssue.ruleId}] ${primaryIssue.problem}', '${primaryIssue.detail} (연속 ${primaryIssue.continuousCount}회)')`
         : `window.scheduleManager.openAddModalWithStation(${st.id}, '${safeName}', '', '')`;
 
-      const headerBadge = isAbnormal 
-        ? '<span class="badge" style="background:#fef2f2; color:#b91c1c; font-weight:700;">🚨 조치 필요</span>' 
-        : (isDual ? '<span class="badge-dual-chip">⚡ 이중화 지점</span>' : '');
+      let headerBadge = "";
+      let popupHeaderStyle = "";
+      let popupSubStyle = "";
+      if (isCritical) {
+        headerBadge = '<span class="badge" style="background:#fef2f2; color:#b91c1c; font-weight:700;">🚨 조치 필요</span>';
+        popupHeaderStyle = "background: linear-gradient(135deg, #b91c1c, #991b1b); color: white;";
+        popupSubStyle = "color:#fecaca;";
+      } else if (isCaution) {
+        headerBadge = '<span class="badge" style="background:#fefce8; color:#a16207; font-weight:700;">⚠️ 주의 (기타 이상)</span>';
+        popupHeaderStyle = "background: linear-gradient(135deg, #ca8a04, #d97706); color: white;";
+        popupSubStyle = "color:#fef08a;";
+      } else if (isDual) {
+        headerBadge = '<span class="badge-dual-chip">⚡ 이중화 지점</span>';
+      } else {
+        headerBadge = '<span class="badge" style="background:#dcfce7; color:#166534; font-weight:700;">🟢 정상 수신</span>';
+      }
 
       const popupHtml = `
         <div class="custom-map-popup">
-          <div class="popup-header ${isAbnormal ? "abnormal" : (isDual ? "dual" : "")}" style="${isAbnormal ? "background: linear-gradient(135deg, #b91c1c, #991b1b); color: white;" : ""}">
+          <div class="popup-header ${isAbnormal ? "abnormal" : (isDual ? "dual" : "")}" style="${popupHeaderStyle}">
             <div class="popup-title">
               <span>${st.name || "-"}</span>
               ${headerBadge}
             </div>
-            <div class="popup-subtitle" style="${isAbnormal ? "color:#fecaca;" : ""}">${st.region || "-"}권역 | ${st.river || "-"}천 (코드: ${st.code || "-"})</div>
+            <div class="popup-subtitle" style="${popupSubStyle}">${st.region || "-"}권역 | ${st.river || "-"}천 (코드: ${st.code || "-"})</div>
           </div>
           
           <div class="popup-body">
