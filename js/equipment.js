@@ -2240,15 +2240,15 @@ class EquipmentManager {
           </div>
 
           <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap:0.65rem; margin-bottom:0.65rem;">
-            <div>
+            <div class="form-group" style="min-width:0;">
               <label class="form-label" style="font-size:0.75rem; font-weight:700;">표준 조치 유형 (중분류) *</label>
-              <select class="filter-select eq-act-row-code" style="width:100%; font-weight:700; color:#1e40af; font-size:0.82rem;" onchange="window.equipmentManager.onWorkActionRowCodeChange(${idx}, this.value)">
+              <select class="filter-select eq-act-row-code" style="width:100%; box-sizing:border-box; font-weight:700; color:#1e40af; font-size:0.82rem;" onchange="window.equipmentManager.onWorkActionRowCodeChange(${idx}, this.value)">
                 ${optionsHtml}
               </select>
             </div>
-            <div>
+            <div class="form-group" style="min-width:0;">
               <label class="form-label" style="font-size:0.75rem; font-weight:700;">표시 조치명</label>
-              <input type="text" class="form-input eq-act-row-name" value="${esc(a.action_name)}" placeholder="예: 유속계 본체 교체" style="font-size:0.82rem;">
+              <input type="text" class="form-input eq-act-row-name" value="${esc(a.action_name)}" placeholder="예: 유속계 본체 교체" style="width:100%; box-sizing:border-box; font-size:0.82rem;">
             </div>
           </div>
 
@@ -2257,22 +2257,22 @@ class EquipmentManager {
               <div style="font-size:0.76rem; font-weight:700; color:#c2410c; margin-bottom:5px;">
                 🔄 장비 교체 / 신규 설치 S/N 및 모델 정보
               </div>
-              <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">
-                <div>
+              <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px;">
+                <div class="form-group" style="min-width:0;">
                   <label class="form-label" style="font-size:0.7rem;">기존(회수) 모델명</label>
-                  <input type="text" class="form-input eq-act-row-before-model" value="${esc(a.before_model)}" placeholder="예: CM300" style="font-size:0.8rem; padding:5px 7px;">
+                  <input type="text" class="form-input eq-act-row-before-model" value="${esc(a.before_model)}" placeholder="예: CM300" style="width:100%; box-sizing:border-box; font-size:0.8rem; padding:5px 7px;">
                 </div>
-                <div>
+                <div class="form-group" style="min-width:0;">
                   <label class="form-label" style="font-size:0.7rem;">기존(회수) S/N</label>
-                  <input type="text" class="form-input eq-act-row-before-sn" value="${esc(a.before_sn)}" placeholder="예: 19068" style="font-size:0.8rem; padding:5px 7px;">
+                  <input type="text" class="form-input eq-act-row-before-sn" value="${esc(a.before_sn)}" placeholder="예: 19068" style="width:100%; box-sizing:border-box; font-size:0.8rem; padding:5px 7px;">
                 </div>
-                <div>
+                <div class="form-group" style="min-width:0;">
                   <label class="form-label" style="font-size:0.7rem;">신규(설치) 모델명</label>
-                  <input type="text" class="form-input eq-act-row-after-model" value="${esc(a.after_model)}" placeholder="예: CM300" style="font-size:0.8rem; padding:5px 7px;">
+                  <input type="text" class="form-input eq-act-row-after-model" value="${esc(a.after_model)}" placeholder="예: CM300" style="width:100%; box-sizing:border-box; font-size:0.8rem; padding:5px 7px;">
                 </div>
-                <div>
+                <div class="form-group" style="min-width:0;">
                   <label class="form-label" style="font-size:0.7rem;">신규(설치) S/N</label>
-                  <input type="text" class="form-input eq-act-row-after-sn" value="${esc(a.after_sn)}" placeholder="예: 23443" style="font-size:0.8rem; padding:5px 7px;">
+                  <input type="text" class="form-input eq-act-row-after-sn" value="${esc(a.after_sn)}" placeholder="예: 23443" style="width:100%; box-sizing:border-box; font-size:0.8rem; padding:5px 7px;">
                 </div>
               </div>
             </div>
@@ -2283,24 +2283,24 @@ class EquipmentManager {
             <input type="hidden" class="eq-act-row-after-sn" value="${esc(a.after_sn)}">
           `}
 
-          <div style="display:grid; grid-template-columns: 1.4fr 80px 1fr; gap:0.6rem; margin-bottom:0.65rem;">
-            <div>
+          <div style="display:grid; grid-template-columns: minmax(0, 1.4fr) 90px minmax(0, 1fr); gap:0.65rem; margin-bottom:0.65rem;">
+            <div class="form-group" style="min-width:0;">
               <label class="form-label" style="font-size:0.73rem;">투입 부품 / 대상 장치명</label>
-              <input type="text" class="form-input eq-act-row-part-name" value="${esc(a.part_name)}" placeholder="예: 유속계 본체, 센서 리피터, 배터리 등" style="font-size:0.8rem; padding:5px 8px;">
+              <input type="text" class="form-input eq-act-row-part-name" value="${esc(a.part_name)}" placeholder="예: 유속계 본체, 센서 리피터, 배터리 등" style="width:100%; box-sizing:border-box; font-size:0.8rem; padding:5px 8px;">
             </div>
-            <div>
+            <div class="form-group" style="min-width:0;">
               <label class="form-label" style="font-size:0.73rem;">수량(EA)</label>
-              <input type="number" class="form-input eq-act-row-part-qty" value="${a.part_qty || 1}" min="1" style="font-size:0.8rem; padding:5px 8px;">
+              <input type="number" class="form-input eq-act-row-part-qty" value="${a.part_qty || 1}" min="1" style="width:100%; box-sizing:border-box; font-size:0.8rem; padding:5px 8px;">
             </div>
-            <div>
+            <div class="form-group" style="min-width:0;">
               <label class="form-label" style="font-size:0.73rem;">측정값 / 파라미터 (전압·옵셋 등)</label>
-              <input type="text" class="form-input eq-act-row-param" value="${esc(a.param_change)}" placeholder="예: 13.8V, 1.25m→1.30m" style="font-size:0.8rem; padding:5px 8px;">
+              <input type="text" class="form-input eq-act-row-param" value="${esc(a.param_change)}" placeholder="예: 13.8V, 1.25m→1.30m" style="width:100%; box-sizing:border-box; font-size:0.8rem; padding:5px 8px;">
             </div>
           </div>
 
-          <div>
+          <div class="form-group" style="width:100%; min-width:0;">
             <label class="form-label" style="font-size:0.78rem; font-weight:700;">상세 조치 내역 (자유 서술) *</label>
-            <textarea class="form-input eq-act-row-detail" rows="3" placeholder="현장 점검 및 조치 상세 내용을 입력하세요..." required style="font-size:0.86rem; line-height:1.5;">${a.detail_text || ""}</textarea>
+            <textarea class="form-input eq-act-row-detail" rows="3" placeholder="현장 점검 및 조치 상세 내용을 입력하세요..." required style="width:100%; box-sizing:border-box; resize:none; min-height:78px; font-size:0.86rem; line-height:1.5;">${a.detail_text || ""}</textarea>
           </div>
         </div>
       `;

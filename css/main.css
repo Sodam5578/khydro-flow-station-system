@@ -821,6 +821,24 @@ body {
   font-size: 0.875rem;
   font-family: inherit;
   outline: none;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.modal-dialog .form-input,
+.modal-dialog .form-textarea,
+.modal-dialog .form-select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+textarea.form-input,
+.form-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  line-height: 1.5;
 }
 
 .form-input:focus, .form-textarea:focus, .form-select:focus {
