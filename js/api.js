@@ -472,6 +472,38 @@ class ApiClient {
     return await res.json();
   }
 
+  async getEquipmentWorkDetail(workId) {
+    const res = await fetch(`${this.baseUrl}/equipment/works/${encodeURIComponent(workId)}`, {
+      headers: this.getHeaders()
+    });
+    return await res.json();
+  }
+
+  async updateEquipmentWork(workId, workData) {
+    const res = await fetch(`${this.baseUrl}/equipment/works/${encodeURIComponent(workId)}`, {
+      method: "PUT",
+      headers: this.getHeaders(),
+      body: JSON.stringify(workData)
+    });
+    return await res.json();
+  }
+
+  async deleteEquipmentWork(workId) {
+    const res = await fetch(`${this.baseUrl}/equipment/works/${encodeURIComponent(workId)}`, {
+      method: "DELETE",
+      headers: this.getHeaders()
+    });
+    return await res.json();
+  }
+
+  async deleteEquipmentAction(actionId) {
+    const res = await fetch(`${this.baseUrl}/equipment/actions/${encodeURIComponent(actionId)}`, {
+      method: "DELETE",
+      headers: this.getHeaders()
+    });
+    return await res.json();
+  }
+
   async getEquipmentRepairs(filters = {}) {
     const q = new URLSearchParams(filters).toString();
     const res = await fetch(`${this.baseUrl}/equipment/repairs?${q}`, { headers: this.getHeaders() });

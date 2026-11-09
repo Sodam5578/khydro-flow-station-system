@@ -1183,7 +1183,51 @@ router.post("/equipment/works", verifyToken, async (req, res) => {
     logActivity(req.user, "현장조치등록", result.workNo, `현장 조치 등록 (${req.body.summary || ""})`, req.ip);
     res.json(result);
   } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
+    res.status(500).json({ success: false, error: e.message, message: e.message });
+  }
+});
+
+// 20-6a. Get Single Field Work & Actions
+router.get("/equipment/works/:id", verifyToken, async (req, res) => {
+  try {
+    const data = await equipmentService.getWorkById(req.params.id);
+    if (!data) return res.status(404).json({ success: false, message: "현장 점검·조치 이력을 찾을 수 없습니다." });
+    res.json({ success: true, ...data });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message, message: e.message });
+  }
+});
+
+// 20-6b. Update Field Work & Actions
+router.put("/equipment/works/:id", verifyToken, async (req, res) => {
+  try {
+    const result = await equipmentService.updateWork(req.params.id, req.body, req.user);
+    logActivity(req.user, "현장조치수정", result.workNo || `WRK-${req.params.id}`, `[${result.stationName || "-"}] 현장 조치 이력 수정 (${result.summary || ""})`, req.ip);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message, message: e.message });
+  }
+});
+
+// 20-6c. Delete Field Work & Actions
+router.delete("/equipment/works/:id", verifyToken, async (req, res) => {
+  try {
+    const result = await equipmentService.deleteWork(req.params.id);
+    logActivity(req.user, "현장조치삭제", result.workNo || `WRK-${req.params.id}`, `[${result.stationName || "-"}] 현장 조치 이력 삭제 (${result.summary || ""})`, req.ip);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message, message: e.message });
+  }
+});
+
+// 20-6d. Delete Single Structured Action
+router.delete("/equipment/actions/:id", verifyToken, async (req, res) => {
+  try {
+    const result = await equipmentService.deleteAction(req.params.id);
+    logActivity(req.user, "세부조치삭제", `ACT-${req.params.id}`, `[${result.stationName || "-"}] 세부 조치 항목 삭제 (${result.actionName || ""})`, req.ip);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message, message: e.message });
   }
 });
 

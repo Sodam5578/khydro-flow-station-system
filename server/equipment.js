@@ -622,7 +622,8 @@ class EquipmentService {
       workers = "",
       summary = "",
       detail_raw = "",
-      actions = []
+      actions = [],
+      applySmartSwitch = true
     } = workData;
 
     let stationName = "";
@@ -635,9 +636,11 @@ class EquipmentService {
       }
     }
 
-    const countRow = await this.get(`SELECT COUNT(*) as cnt FROM equipment_work`);
-    const nextSeq = (countRow ? countRow.cnt : 0) + 1;
+    const maxRow = await this.get(`SELECT COALESCE(MAX(id), 0) as maxId FROM equipment_work`);
+    const nextSeq = (maxRow ? maxRow.maxId : 0) + 1;
     const workNo = `WRK-2026-${String(nextSeq).padStart(4, "0")}`;
+
+    const computedDetailRaw = detail_raw || actions.map(a => a.detail_text || a.action_name || "").filter(Boolean).join(", ");
 
     const workRes = await this.run(`
       INSERT INTO equipment_work (
@@ -648,14 +651,14 @@ class EquipmentService {
       workNo, station_id || null, stationName, stationCode,
       work_date || new Date().toISOString().split("T")[0],
       work_type, workers, summary || `[${work_type}] 현장 조치 등록`,
-      detail_raw, user.name || "사용자"
+      computedDetailRaw, user.name || "사용자"
     ]);
 
     const workId = workRes.lastID;
 
     // Process each structured action
     for (const act of actions) {
-      const actRes = await this.run(`
+      await this.run(`
         INSERT INTO equipment_action (
           work_id, equipment_id, action_category, action_code, action_name,
           before_model, before_sn, after_model, after_sn,
@@ -678,7 +681,7 @@ class EquipmentService {
       ]);
 
       // Smart State Switching for Equipment Replacements & New Installs
-      if (["REPLACE_FLOW", "REPLACE_WATER", "INSTALL_FLOW", "INSTALL_WATER"].includes(act.action_code)) {
+      if (applySmartSwitch && ["REPLACE_FLOW", "REPLACE_WATER", "INSTALL_FLOW", "INSTALL_WATER"].includes(act.action_code)) {
         // 1. If old equipment S/N exists, move it to REPAIRING or SPARE
         if (act.before_sn) {
           const oldDev = await this.get(`SELECT equipment_id, status FROM equipment_master WHERE serial_no = ?`, [act.before_sn]);
@@ -715,6 +718,208 @@ class EquipmentService {
     }
 
     return { success: true, workId, workNo };
+  }
+
+  /**
+   * 6-1. Get Single Field Work & Its Structured Actions
+   */
+  async getWorkById(workId) {
+    const work = await this.get(`SELECT * FROM equipment_work WHERE id = ?`, [workId]);
+    if (!work) return null;
+
+    const actions = await this.all(
+      `SELECT * FROM equipment_action WHERE work_id = ? ORDER BY id ASC`,
+      [workId]
+    );
+    return { work, actions };
+  }
+
+  /**
+   * 6-2. Update Existing Field Work & Its Structured Actions
+   */
+  async updateWork(workId, workData = {}, user = {}) {
+    const existing = await this.get(`SELECT * FROM equipment_work WHERE id = ?`, [workId]);
+    if (!existing) throw new Error("수정할 현장 점검·조치 이력을 찾을 수 없습니다.");
+
+    let stationId = existing.station_id;
+    let stationName = existing.station_name || "";
+    let stationCode = existing.station_code || "";
+
+    if (workData.station_id !== undefined && workData.station_id !== null && workData.station_id !== "") {
+      const parsedStId = parseInt(workData.station_id, 10);
+      const st = await this.get(`SELECT id, name, code FROM stations WHERE id = ?`, [parsedStId]);
+      if (st) {
+        stationId = st.id;
+        stationName = st.name;
+        stationCode = st.code;
+      }
+    }
+
+    const workDate = workData.work_date || existing.work_date;
+    const workType = workData.work_type || existing.work_type || "수시점검";
+    const workers = workData.workers !== undefined ? String(workData.workers).trim() : (existing.workers || "");
+    const actions = Array.isArray(workData.actions) ? workData.actions : [];
+    const applySmartSwitch = Boolean(workData.applySmartSwitch);
+
+    let summary = workData.summary !== undefined ? String(workData.summary).trim() : (existing.summary || "");
+    if (!summary && actions.length > 0) {
+      const firstAct = actions[0];
+      const extraCnt = actions.length > 1 ? ` 외 ${actions.length - 1}건` : "";
+      summary = `[${workType}] ${firstAct.action_name || "현장 조치"}${extraCnt}`;
+    }
+
+    const detailRaw = actions.map(a => a.detail_text || a.action_name || "").filter(Boolean).join(", ") || existing.detail_raw || "";
+
+    await this.run(`
+      UPDATE equipment_work
+      SET station_id = ?, station_name = ?, station_code = ?,
+          work_date = ?, work_type = ?, workers = ?,
+          summary = ?, detail_raw = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `, [
+      stationId, stationName, stationCode,
+      workDate, workType, workers,
+      summary, detailRaw, workId
+    ]);
+
+    // Sync actions for this work_id
+    const existingActions = await this.all(`SELECT * FROM equipment_action WHERE work_id = ? ORDER BY id ASC`, [workId]);
+    const existingMap = new Map(existingActions.map(a => [Number(a.id), a]));
+    const incomingIds = new Set(actions.map(a => Number(a.id)).filter(id => !isNaN(id) && id > 0));
+
+    // Delete removed actions
+    for (const oldAct of existingActions) {
+      if (!incomingIds.has(Number(oldAct.id))) {
+        await this.run(`DELETE FROM equipment_action WHERE id = ? AND work_id = ?`, [oldAct.id, workId]);
+      }
+    }
+
+    // Update or Insert incoming actions
+    for (const act of actions) {
+      const actId = Number(act.id);
+      const prevAct = (!isNaN(actId) && existingMap.has(actId)) ? existingMap.get(actId) : null;
+
+      const equipmentId = act.equipment_id !== undefined ? (act.equipment_id || null) : (prevAct ? prevAct.equipment_id : null);
+      const actionCategory = act.action_category || (prevAct ? prevAct.action_category : "단순점검");
+      const actionCode = act.action_code || (prevAct ? prevAct.action_code : "NORMAL_CHECK");
+      const actionName = act.action_name || (prevAct ? prevAct.action_name : "종합 점검 및 현장 확인");
+      const beforeModel = act.before_model !== undefined ? String(act.before_model).trim() : (prevAct ? prevAct.before_model : "");
+      const beforeSn = act.before_sn !== undefined ? String(act.before_sn).trim() : (prevAct ? prevAct.before_sn : "");
+      const afterModel = act.after_model !== undefined ? String(act.after_model).trim() : (prevAct ? prevAct.after_model : "");
+      const afterSn = act.after_sn !== undefined ? String(act.after_sn).trim() : (prevAct ? prevAct.after_sn : "");
+      const partName = act.part_name !== undefined ? String(act.part_name).trim() : (prevAct ? prevAct.part_name : "");
+      const partQty = act.part_qty !== undefined && act.part_qty !== "" ? (parseInt(act.part_qty, 10) || 1) : (prevAct ? prevAct.part_qty : 1);
+      const paramChange = act.param_change !== undefined ? String(act.param_change).trim() : (prevAct ? prevAct.param_change : "");
+      const detailText = act.detail_text !== undefined ? String(act.detail_text).trim() : (prevAct ? prevAct.detail_text : "");
+
+      if (prevAct) {
+        await this.run(`
+          UPDATE equipment_action
+          SET equipment_id = ?, action_category = ?, action_code = ?, action_name = ?,
+              before_model = ?, before_sn = ?, after_model = ?, after_sn = ?,
+              part_name = ?, part_qty = ?, param_change = ?, detail_text = ?
+          WHERE id = ? AND work_id = ?
+        `, [
+          equipmentId, actionCategory, actionCode, actionName,
+          beforeModel, beforeSn, afterModel, afterSn,
+          partName, partQty, paramChange, detailText,
+          prevAct.id, workId
+        ]);
+      } else {
+        await this.run(`
+          INSERT INTO equipment_action (
+            work_id, equipment_id, action_category, action_code, action_name,
+            before_model, before_sn, after_model, after_sn,
+            part_name, part_qty, param_change, detail_text
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          workId, equipmentId, actionCategory, actionCode, actionName,
+          beforeModel, beforeSn, afterModel, afterSn,
+          partName, partQty, paramChange, detailText
+        ]);
+      }
+
+      if (applySmartSwitch && ["REPLACE_FLOW", "REPLACE_WATER", "INSTALL_FLOW", "INSTALL_WATER"].includes(actionCode)) {
+        if (beforeSn) {
+          const oldDev = await this.get(`SELECT equipment_id FROM equipment_master WHERE serial_no = ?`, [beforeSn]);
+          if (oldDev) {
+            await this.updateDeviceStatus(
+              oldDev.equipment_id,
+              "REPAIRING",
+              "기술원/수리업체(회수)",
+              `현장 교체 이력 수정 반영 (${existing.work_no})`,
+              user
+            );
+          }
+        }
+        if (afterSn) {
+          const newDev = await this.get(`SELECT equipment_id FROM equipment_master WHERE serial_no = ?`, [afterSn]);
+          if (newDev) {
+            await this.run(`
+              UPDATE equipment_master
+              SET station_id = ?, station_name = ?, station_code = ?,
+                  status = 'OPERATING', status_label = '운영중', location = '현장설치',
+                  version = version + 1, updated_at = CURRENT_TIMESTAMP
+              WHERE equipment_id = ?
+            `, [stationId, stationName, stationCode, newDev.equipment_id]);
+          }
+        }
+      }
+    }
+
+    return {
+      success: true,
+      workId,
+      workNo: existing.work_no,
+      stationId,
+      stationName,
+      summary
+    };
+  }
+
+  /**
+   * 6-3. Delete Entire Field Work & Its Actions
+   */
+  async deleteWork(workId) {
+    const existing = await this.get(`SELECT * FROM equipment_work WHERE id = ?`, [workId]);
+    if (!existing) throw new Error("삭제할 현장 점검·조치 이력을 찾을 수 없습니다.");
+
+    await this.run(`DELETE FROM equipment_action WHERE work_id = ?`, [workId]);
+    await this.run(`DELETE FROM equipment_work WHERE id = ?`, [workId]);
+
+    return {
+      success: true,
+      workId,
+      workNo: existing.work_no,
+      stationId: existing.station_id,
+      stationName: existing.station_name,
+      summary: existing.summary
+    };
+  }
+
+  /**
+   * 6-4. Delete Single Structured Action (and parent work if no actions remain)
+   */
+  async deleteAction(actionId) {
+    const act = await this.get(`SELECT * FROM equipment_action WHERE id = ?`, [actionId]);
+    if (!act) throw new Error("삭제할 세부 조치 항목을 찾을 수 없습니다.");
+
+    const work = await this.get(`SELECT * FROM equipment_work WHERE id = ?`, [act.work_id]);
+    await this.run(`DELETE FROM equipment_action WHERE id = ?`, [actionId]);
+
+    const remaining = await this.all(`SELECT * FROM equipment_action WHERE work_id = ? ORDER BY id ASC`, [act.work_id]);
+    if (remaining.length === 0) {
+      await this.run(`DELETE FROM equipment_work WHERE id = ?`, [act.work_id]);
+    }
+
+    return {
+      success: true,
+      actionId,
+      workId: act.work_id,
+      workDeleted: remaining.length === 0,
+      stationName: work ? work.station_name : "",
+      actionName: act.action_name
+    };
   }
 
   /**
