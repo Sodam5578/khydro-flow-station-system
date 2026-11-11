@@ -484,7 +484,7 @@ body {
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-lg);
-  width: 280px;
+  width: 330px;
   max-height: calc(100% - 24px);
   overflow-y: auto;
 }
