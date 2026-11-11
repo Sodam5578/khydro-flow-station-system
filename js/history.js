@@ -312,12 +312,27 @@ class MaintenanceHistoryManager {
   // ==========================================
   // 3. MODAL CRUD HANDLERS
   // ==========================================
-  openCreateModal(stationId = null) {
+  openCreateModal(stationId = null, prefill = {}) {
     this.editingHistoryId = null;
     const allStations = window.dataManager.getAll();
 
+    // If stationId was not provided, attempt fuzzy match by stationName or code
+    if (!stationId && prefill && (prefill.stationName || prefill.stCode)) {
+      const match = allStations.find(s => 
+        (prefill.stCode && String(s.code) === String(prefill.stCode)) || 
+        (prefill.stationName && (s.name === prefill.stationName || s.name.includes(prefill.stationName)))
+      );
+      if (match) stationId = match.id;
+    }
+
     const titleEl = document.getElementById("maint-hist-form-modal-title");
-    if (titleEl) titleEl.textContent = "🛠️ 유지관리 조치 이력 신규 등록";
+    if (titleEl) {
+      if (prefill.ruleId) {
+        titleEl.textContent = `🚨 [${prefill.ruleId}] 실시간 이상 조치 등록`;
+      } else {
+        titleEl.textContent = "🛠️ 유지관리 조치 이력 신규 등록";
+      }
+    }
 
     // Populate Station Select
     const selectEl = document.getElementById("hist-form-station-id");
@@ -326,23 +341,42 @@ class MaintenanceHistoryManager {
         const isSel = String(s.id) === String(stationId) ? "selected" : "";
         return `<option value="${s.id}" data-name="${s.name}" ${isSel}>${s.name} (${s.river || s.region}) [${s.code || "코드미부여"}]</option>`;
       }).join("");
+      if (stationId) {
+        selectEl.value = String(stationId);
+      }
     }
 
-    // Reset fields
+    // Reset & apply prefill
     const today = new Date().toISOString().slice(0, 10);
     const issueDateEl = document.getElementById("hist-form-issue-date");
-    if (issueDateEl) issueDateEl.value = today;
-    document.getElementById("hist-form-date").value = today;
-    document.getElementById("hist-form-type").value = "정기점검";
-    document.getElementById("hist-form-category").value = "전원·안전";
-    document.getElementById("hist-form-equipment").value = "";
-    document.getElementById("hist-form-actor-type").value = "기술원(자체)";
-    this.onActorTypeChange("기술원(자체)");
-    document.getElementById("hist-form-worker").value = window.apiClient?.user?.name || "";
-    document.getElementById("hist-form-status").value = "완료";
-    document.getElementById("hist-form-cost").value = "";
-    document.getElementById("hist-form-desc").value = "";
-    document.getElementById("hist-form-memo").value = "";
+    if (issueDateEl) issueDateEl.value = prefill.issueDate || today;
+    document.getElementById("hist-form-date").value = prefill.actionDate || today;
+    document.getElementById("hist-form-type").value = prefill.actionType || "정기점검";
+    document.getElementById("hist-form-category").value = prefill.category || "전원·안전";
+    document.getElementById("hist-form-equipment").value = prefill.targetEquipment || "";
+
+    const actor = prefill.actorType || "기술원(자체)";
+    const actorSelect = document.getElementById("hist-form-actor-type");
+    if (actorSelect) {
+      if (actor === "기술원(자체)" || actor.includes("기술원")) {
+        actorSelect.value = "기술원(자체)";
+        this.onActorTypeChange("기술원(자체)");
+      } else if (actor === "용역사(리버앤씨)" || actor.includes("리버앤씨")) {
+        actorSelect.value = "용역사(리버앤씨)";
+        this.onActorTypeChange("용역사(리버앤씨)");
+      } else {
+        actorSelect.value = "custom";
+        this.onActorTypeChange("custom");
+        const customInput = document.getElementById("hist-form-actor-custom");
+        if (customInput) customInput.value = actor;
+      }
+    }
+
+    document.getElementById("hist-form-worker").value = prefill.workerName || window.apiClient?.user?.name || "";
+    document.getElementById("hist-form-status").value = prefill.resultStatus || "완료";
+    document.getElementById("hist-form-cost").value = prefill.cost || "";
+    document.getElementById("hist-form-desc").value = prefill.description || "";
+    document.getElementById("hist-form-memo").value = prefill.memo || "";
 
     const modal = document.getElementById("maint-history-form-modal");
     if (modal) modal.classList.add("active");
@@ -484,6 +518,9 @@ class MaintenanceHistoryManager {
       if (this.currentStationId) {
         this.loadStationHistory(this.currentStationId);
       }
+      if (window.monitorManager && typeof window.monitorManager.refreshStationActionHistory === "function") {
+        window.monitorManager.refreshStationActionHistory(stationId);
+      }
       window.app.refreshAll();
     } catch (e) {
       console.error("Save maintenance history error:", e);
@@ -503,8 +540,12 @@ class MaintenanceHistoryManager {
       if (this.activeTab === "history") {
         this.loadGlobalHistory();
       }
-      if (stationId || this.currentStationId) {
-        this.loadStationHistory(stationId || this.currentStationId);
+      const targetStId = stationId || this.currentStationId;
+      if (targetStId) {
+        this.loadStationHistory(targetStId);
+      }
+      if (window.monitorManager && typeof window.monitorManager.refreshStationActionHistory === "function") {
+        window.monitorManager.refreshStationActionHistory(targetStId);
       }
       window.app.refreshAll();
     } catch (e) {

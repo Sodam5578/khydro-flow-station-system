@@ -632,6 +632,9 @@ class GISManager {
           
           <div class="popup-footer" style="display:flex; gap:4px; flex-wrap:wrap; justify-content:space-between; align-items:center;">
             <button class="btn btn-outline btn-sm" onclick="window.modalManager.openDetail(${st.id})" title="지점 기본정보 및 점검현황">상세제원</button>
+            <button class="btn btn-outline btn-sm" style="color:#0f766e; border-color:#99f6e4; background:#f0fdfa; font-weight:700;" onclick="window.monitorManager ? window.monitorManager.openStationActionHistoryModal(${st.id}, '${safeName}', '${st.code || ""}') : window.maintenanceHistoryManager.openCreateModal(${st.id})" title="이 지점의 과거 조치 이력 확인 및 등록">
+              📜 조치이력
+            </button>
             <button class="btn btn-outline btn-sm" style="color:#1e40af; border-color:#93c5fd; background:#eff6ff; font-weight:700;" onclick="window.equipmentManager.navigateToStation(${st.id}, '${safeName}', 'devices')" title="이 지점의 전체 장비 리스트 및 교체·수리 이력으로 이동">
               🛠️ 장비 목록
             </button>
