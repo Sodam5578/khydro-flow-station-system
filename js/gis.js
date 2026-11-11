@@ -76,7 +76,22 @@ class GISManager {
     // 3. Render Real 850 Standard Watersheds
     this.initBasinsLayer();
 
-    // 4. Render Station Markers on top
+    // 4. Create Dedicated Layer Panes for Hierarchy:
+    // Green (Normal: 610) -> Yellow (Caution: 630) -> Red (Critical/Warning: 660)
+    if (!this.map.getPane("normalStationPane")) {
+      this.map.createPane("normalStationPane");
+      this.map.getPane("normalStationPane").style.zIndex = "610";
+    }
+    if (!this.map.getPane("cautionStationPane")) {
+      this.map.createPane("cautionStationPane");
+      this.map.getPane("cautionStationPane").style.zIndex = "630";
+    }
+    if (!this.map.getPane("criticalStationPane")) {
+      this.map.createPane("criticalStationPane");
+      this.map.getPane("criticalStationPane").style.zIndex = "660";
+    }
+
+    // 5. Render Station Markers on top
     this.markersLayer = L.layerGroup().addTo(this.map);
 
     this.renderMarkers();
@@ -325,6 +340,20 @@ class GISManager {
   renderMarkers() {
     if (!this.map || !this.markersLayer) return;
 
+    // Ensure dedicated hierarchy panes exist
+    if (!this.map.getPane("normalStationPane")) {
+      this.map.createPane("normalStationPane");
+      this.map.getPane("normalStationPane").style.zIndex = "610";
+    }
+    if (!this.map.getPane("cautionStationPane")) {
+      this.map.createPane("cautionStationPane");
+      this.map.getPane("cautionStationPane").style.zIndex = "630";
+    }
+    if (!this.map.getPane("criticalStationPane")) {
+      this.map.createPane("criticalStationPane");
+      this.map.getPane("criticalStationPane").style.zIndex = "660";
+    }
+
     this.updateFilterLabelsWithCounts();
     this.markersLayer.clearLayers();
     this.allMarkers = [];
@@ -334,7 +363,27 @@ class GISManager {
 
     let visibleCount = 0;
 
-    stations.forEach(st => {
+    // Layer Hierarchy Ordering:
+    // 1. Normal (Green / Dual) on bottom -> 2. Caution (Yellow) in middle -> 3. Critical (Red Warning) on top
+    const getLayerPriority = (st) => {
+      let issues = [];
+      const stCodeStr = String(st.code || "").trim();
+      const stNameStr = String(st.name || "").trim();
+      const cleanName = stNameStr.replace(/[\(\)\s]/g, "");
+
+      if (stCodeStr && liveIssuesMap[stCodeStr]) issues = liveIssuesMap[stCodeStr];
+      else if (stNameStr && liveIssuesMap[stNameStr]) issues = liveIssuesMap[stNameStr];
+      else if (cleanName && liveIssuesMap[cleanName]) issues = liveIssuesMap[cleanName];
+
+      const statusType = this.classifyStationIssues(issues);
+      if (statusType === "critical") return 3; // Top (Red)
+      if (statusType === "caution") return 2;  // Middle (Yellow)
+      return 1; // Bottom (Green / Normal)
+    };
+
+    const sortedStations = [...stations].sort((a, b) => getLayerPriority(a) - getLayerPriority(b));
+
+    sortedStations.forEach(st => {
       const lat = st.coords?.lat;
       const lon = st.coords?.lon;
       if (!lat || !lon) return;
@@ -407,25 +456,55 @@ class GISManager {
 
       const iconLetter = st.gaugeType?.includes("EWSV") ? "E" : (st.gaugeType?.includes("ADVM") ? "A" : "○");
       let markerHtml = "";
+      let markerPane = "normalStationPane";
+      let zOffset = 0;
+      let iconSize = [30, 30];
+      let iconAnchor = [15, 15];
+      let popupAnchor = [0, -15];
+
       if (isCritical) {
+        // Red Warning: Slightly larger pin size (36px) & Top layer pane (z-index: 660, zOffset: 2500)
+        markerPane = "criticalStationPane";
+        zOffset = 2500;
+        iconSize = [36, 36];
+        iconAnchor = [18, 18];
+        popupAnchor = [0, -18];
         markerHtml = `
           <div class="station-pin pin-issue-abnormal" title="🚨 [경고] 자료 미수신/배터리 이상: ${st.name} (${issues.length}건)">
             <span>🚨</span>
           </div>
         `;
       } else if (isCaution) {
+        // Yellow Caution: Middle layer pane (z-index: 630, zOffset: 1200)
+        markerPane = "cautionStationPane";
+        zOffset = 1200;
+        iconSize = [30, 30];
+        iconAnchor = [15, 15];
+        popupAnchor = [0, -15];
         markerHtml = `
           <div class="station-pin pin-issue-caution" title="⚠️ [주의] 기타 품질 이상: ${st.name} (${issues.length}건)">
             ${isDual ? "⚡" : iconLetter}
           </div>
         `;
       } else if (isDual) {
+        // Dual Normal: Bottom layer pane (z-index: 610, zOffset: 100)
+        markerPane = "normalStationPane";
+        zOffset = 100;
+        iconSize = [30, 30];
+        iconAnchor = [15, 15];
+        popupAnchor = [0, -15];
         markerHtml = `
           <div class="station-pin pin-gauge-dual" title="⚡ 이중화(정상): ${st.name} (${st.gaugeType})">
             <span>⚡</span>
           </div>
         `;
       } else {
+        // Green Normal: Bottom layer pane (z-index: 610, zOffset: 0)
+        markerPane = "normalStationPane";
+        zOffset = 0;
+        iconSize = [30, 30];
+        iconAnchor = [15, 15];
+        popupAnchor = [0, -15];
         markerHtml = `
           <div class="station-pin pin-status-normal" title="🟢 정상 수신: ${st.name} (${st.gaugeType})">
             ${iconLetter}
@@ -434,14 +513,18 @@ class GISManager {
       }
 
       const customIcon = L.divIcon({
-        className: "custom-div-icon",
+        className: `custom-div-icon ${isCritical ? "critical-div-icon" : (isCaution ? "caution-div-icon" : "normal-div-icon")}`,
         html: markerHtml,
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-        popupAnchor: [0, -15]
+        iconSize: iconSize,
+        iconAnchor: iconAnchor,
+        popupAnchor: popupAnchor
       });
 
-      const marker = L.marker([lat, lon], { icon: customIcon });
+      const marker = L.marker([lat, lon], {
+        icon: customIcon,
+        pane: markerPane,
+        zIndexOffset: zOffset
+      });
 
       // Real-time issues alert card in popup
       let warningBoxHtml = "";
