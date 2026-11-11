@@ -33,7 +33,7 @@ const officialUsers = [
   { u: "kihs02", p: "kihs02", name: "이동오", pos: "팀원", role: "member", team: "수자원인프라팀", email: "" },
   { u: "kihs03", p: "kihs03", name: "나형욱", pos: "팀원", role: "member", team: "수자원인프라팀", email: "" },
   { u: "kihs04", p: "kihs04", name: "박세찬", pos: "팀원", role: "member", team: "수자원인프라팀", email: "" },
-  { u: "test", p: "test1234", name: "테스트", pos: "팀원", role: "member", team: "수자원인프라팀", email: "" }
+  { u: "test", p: "test2026", name: "테스트", pos: "팀원", role: "member", team: "수자원인프라팀", email: "" }
 ];
 
 async function initDb() {
