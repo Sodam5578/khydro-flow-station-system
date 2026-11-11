@@ -32,6 +32,100 @@ class EquipmentService {
   }
 
   /**
+   * Helper: Standard Lifespan Years (조달청 고시 제2024-30호) & Calibration Cycle (유속계 2년 / 수위계 3년)
+   */
+  getStandardLifespan(category) {
+    const map = {
+      FLOWMETER: 13,
+      WATER_LEVEL: 10,
+      MOUNT: 12,
+      CONTROL: 8,
+      SHELTER: 8,
+      UNDERWATER: 7,
+      LIGHTNING: 7,
+      CCTV: 9,
+      ANCILLARY: 10,
+      ETC: 10
+    };
+    return map[category] || 10;
+  }
+
+  getCalibCycleYears(category) {
+    if (category === "FLOWMETER") return 2;
+    if (category === "WATER_LEVEL") return 3;
+    return 0;
+  }
+
+  addYearsMinusOneDay(dateStr, years) {
+    if (!dateStr || !years) return "";
+    const m = String(dateStr).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return "";
+    const y = parseInt(m[1], 10) + Number(years);
+    const mo = parseInt(m[2], 10) - 1;
+    const d = parseInt(m[3], 10);
+    const dt = new Date(Date.UTC(y, mo, d));
+    dt.setUTCDate(dt.getUTCDate() - 1);
+    return dt.toISOString().split("T")[0];
+  }
+
+  computeLifespanAndCalib(category, acqDateRaw, customLifespanYears, recentCalibRaw, expireCalibRaw, certNoRaw) {
+    const stdLifespan = this.getStandardLifespan(category);
+    const lifespanYears = parseInt(customLifespanYears, 10) > 0 ? parseInt(customLifespanYears, 10) : stdLifespan;
+
+    const yrMatch = String(acqDateRaw || "").match(/(19\d{2}|20\d{2})/);
+    const acqYear = yrMatch ? parseInt(yrMatch[1], 10) : new Date().getFullYear();
+    const acqDate = yrMatch ? String(yrMatch[1]) : String(acqYear);
+    const lifespanEndYear = String(acqYear + lifespanYears);
+    const isLifespanOver = parseInt(lifespanEndYear, 10) < 2026 ? 1 : 0;
+
+    let recentCalibDate = String(recentCalibRaw || "").trim();
+    if (recentCalibDate === "null" || recentCalibDate === "undefined" || recentCalibDate === "-") recentCalibDate = "";
+    let calibExpireDate = String(expireCalibRaw || "").trim();
+    if (calibExpireDate === "null" || calibExpireDate === "undefined" || calibExpireDate === "-") calibExpireDate = "";
+    let calibCertNo = String(certNoRaw || "").trim();
+    if (calibCertNo === "null" || calibCertNo === "undefined" || calibCertNo === "-") calibCertNo = "";
+    let calibStatus = "none";
+
+    const cycle = this.getCalibCycleYears(category);
+    if (cycle > 0) {
+      if (!recentCalibDate && !calibExpireDate) {
+        recentCalibDate = "";
+        calibExpireDate = "";
+        calibCertNo = "";
+        calibStatus = "none";
+      } else {
+        if (recentCalibDate && !calibExpireDate) {
+          calibExpireDate = this.addYearsMinusOneDay(recentCalibDate, cycle);
+        } else if (!recentCalibDate && calibExpireDate) {
+          recentCalibDate = this.addYearsMinusOneDay(calibExpireDate, -cycle);
+        }
+        const todayStr = new Date().toISOString().split("T")[0];
+        const refToday = todayStr < "2026-11-03" ? "2026-11-03" : todayStr;
+        if (calibExpireDate && calibExpireDate < refToday) {
+          calibStatus = "overdue";
+        } else if (calibExpireDate && calibExpireDate <= "2026-12-31") {
+          calibStatus = "due_soon";
+        } else if (calibExpireDate) {
+          calibStatus = "valid";
+        } else {
+          calibStatus = "none";
+        }
+      }
+    }
+
+    return {
+      acquisition_date: acqDate,
+      lifespan_years: lifespanYears,
+      lifespan_end_year: lifespanEndYear,
+      is_lifespan_over: isLifespanOver,
+      recent_calib_date: recentCalibDate,
+      calib_expire_date: calibExpireDate,
+      calib_cert_no: calibCertNo,
+      calib_status: calibStatus
+    };
+  }
+
+  /**
    * 0. Overall Equipment Dashboard Aggregations
    */
   async getDashboardStats() {
@@ -42,7 +136,11 @@ class EquipmentService {
         SUM(CASE WHEN status='SPARE' THEN 1 ELSE 0 END) as spare,
         SUM(CASE WHEN status='REPAIRING' THEN 1 ELSE 0 END) as repairing,
         SUM(CASE WHEN status='DISPOSAL' THEN 1 ELSE 0 END) as disposal,
-        SUM(CASE WHEN is_lifespan_over=1 THEN 1 ELSE 0 END) as lifespan_over
+        SUM(CASE WHEN status='RETURNED' THEN 1 ELSE 0 END) as returned,
+        SUM(CASE WHEN is_lifespan_over=1 AND status != 'RETURNED' THEN 1 ELSE 0 END) as lifespan_over,
+        SUM(CASE WHEN category IN ('FLOWMETER', 'WATER_LEVEL') AND status != 'RETURNED' AND calib_status IN ('overdue', 'due_soon') THEN 1 ELSE 0 END) as calib_need_total,
+        SUM(CASE WHEN category='FLOWMETER' AND status != 'RETURNED' AND calib_status IN ('overdue', 'due_soon') THEN 1 ELSE 0 END) as flow_calib_need,
+        SUM(CASE WHEN category='WATER_LEVEL' AND status != 'RETURNED' AND calib_status IN ('overdue', 'due_soon') THEN 1 ELSE 0 END) as water_calib_need
       FROM equipment_master
     `);
 
@@ -50,15 +148,37 @@ class EquipmentService {
       SELECT 
         category,
         category_name,
+        MAX(lifespan_years) as lifespan_years,
         COUNT(*) as total,
         SUM(CASE WHEN status='OPERATING' THEN 1 ELSE 0 END) as operating,
         SUM(CASE WHEN status='SPARE' THEN 1 ELSE 0 END) as spare,
         SUM(CASE WHEN status='REPAIRING' THEN 1 ELSE 0 END) as repairing,
         SUM(CASE WHEN status='DISPOSAL' THEN 1 ELSE 0 END) as disposal,
-        SUM(CASE WHEN is_lifespan_over=1 THEN 1 ELSE 0 END) as lifespan_over
+        SUM(CASE WHEN status='RETURNED' THEN 1 ELSE 0 END) as returned,
+        SUM(CASE WHEN is_lifespan_over=1 AND status != 'RETURNED' THEN 1 ELSE 0 END) as lifespan_over,
+        SUM(CASE WHEN status != 'RETURNED' AND calib_status IN ('overdue', 'due_soon') THEN 1 ELSE 0 END) as calib_need
       FROM equipment_master
       GROUP BY category, category_name
       ORDER BY total DESC
+    `);
+
+    const calibSummary = await this.all(`
+      SELECT
+        category,
+        category_name,
+        COUNT(*) as total,
+        SUM(CASE WHEN status='OPERATING' THEN 1 ELSE 0 END) as operating,
+        SUM(CASE WHEN status='RETURNED' THEN 1 ELSE 0 END) as returned,
+        SUM(CASE WHEN calib_status='overdue' AND status != 'RETURNED' THEN 1 ELSE 0 END) as overdue,
+        SUM(CASE WHEN calib_status='due_soon' AND status != 'RETURNED' THEN 1 ELSE 0 END) as due_soon,
+        SUM(CASE WHEN calib_status IN ('overdue', 'due_soon') AND status != 'RETURNED' THEN 1 ELSE 0 END) as need_calib,
+        SUM(CASE WHEN calib_status IN ('overdue', 'due_soon') AND status != 'RETURNED' AND calib_cert_no != '취득·설치일 기준' THEN 1 ELSE 0 END) as need_calib_cert,
+        SUM(CASE WHEN calib_status='valid' AND status != 'RETURNED' THEN 1 ELSE 0 END) as valid,
+        SUM(CASE WHEN (calib_status='none' OR calib_status IS NULL OR recent_calib_date IS NULL OR recent_calib_date = '') AND status != 'RETURNED' THEN 1 ELSE 0 END) as no_record,
+        SUM(CASE WHEN calib_expire_date LIKE '2027%' AND status != 'RETURNED' THEN 1 ELSE 0 END) as due_2027
+      FROM equipment_master
+      WHERE category IN ('FLOWMETER', 'WATER_LEVEL')
+      GROUP BY category, category_name
     `);
 
     const flowModels = await this.all(`
@@ -73,7 +193,11 @@ class EquipmentService {
         SUM(CASE WHEN status='SPARE' THEN 1 ELSE 0 END) as spare,
         SUM(CASE WHEN status='REPAIRING' THEN 1 ELSE 0 END) as repairing,
         SUM(CASE WHEN status='DISPOSAL' THEN 1 ELSE 0 END) as disposal,
-        SUM(CASE WHEN is_lifespan_over=1 THEN 1 ELSE 0 END) as lifespan_over
+        SUM(CASE WHEN status='RETURNED' THEN 1 ELSE 0 END) as returned,
+        SUM(CASE WHEN is_lifespan_over=1 AND status != 'RETURNED' THEN 1 ELSE 0 END) as lifespan_over,
+        SUM(CASE WHEN calib_status IN ('overdue', 'due_soon') AND status != 'RETURNED' THEN 1 ELSE 0 END) as calib_need,
+        SUM(CASE WHEN calib_status='valid' AND status != 'RETURNED' THEN 1 ELSE 0 END) as calib_valid,
+        SUM(CASE WHEN (calib_status='none' OR calib_status IS NULL OR recent_calib_date IS NULL OR recent_calib_date = '') AND status != 'RETURNED' THEN 1 ELSE 0 END) as calib_none
       FROM equipment_master
       WHERE category='FLOWMETER'
       GROUP BY model_name
@@ -95,7 +219,11 @@ class EquipmentService {
         SUM(CASE WHEN status='SPARE' THEN 1 ELSE 0 END) as spare,
         SUM(CASE WHEN status='REPAIRING' THEN 1 ELSE 0 END) as repairing,
         SUM(CASE WHEN status='DISPOSAL' THEN 1 ELSE 0 END) as disposal,
-        SUM(CASE WHEN is_lifespan_over=1 THEN 1 ELSE 0 END) as lifespan_over
+        SUM(CASE WHEN status='RETURNED' THEN 1 ELSE 0 END) as returned,
+        SUM(CASE WHEN is_lifespan_over=1 AND status != 'RETURNED' THEN 1 ELSE 0 END) as lifespan_over,
+        SUM(CASE WHEN calib_status IN ('overdue', 'due_soon') AND status != 'RETURNED' THEN 1 ELSE 0 END) as calib_need,
+        SUM(CASE WHEN calib_status='valid' AND status != 'RETURNED' THEN 1 ELSE 0 END) as calib_valid,
+        SUM(CASE WHEN (calib_status='none' OR calib_status IS NULL OR recent_calib_date IS NULL OR recent_calib_date = '') AND status != 'RETURNED' THEN 1 ELSE 0 END) as calib_none
       FROM equipment_master
       WHERE category='WATER_LEVEL'
       GROUP BY clean_model
@@ -141,6 +269,7 @@ class EquipmentService {
         calib_stations: (calibCount && calibCount.total) || 0,
         total_actions: (actionsCount && actionsCount.total) || 0
       },
+      calibSummary,
       categories,
       flowModels,
       waterModels,
@@ -166,6 +295,8 @@ class EquipmentService {
         SUM(CASE WHEN e.category = 'WATER_LEVEL' AND e.status = 'OPERATING' THEN 1 ELSE 0 END) as waterlevel_count,
         SUM(CASE WHEN e.status = 'REPAIRING' THEN 1 ELSE 0 END) as repairing_count,
         SUM(CASE WHEN e.status = 'SPARE' THEN 1 ELSE 0 END) as spare_count,
+        SUM(CASE WHEN e.is_lifespan_over = 1 THEN 1 ELSE 0 END) as lifespan_over_count,
+        SUM(CASE WHEN e.category IN ('FLOWMETER', 'WATER_LEVEL') AND e.calib_status IN ('overdue', 'due_soon') THEN 1 ELSE 0 END) as calib_due_count,
         (SELECT COUNT(*) FROM equipment_work w WHERE w.station_id = s.id) as work_count
       FROM stations s
       LEFT JOIN equipment_master e ON s.id = e.station_id
@@ -190,7 +321,11 @@ class EquipmentService {
 
     // Filter by quick status filter
     if (filterType === "calib" || filterType === "calib2026") {
-      rows = rows.filter(r => r.calib_2026 === 1);
+      rows = rows.filter(r => r.calib_2026 === 1 || (r.calib_due_count || 0) > 0);
+    } else if (filterType === "calibDue") {
+      rows = rows.filter(r => (r.calib_due_count || 0) > 0);
+    } else if (filterType === "lifespanOver") {
+      rows = rows.filter(r => (r.lifespan_over_count || 0) > 0);
     } else if (filterType === "flow") {
       rows = rows.filter(r => (r.flowmeter_count || 0) > 0);
     } else if (filterType === "water") {
@@ -264,6 +399,8 @@ class EquipmentService {
       stationId = null,
       category = "all",
       status = "all",
+      isOver = "all",
+      calibFilter = "all",
       calibOnly = false,
       page = 1,
       limit = 50
@@ -278,8 +415,12 @@ class EquipmentService {
     }
 
     if (category && String(category).toLowerCase() !== "all") {
-      whereClause += " AND category = ?";
-      params.push(category);
+      if (category === "FLOW_WATER") {
+        whereClause += " AND category IN ('FLOWMETER', 'WATER_LEVEL')";
+      } else {
+        whereClause += " AND category = ?";
+        params.push(category);
+      }
     }
 
     if (status && String(status).toLowerCase() !== "all") {
@@ -291,8 +432,29 @@ class EquipmentService {
       }
     }
 
-    if (calibOnly === "1" || calibOnly === "true" || calibOnly === true) {
-      whereClause += " AND (calib_status IS NOT NULL AND calib_status != '' AND recent_calib_date != '')";
+    if (isOver === "1" || isOver === "OVER" || isOver === "true") {
+      whereClause += " AND is_lifespan_over = 1";
+    } else if (isOver === "0" || isOver === "WITHIN" || isOver === "false") {
+      whereClause += " AND is_lifespan_over = 0";
+    }
+
+    const cf = String(calibFilter || "all").toUpperCase();
+    if (cf === "NEED_ALL" || cf === "NEED_CALIB") {
+      whereClause += " AND category IN ('FLOWMETER', 'WATER_LEVEL') AND status != 'RETURNED' AND calib_status IN ('overdue', 'due_soon')";
+    } else if (cf === "NEED_CERT") {
+      whereClause += " AND category IN ('FLOWMETER', 'WATER_LEVEL') AND status != 'RETURNED' AND calib_status IN ('overdue', 'due_soon') AND calib_cert_no != '취득·설치일 기준'";
+    } else if (cf === "OVERDUE") {
+      whereClause += " AND category IN ('FLOWMETER', 'WATER_LEVEL') AND status != 'RETURNED' AND calib_status = 'overdue'";
+    } else if (cf === "DUE_SOON") {
+      whereClause += " AND category IN ('FLOWMETER', 'WATER_LEVEL') AND status != 'RETURNED' AND calib_status = 'due_soon'";
+    } else if (cf === "DUE_2027") {
+      whereClause += " AND category IN ('FLOWMETER', 'WATER_LEVEL') AND status != 'RETURNED' AND calib_expire_date LIKE '2027%'";
+    } else if (cf === "VALID") {
+      whereClause += " AND category IN ('FLOWMETER', 'WATER_LEVEL') AND status != 'RETURNED' AND calib_status = 'valid'";
+    } else if (cf === "NO_RECORD" || cf === "NONE" || cf === "UNINSPECTED") {
+      whereClause += " AND category IN ('FLOWMETER', 'WATER_LEVEL') AND status != 'RETURNED' AND (calib_status = 'none' OR calib_status IS NULL OR recent_calib_date IS NULL OR recent_calib_date = '' OR recent_calib_date = '-')";
+    } else if (calibOnly === "1" || calibOnly === "true" || calibOnly === true) {
+      whereClause += " AND status != 'RETURNED' AND (calib_status IS NOT NULL AND calib_status != '' AND recent_calib_date != '')";
     }
 
     if (search) {
@@ -358,6 +520,16 @@ class EquipmentService {
     else if (data.status === "DISPOSAL") statusLabel = "폐품";
     else if (data.status === "RETURN") statusLabel = "반납예정";
 
+    const cat = data.category || "FLOWMETER";
+    const lc = this.computeLifespanAndCalib(
+      cat,
+      data.acquisition_date,
+      data.lifespan_years,
+      data.recent_calib_date,
+      data.calib_expire_date,
+      data.calib_cert_no
+    );
+
     const sql = `
       INSERT INTO equipment_master (
         equipment_id, station_id, station_name, station_code,
@@ -366,9 +538,9 @@ class EquipmentService {
         quantity, status, status_label, location,
         acquisition_date, acquisition_cost, lifespan_years,
         lifespan_end_year, is_lifespan_over,
-        calib_status, recent_calib_date, calib_cert_no,
+        calib_status, recent_calib_date, calib_cert_no, calib_expire_date,
         memo, source_sheet
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '사용자직접등록')
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '사용자직접등록')
     `;
 
     const res = await this.run(sql, [
@@ -376,7 +548,7 @@ class EquipmentService {
       data.station_id || null,
       stationName,
       stationCode,
-      data.category || "FLOWMETER",
+      cat,
       data.category_name || "유속계",
       data.item_name || data.category_name || "유속계",
       data.manage_no || "",
@@ -389,14 +561,15 @@ class EquipmentService {
       data.status || "OPERATING",
       statusLabel,
       data.location || "현장설치",
-      data.acquisition_date || new Date().getFullYear().toString(),
+      lc.acquisition_date,
       data.acquisition_cost || 0,
-      data.lifespan_years || 10,
-      data.lifespan_end_year || "",
-      data.is_lifespan_over || 0,
-      data.calib_status || "pending",
-      data.recent_calib_date || "",
-      data.calib_cert_no || "",
+      lc.lifespan_years,
+      lc.lifespan_end_year,
+      lc.is_lifespan_over,
+      lc.calib_status,
+      lc.recent_calib_date,
+      lc.calib_cert_no,
+      lc.calib_expire_date,
       data.memo || ""
     ]);
 
@@ -410,7 +583,7 @@ class EquipmentService {
   }
 
   /**
-   * 4-1. Get Single Equipment Detail with Audit History & Active Repair
+   * 4-1. Get Single Equipment Detail with Audit History & Active Repair & Calibration History
    */
   async getDeviceById(equipmentId) {
     const device = await this.get(`SELECT * FROM equipment_master WHERE equipment_id = ?`, [equipmentId]);
@@ -424,16 +597,190 @@ class EquipmentService {
       `SELECT * FROM equipment_repair WHERE equipment_id = ? ORDER BY id DESC LIMIT 1`,
       [equipmentId]
     );
+    const calibrationHistory = await this.all(
+      `SELECT * FROM equipment_calibration_history WHERE equipment_id = ? ORDER BY calib_date DESC, id DESC`,
+      [equipmentId]
+    );
 
     return {
       device,
       auditLogs,
-      activeRepair
+      activeRepair,
+      calibrationHistory
     };
   }
 
   /**
-   * 4-2. Update Single Equipment Full Details (Model, S/N, Asset No, Station, Status, Location, Memo)
+   * Helper: Synchronize device recent_calib_date, calib_expire_date, calib_cert_no, calib_status with latest calibration history
+   */
+  async syncDeviceLatestCalibration(equipmentId) {
+    const dev = await this.get(`SELECT * FROM equipment_master WHERE equipment_id = ?`, [equipmentId]);
+    if (!dev) return;
+
+    const latest = await this.get(
+      `SELECT * FROM equipment_calibration_history WHERE equipment_id = ? ORDER BY calib_date DESC, id DESC LIMIT 1`,
+      [equipmentId]
+    );
+
+    if (!latest) {
+      await this.run(
+        `UPDATE equipment_master 
+         SET recent_calib_date = NULL, calib_expire_date = NULL, calib_cert_no = NULL, calib_status = 'none', updated_at = CURRENT_TIMESTAMP
+         WHERE equipment_id = ?`,
+        [equipmentId]
+      );
+      return;
+    }
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const refToday = todayStr < "2026-11-03" ? "2026-11-03" : todayStr;
+    let calibStatus = "valid";
+    if (latest.expire_date < refToday) {
+      calibStatus = "overdue";
+    } else if (latest.expire_date >= "2026-11-03" && latest.expire_date <= "2026-12-31") {
+      calibStatus = "due_soon";
+    }
+
+    await this.run(
+      `UPDATE equipment_master 
+       SET recent_calib_date = ?, calib_expire_date = ?, calib_cert_no = ?, calib_status = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE equipment_id = ?`,
+      [latest.calib_date, latest.expire_date, latest.cert_no || "", calibStatus, equipmentId]
+    );
+  }
+
+  /**
+   * 4-1b. Get Calibration History for Equipment
+   */
+  async getDeviceCalibrations(equipmentId) {
+    return await this.all(
+      `SELECT * FROM equipment_calibration_history WHERE equipment_id = ? ORDER BY calib_date DESC, id DESC`,
+      [equipmentId]
+    );
+  }
+
+  /**
+   * 4-1c. Add New Calibration Record for Equipment
+   */
+  async addCalibrationRecord(equipmentId, data = {}, user = {}) {
+    const dev = await this.get(`SELECT * FROM equipment_master WHERE equipment_id = ?`, [equipmentId]);
+    if (!dev) throw new Error("장비를 찾을 수 없습니다.");
+
+    const cycle = this.getCalibCycleYears(dev.category) || 2;
+    const calibDate = String(data.calib_date || "").trim();
+    if (!calibDate) throw new Error("검정 실시일자를 입력해주세요.");
+
+    let expireDate = String(data.expire_date || "").trim();
+    if (!expireDate) {
+      expireDate = this.addYearsMinusOneDay(calibDate, cycle);
+    }
+
+    const agency = String(data.agency || "한국수자원조사기술원").trim();
+    const certNo = String(data.cert_no || "").trim();
+    const resultStatus = String(data.result_status || "합격").trim();
+    const calibCost = parseInt(data.calib_cost, 10) || 0;
+    const memo = String(data.memo || "").trim();
+    const actor = user.name ? `${user.name} (${user.username || ""})` : (user.username || "관리자");
+
+    const insertRes = await this.run(
+      `INSERT INTO equipment_calibration_history 
+        (equipment_id, station_id, station_name, category, model_name, serial_no, calib_date, cycle_years, expire_date, agency, cert_no, result_status, calib_cost, memo, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        equipmentId,
+        dev.station_id || null,
+        dev.station_name || "",
+        dev.category,
+        dev.model_name || "",
+        dev.serial_no || "",
+        calibDate,
+        cycle,
+        expireDate,
+        agency,
+        certNo,
+        resultStatus,
+        calibCost,
+        memo,
+        actor
+      ]
+    );
+
+    // Synchronize latest calibration state onto equipment_master
+    await this.syncDeviceLatestCalibration(equipmentId);
+
+    // Audit log
+    await this.run(
+      `INSERT INTO equipment_audit_log (equipment_id, field_name, before_value, after_value, changed_by, reason)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        equipmentId,
+        "검정이력등록",
+        dev.recent_calib_date || "-",
+        `${calibDate} (~${expireDate}) / ${resultStatus} [성적서:${certNo || "-"}]`,
+        actor,
+        memo || "새 법정 검정 결과 등록"
+      ]
+    );
+
+    return {
+      success: true,
+      historyId: insertRes.lastID,
+      message: "검정 이력이 등록되고 장비 상태가 갱신되었습니다."
+    };
+  }
+
+  /**
+   * 4-1d. Update Existing Calibration Record
+   */
+  async updateCalibrationRecord(historyId, data = {}, user = {}) {
+    const existing = await this.get(`SELECT * FROM equipment_calibration_history WHERE id = ?`, [historyId]);
+    if (!existing) throw new Error("수정할 검정 이력을 찾을 수 없습니다.");
+
+    const calibDate = data.calib_date || existing.calib_date;
+    const cycle = parseInt(data.cycle_years, 10) || existing.cycle_years || 2;
+    let expireDate = data.expire_date || existing.expire_date;
+    if (data.calib_date && !data.expire_date) {
+      expireDate = this.addYearsMinusOneDay(calibDate, cycle);
+    }
+    const agency = data.agency !== undefined ? data.agency : existing.agency;
+    const certNo = data.cert_no !== undefined ? data.cert_no : existing.cert_no;
+    const resultStatus = data.result_status !== undefined ? data.result_status : existing.result_status;
+    const calibCost = data.calib_cost !== undefined ? parseInt(data.calib_cost, 10) : existing.calib_cost;
+    const memo = data.memo !== undefined ? data.memo : existing.memo;
+
+    await this.run(
+      `UPDATE equipment_calibration_history 
+       SET calib_date = ?, cycle_years = ?, expire_date = ?, agency = ?, cert_no = ?, result_status = ?, calib_cost = ?, memo = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [calibDate, cycle, expireDate, agency, certNo, resultStatus, calibCost, memo, historyId]
+    );
+
+    await this.syncDeviceLatestCalibration(existing.equipment_id);
+
+    return {
+      success: true,
+      message: "검정 이력이 수정되었습니다."
+    };
+  }
+
+  /**
+   * 4-1e. Delete Calibration Record
+   */
+  async deleteCalibrationRecord(historyId, user = {}) {
+    const existing = await this.get(`SELECT * FROM equipment_calibration_history WHERE id = ?`, [historyId]);
+    if (!existing) throw new Error("삭제할 검정 이력을 찾을 수 없습니다.");
+
+    await this.run(`DELETE FROM equipment_calibration_history WHERE id = ?`, [historyId]);
+    await this.syncDeviceLatestCalibration(existing.equipment_id);
+
+    return {
+      success: true,
+      message: "검정 이력이 삭제되었습니다."
+    };
+  }
+
+  /**
+   * 4-2. Update Single Equipment Full Details (Model, S/N, Asset No, Station, Status, Location, Lifespan, Calibration, Memo)
    */
   async updateDevice(equipmentId, data = {}, user = {}) {
     const current = await this.get(`SELECT * FROM equipment_master WHERE equipment_id = ?`, [equipmentId]);
@@ -457,7 +804,8 @@ class EquipmentService {
       SPARE: "예비품",
       REPAIRING: "수리중",
       DISPOSAL: "폐품",
-      RETURN: "반납예정"
+      RETURNED: "자산반납",
+      RETURN: "반납완료"
     };
 
     // Resolve station assignment
@@ -489,7 +837,21 @@ class EquipmentService {
     const newStatus = data.status || current.status || "OPERATING";
     const newStatusLabel = statusLabelMap[newStatus] || "운영중";
     const newLocation = data.location !== undefined ? String(data.location).trim() : (current.location || "");
-    const newAcqDate = data.acquisition_date !== undefined ? String(data.acquisition_date).trim() : (current.acquisition_date || "");
+    const rawAcqDate = data.acquisition_date !== undefined ? (data.acquisition_date ? String(data.acquisition_date).trim() : "") : (current.acquisition_date || "");
+    const rawLifespanYears = data.lifespan_years !== undefined ? data.lifespan_years : (newCategory !== current.category ? this.getStandardLifespan(newCategory) : current.lifespan_years);
+    const rawRecentCalib = data.recent_calib_date !== undefined ? (data.recent_calib_date ? String(data.recent_calib_date).trim() : "") : (current.recent_calib_date || "");
+    const rawExpireCalib = data.calib_expire_date !== undefined ? (data.calib_expire_date ? String(data.calib_expire_date).trim() : "") : (current.calib_expire_date || "");
+    const rawCertNo = data.calib_cert_no !== undefined ? (data.calib_cert_no ? String(data.calib_cert_no).trim() : "") : (current.calib_cert_no || "");
+
+    const lc = this.computeLifespanAndCalib(
+      newCategory,
+      rawAcqDate,
+      rawLifespanYears,
+      rawRecentCalib,
+      rawExpireCalib,
+      rawCertNo
+    );
+
     const newMemo = data.memo !== undefined ? String(data.memo).trim() : (current.memo || "");
     const reason = data.reason ? String(data.reason).trim() : "장비 정보/상태 직접 수정";
 
@@ -503,7 +865,10 @@ class EquipmentService {
       ["station_name", "배정관측소", current.station_name || "미배정(보관)", stationName || "미배정(보관)"],
       ["status", "운영상태", `${current.status_label || current.status}`, `${newStatusLabel}(${newStatus})`],
       ["location", "보관/설치위치", current.location || "", newLocation],
-      ["acquisition_date", "취득년도", current.acquisition_date || "", newAcqDate],
+      ["acquisition_date", "취득년도", current.acquisition_date || "", lc.acquisition_date],
+      ["lifespan_years", "내용연수(년)", String(current.lifespan_years || ""), String(lc.lifespan_years || "")],
+      ["recent_calib_date", "최근검정일", current.recent_calib_date || "", lc.recent_calib_date],
+      ["calib_expire_date", "검정만료일", current.calib_expire_date || "", lc.calib_expire_date],
       ["memo", "비고", current.memo || "", newMemo]
     ];
 
@@ -519,7 +884,9 @@ class EquipmentService {
           category = ?, category_name = ?,
           model_name = ?, serial_no = ?, asset_no = ?,
           status = ?, status_label = ?, location = ?,
-          acquisition_date = ?, memo = ?,
+          acquisition_date = ?, lifespan_years = ?, lifespan_end_year = ?, is_lifespan_over = ?,
+          calib_status = ?, recent_calib_date = ?, calib_expire_date = ?, calib_cert_no = ?,
+          memo = ?,
           version = version + 1, updated_at = CURRENT_TIMESTAMP
       WHERE equipment_id = ?
     `, [
@@ -527,7 +894,9 @@ class EquipmentService {
       newCategory, newCategoryName,
       newModel, newSerial, newAsset,
       newStatus, newStatusLabel, newLocation,
-      newAcqDate, newMemo,
+      lc.acquisition_date, lc.lifespan_years, lc.lifespan_end_year, lc.is_lifespan_over,
+      lc.calib_status, lc.recent_calib_date, lc.calib_expire_date, lc.calib_cert_no,
+      newMemo,
       equipmentId
     ]);
 
@@ -1132,6 +1501,9 @@ class EquipmentService {
         ["model_name", "모델명"],
         ["serial_no", "제조번호(S/N)"],
         ["asset_no", "자산번호"],
+        ["acquisition_date", "취득년도"],
+        ["recent_calib_date", "최근검정일"],
+        ["calib_expire_date", "검정만료일"],
         ["location", "보관위치"],
         ["memo", "비고"]
       ];

@@ -727,44 +727,36 @@
         <section class="view-panel" id="view-equipment">
           <!-- Top KPI Summary Cards -->
           <div class="kpi-grid">
-            <div class="kpi-card">
+            <div class="kpi-card" style="cursor:pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'ALL' })" title="클릭 시 전체 장비대장으로 이동">
               <div class="kpi-icon blue">📦</div>
               <div class="kpi-content">
                 <div class="kpi-label">전체 설비·자산 총괄</div>
-                <div class="kpi-value" id="kpi-eq-total-count">2,113점</div>
-                <div class="kpi-sub">전국 176개 관측시설 9대 설비</div>
+                <div class="kpi-value" id="kpi-eq-total-count">1,845점</div>
+                <div class="kpi-sub">정상 가동 <b id="kpi-eq-operating-count">1,729</b>대 (93.7%)</div>
               </div>
             </div>
-            <div class="kpi-card">
-              <div class="kpi-icon green">⚡</div>
-              <div class="kpi-content">
-                <div class="kpi-label">정상 가동 (운영중)</div>
-                <div class="kpi-value" id="kpi-eq-operating-count">1,940점</div>
-                <div class="kpi-sub">현장 정상 관측 가동률 91.8%</div>
-              </div>
-            </div>
-            <div class="kpi-card">
+            <div class="kpi-card" style="cursor:pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'FLOWMETER' })" title="클릭 시 유속계 대장으로 이동">
               <div class="kpi-icon purple">🌊</div>
               <div class="kpi-content">
-                <div class="kpi-label">핵심 센서 (유속·수위)</div>
-                <div class="kpi-value">유속 645 / 수위 233</div>
-                <div class="kpi-sub">RQ-30D, CM300 등 주력 계측기</div>
+                <div class="kpi-label">유속계 (검정 2년 주기)</div>
+                <div class="kpi-value" id="kpi-eq-flow-count">646대</div>
+                <div class="kpi-sub">내용연수 13년 · 검정필요 <b id="kpi-eq-flow-need" style="color:#d97706;">6</b>대</div>
               </div>
             </div>
-            <div class="kpi-card">
-              <div class="kpi-icon amber">🛠️</div>
+            <div class="kpi-card" style="cursor:pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL' })" title="클릭 시 수위계 대장으로 이동">
+              <div class="kpi-icon cyan">📏</div>
               <div class="kpi-content">
-                <div class="kpi-label">수리 및 후속조치</div>
-                <div class="kpi-value" id="kpi-eq-repair-count" style="color:#b91c1c;">7건</div>
-                <div class="kpi-sub">전문업체 정밀점검·수리 진행중</div>
+                <div class="kpi-label">수위계 (검정 3년 주기)</div>
+                <div class="kpi-value" id="kpi-eq-water-count">224대</div>
+                <div class="kpi-sub">내용연수 10년 · 검정필요 <b id="kpi-eq-water-need" style="color:#d97706;">39</b>대</div>
               </div>
             </div>
-            <div class="kpi-card">
-              <div class="kpi-icon cyan">🎯</div>
+            <div class="kpi-card" style="cursor:pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'ALL', isOver: '1' })" title="클릭 시 내용연수 초과 장비 목록으로 이동">
+              <div class="kpi-icon red">⚠️</div>
               <div class="kpi-content">
-                <div class="kpi-label">26년 법정 검정대상</div>
-                <div class="kpi-value">30개소</div>
-                <div class="kpi-sub">정기검정 법정 의무 관리</div>
+                <div class="kpi-label">내용연수 초과 설비</div>
+                <div class="kpi-value" id="kpi-eq-lifespan-over-count" style="color:#dc2626;">171점</div>
+                <div class="kpi-sub">조달청 고시 내용연수 기준 초과</div>
               </div>
             </div>
           </div>
@@ -778,7 +770,7 @@
               <span>📍</span> 지점별 현황 (176개소)
             </button>
             <button class="eq-tab-btn" data-tab="devices" onclick="window.equipmentManager.switchSubTab('devices')">
-              <span>📋</span> 전체 장비대장 (9대 설비)
+              <span>📋</span> 전체 장비대장 (검정·내용연수)
             </button>
             <button class="eq-tab-btn" data-tab="repairs" onclick="window.equipmentManager.switchSubTab('repairs')">
               <span>🛠️</span> 수리·후속조치
@@ -807,7 +799,7 @@
                   <span class="badge badge-blue" style="font-weight: 700;">전국 176개소 9대 설비</span>
                 </div>
                 <div style="font-size: 0.83rem; color: #64748b; margin-top: 4px;">
-                  유속계·수위계 등 핵심 계측기기 종류별(모델별) 보유 대수, 운영·예비·수리 상태 및 내구연한 종합 분석
+                  9대 설비 조달청 내용연수 관리 및 유속계(2년 주기)·수위계(3년 주기) 검정일·만료일 기반 검정 대상 통합 조회
                 </div>
               </div>
               <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
@@ -820,46 +812,38 @@
               </div>
             </div>
 
-            <!-- Row 1: Executive KPI Cards -->
+            <!-- Row 1: Executive KPI Cards (4대 핵심 지표) -->
             <div class="kpi-grid" style="margin-bottom: 1.25rem;">
               <div class="kpi-card" style="cursor: pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'ALL' })" title="클릭 시 전체 장비대장으로 이동">
                 <div class="kpi-icon blue">📦</div>
                 <div class="kpi-content">
                   <div class="kpi-label">전체 설비·자산</div>
-                  <div class="kpi-value" id="dash-kpi-total">2,113점</div>
-                  <div class="kpi-sub">정상 가동 <b id="dash-kpi-operating">2,007</b>대 (95.0%)</div>
+                  <div class="kpi-value" id="dash-kpi-total">1,845점</div>
+                  <div class="kpi-sub">정상 가동 <b id="dash-kpi-operating">1,704</b>대 · 반납 <b style="color:#7e22ce;">45</b>대</div>
                 </div>
               </div>
               <div class="kpi-card" style="cursor: pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'FLOWMETER' })" title="클릭 시 유속계 대장으로 이동">
                 <div class="kpi-icon purple">🌊</div>
                 <div class="kpi-content">
-                  <div class="kpi-label">유속계 총괄 대수</div>
-                  <div class="kpi-value" id="dash-kpi-flowmeter">645대</div>
-                  <div class="kpi-sub">비접촉 <b id="dash-kpi-flow-noncontact">446</b> | 접촉 <b id="dash-kpi-flow-contact">199</b></div>
+                  <div class="kpi-label">유속계 (검정 2년 주기)</div>
+                  <div class="kpi-value" id="dash-kpi-flowmeter">646대</div>
+                  <div class="kpi-sub">가동 566대 · 반납 <b style="color:#7e22ce;">32</b>대 · 검정필요 <b id="dash-kpi-flow-need" style="color:#d97706;">6</b>대</div>
                 </div>
               </div>
               <div class="kpi-card" style="cursor: pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL' })" title="클릭 시 수위계 대장으로 이동">
                 <div class="kpi-icon cyan">📏</div>
                 <div class="kpi-content">
-                  <div class="kpi-label">수위계 총괄 대수</div>
-                  <div class="kpi-value" id="dash-kpi-waterlevel">233대</div>
-                  <div class="kpi-sub">레이더 <b id="dash-kpi-water-radar">104</b> | 수압·기타 <b id="dash-kpi-water-pressure">129</b></div>
+                  <div class="kpi-label">수위계 (검정 3년 주기)</div>
+                  <div class="kpi-value" id="dash-kpi-waterlevel">224대</div>
+                  <div class="kpi-sub">가동 163대 · 반납 <b style="color:#7e22ce;">13</b>대 · 검정필요 <b id="dash-kpi-water-need" style="color:#d97706;">31</b>대</div>
                 </div>
               </div>
-              <div class="kpi-card" style="cursor: pointer;" onclick="window.equipmentManager.switchSubTab('repairs')" title="클릭 시 수리관리 탭으로 이동">
-                <div class="kpi-icon amber">🛠️</div>
-                <div class="kpi-content">
-                  <div class="kpi-label">전문 수리 / 예비품</div>
-                  <div class="kpi-value" id="dash-kpi-repair" style="color: #b91c1c;">수리 7 / 예비 74</div>
-                  <div class="kpi-sub">리버앤씨 수리 및 보관품</div>
-                </div>
-              </div>
-              <div class="kpi-card" style="cursor: pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ isOver: '1' })" title="클릭 시 내구연한 경과 장비 목록으로 이동">
+              <div class="kpi-card" style="cursor: pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'ALL', isOver: '1' })" title="클릭 시 내용연수 초과 장비 목록으로 이동">
                 <div class="kpi-icon red">⚠️</div>
                 <div class="kpi-content">
-                  <div class="kpi-label">내구연한 경과(초과)</div>
-                  <div class="kpi-value" id="dash-kpi-lifespan" style="color: #dc2626;">119점</div>
-                  <div class="kpi-sub">전체 대비 5.6% (노후 교체 우선순위)</div>
+                  <div class="kpi-label">내용연수 초과 (노후설비)</div>
+                  <div class="kpi-value" id="dash-kpi-lifespan" style="color: #dc2626;">171점</div>
+                  <div class="kpi-sub">조달청 고시 기준 초과 (교체 우선순위)</div>
                 </div>
               </div>
             </div>
@@ -868,24 +852,30 @@
             <div class="card" style="margin-bottom: 1.25rem;">
               <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                 <div class="card-title">
-                  <span>🌊</span> 유속계 종류별(모델별) 보유 및 운영 현황
-                  <span class="badge badge-purple" style="margin-left: 8px;">총 645대 (15종 모델)</span>
+                  <span>🌊</span> 유속계 종류별(모델별) 보유 및 검정·내용연수 현황
+                  <span class="badge badge-purple" style="margin-left: 8px;">총 646대 · 내용연수 13년 · 검정주기 2년</span>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                  <span class="badge badge-blue" style="font-weight: 700;">📡 비접촉식 446대 (69.1%)</span>
-                  <span class="badge badge-purple" style="font-weight: 700;">🌊 접촉식 199대 (30.9%)</span>
+                  <button type="button" class="btn btn-outline btn-sm" style="font-size:0.76rem; font-weight:700; color:#b91c1c; border-color:#fca5a5; background:#fff5f5;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'FLOWMETER', calibFilter: 'NEED_ALL' })">
+                    🚨 검정필요 유속계만 조회 (6대) ➔
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm" style="font-size:0.76rem; font-weight:700; color:#7e22ce; border-color:#d8b4fe; background:#faf5ff;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'FLOWMETER', status: 'RETURNED' })">
+                    📦 자산반납 유속계 (32대) ➔
+                  </button>
+                  <span class="badge badge-blue" style="font-weight: 700;">📡 비접촉식 446대</span>
+                  <span class="badge badge-purple" style="font-weight: 700;">🌊 접촉식 200대</span>
                 </div>
               </div>
               <div class="card-body">
                 <!-- Measurement Method Visual Bar -->
                 <div style="margin-bottom: 1rem; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
                   <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; font-size: 0.82rem; font-weight: 700; margin-bottom: 6px;">
-                    <span style="color: #1e40af;">📡 비접촉식 전자파표면유속계: 446대 (69.1%) - RG-30D, RQ-30D, ESVFlow, RQ-30</span>
-                    <span style="color: #6b21a8;">🌊 접촉식 초음파도플러(ADVM/다경로): 199대 (30.9%) - CM600, CM1200, CM300 등</span>
+                    <span style="color: #1e40af;">📡 비접촉식 전자파표면유속계: 446대 (69.0%) - RG-30D, RQ-30D, ESVFlow, RQ-30</span>
+                    <span style="color: #6b21a8;">🌊 접촉식 초음파도플러(ADVM/다경로): 200대 (31.0%) - CM600, CM1200, CM300 등</span>
                   </div>
                   <div style="display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: #e2e8f0;">
-                    <div style="width: 69.1%; background: #3b82f6;" title="비접촉식 446대 (69.1%)"></div>
-                    <div style="width: 30.9%; background: #9333ea;" title="접촉식 199대 (30.9%)"></div>
+                    <div style="width: 69.0%; background: #3b82f6;" title="비접촉식 446대 (69.0%)"></div>
+                    <div style="width: 31.0%; background: #9333ea;" title="접촉식 200대 (31.0%)"></div>
                   </div>
                 </div>
 
@@ -895,20 +885,22 @@
                     <thead>
                       <tr>
                         <th style="width: 45px; text-align: center;">No.</th>
-                        <th style="width: 140px;">유속계 모델명</th>
-                        <th style="width: 170px;">계측 방식</th>
-                        <th style="width: 90px; text-align: right;">보유대수</th>
-                        <th style="width: 130px;">점유율 (비율)</th>
-                        <th style="width: 85px; text-align: center;">운영중</th>
-                        <th style="width: 80px; text-align: center;">예비품</th>
-                        <th style="width: 80px; text-align: center;">수리중</th>
-                        <th style="width: 80px; text-align: center;">불용/폐기</th>
-                        <th style="width: 105px; text-align: center;">내구연한초과</th>
-                        <th style="width: 95px; text-align: center;">장비목록</th>
+                        <th style="width: 130px;">유속계 모델명</th>
+                        <th style="width: 165px;">계측 방식</th>
+                        <th style="width: 85px; text-align: right;">보유대수</th>
+                        <th style="width: 120px;">점유율 (비율)</th>
+                        <th style="width: 75px; text-align: center;">운영중</th>
+                        <th style="width: 75px; text-align: center;">예비품</th>
+                        <th style="width: 75px; text-align: center;">수리중</th>
+                        <th style="width: 75px; text-align: center;">불용/폐기</th>
+                        <th style="width: 75px; text-align: center;">자산반납</th>
+                        <th style="width: 105px; text-align: center;">🎯 검정필요(2년)</th>
+                        <th style="width: 105px; text-align: center;">⚠️ 내용연수초과(13년)</th>
+                        <th style="width: 85px; text-align: center;">장비목록</th>
                       </tr>
                     </thead>
                     <tbody id="dash-flowmeter-tbody">
-                      <tr><td colspan="11" style="text-align: center; padding: 2rem; color: #94a3b8;">유속계 모델별 통계를 집계하는 중...</td></tr>
+                      <tr><td colspan="13" style="text-align: center; padding: 2rem; color: #94a3b8;">유속계 모델별 통계를 집계하는 중...</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -919,12 +911,18 @@
             <div class="card" style="margin-bottom: 1.25rem;">
               <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                 <div class="card-title">
-                  <span>📏</span> 수위계 종류별(모델별) 보유 및 운영 현황
-                  <span class="badge badge-cyan" style="margin-left: 8px;">총 233대</span>
+                  <span>📏</span> 수위계 종류별(모델별) 보유 및 검정·내용연수 현황
+                  <span class="badge badge-cyan" style="margin-left: 8px;">총 224대 · 내용연수 10년 · 검정주기 3년</span>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                  <span class="badge badge-cyan" style="font-weight: 700;">📡 레이더 수위계 104대 (44.6%)</span>
-                  <span class="badge badge-blue" style="font-weight: 700;">🌊 압력/수압식 센서 129대 (55.4%)</span>
+                  <button type="button" class="btn btn-outline btn-sm" style="font-size:0.76rem; font-weight:700; color:#b91c1c; border-color:#fca5a5; background:#fff5f5;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL', calibFilter: 'NEED_ALL' })">
+                    🚨 검정필요 수위계만 조회 (31대) ➔
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm" style="font-size:0.76rem; font-weight:700; color:#7e22ce; border-color:#d8b4fe; background:#faf5ff;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL', status: 'RETURNED' })">
+                    📦 자산반납 수위계 (13대) ➔
+                  </button>
+                  <span class="badge badge-cyan" style="font-weight: 700;">📡 레이더 수위계</span>
+                  <span class="badge badge-blue" style="font-weight: 700;">🌊 압력/수압식 센서</span>
                 </div>
               </div>
               <div class="card-body">
@@ -934,20 +932,22 @@
                     <thead>
                       <tr>
                         <th style="width: 45px; text-align: center;">No.</th>
-                        <th style="width: 150px;">수위계 모델명</th>
-                        <th style="width: 160px;">계측 방식</th>
-                        <th style="width: 90px; text-align: right;">보유대수</th>
-                        <th style="width: 130px;">점유율 (비율)</th>
-                        <th style="width: 85px; text-align: center;">운영중</th>
-                        <th style="width: 80px; text-align: center;">예비품</th>
-                        <th style="width: 80px; text-align: center;">수리중</th>
-                        <th style="width: 80px; text-align: center;">불용/폐기</th>
-                        <th style="width: 105px; text-align: center;">내구연한초과</th>
-                        <th style="width: 95px; text-align: center;">장비목록</th>
+                        <th style="width: 140px;">수위계 모델명</th>
+                        <th style="width: 155px;">계측 방식</th>
+                        <th style="width: 85px; text-align: right;">보유대수</th>
+                        <th style="width: 120px;">점유율 (비율)</th>
+                        <th style="width: 75px; text-align: center;">운영중</th>
+                        <th style="width: 75px; text-align: center;">예비품</th>
+                        <th style="width: 75px; text-align: center;">수리중</th>
+                        <th style="width: 75px; text-align: center;">불용/폐기</th>
+                        <th style="width: 75px; text-align: center;">자산반납</th>
+                        <th style="width: 105px; text-align: center;">🎯 검정필요(3년)</th>
+                        <th style="width: 105px; text-align: center;">⚠️ 내용연수초과(10년)</th>
+                        <th style="width: 85px; text-align: center;">장비목록</th>
                       </tr>
                     </thead>
                     <tbody id="dash-waterlevel-tbody">
-                      <tr><td colspan="11" style="text-align: center; padding: 2rem; color: #94a3b8;">수위계 모델별 통계를 집계하는 중...</td></tr>
+                      <tr><td colspan="13" style="text-align: center; padding: 2rem; color: #94a3b8;">수위계 모델별 통계를 집계하는 중...</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -960,9 +960,9 @@
               <div class="card">
                 <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
                   <div class="card-title">
-                    <span>🏢</span> 9대 설비 카테고리별 종합 자산 분포
+                    <span>🏢</span> 9대 설비 카테고리별 종합 자산 & 내용연수 기준
                   </div>
-                  <span class="badge badge-gray">총 2,113점</span>
+                  <span class="badge badge-gray">조달청 고시 제2024-30호</span>
                 </div>
                 <div class="card-body" id="dash-categories-body" style="padding: 1rem;">
                   <!-- Dynamically populated from equipment.js -->
@@ -1023,6 +1023,8 @@
                 <div class="eq-pill-scroll-row" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; flex-wrap: wrap;">
                   <button class="eq-filter-pill active" data-filter="all" onclick="window.equipmentManager.setStationFilter('all')">전체 (223)</button>
                   <button class="eq-filter-pill" data-filter="operating" onclick="window.equipmentManager.setStationFilter('operating')">운영중 (176)</button>
+                  <button class="eq-filter-pill" data-filter="calibDue" onclick="window.equipmentManager.setStationFilter('calibDue')" title="검정만료 또는 당해연도 검정도래 유속계·수위계를 보유한 지점">🎯 검정필요 보유</button>
+                  <button class="eq-filter-pill" data-filter="lifespanOver" onclick="window.equipmentManager.setStationFilter('lifespanOver')" title="내용연수 초과 장비를 보유한 지점">⚠️ 연수초과 보유</button>
                   <button class="eq-filter-pill" data-filter="spare" onclick="window.equipmentManager.setStationFilter('spare')">📦 예비·보관</button>
                   <button class="eq-filter-pill" data-filter="repair" onclick="window.equipmentManager.setStationFilter('repair')">🚨 수리중</button>
                   <button class="eq-filter-pill" style="background:#eff6ff; color:#1e40af; border-color:#bfdbfe;" onclick="window.equipmentManager.goToDevicesWithFilter({ status: 'UNASSIGNED', search: '' })" title="특정 관측소에 배정되지 않은 본원·창고 보관 예비품/수리품 관리로 이동">🏢 본원보관품 관리 ➔</button>
@@ -1059,39 +1061,65 @@
               <div class="card-header" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                   <div class="card-title">
-                    <span>📋</span> 9대 설비 전체 물품관리대장
-                    <span class="badge badge-blue" id="eq-all-devices-count" style="margin-left: 8px;">2,113대/식</span>
+                    <span>📋</span> 9대 설비 전체 물품관리대장 (내용연수 & 유속계·수위계 검정관리)
+                    <span class="badge badge-blue" id="eq-all-devices-count" style="margin-left: 8px;">1,845대/식</span>
                   </div>
-                  <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <button class="btn btn-outline btn-sm" style="color:#1e40af; border-color:#bfdbfe; background:#eff6ff; font-weight:700;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'FLOWMETER', calibFilter: 'NEED_ALL', isOver: 'ALL', search: '' })">
+                      🌊 검정필요 유속계(2년주기)
+                    </button>
+                    <button class="btn btn-outline btn-sm" style="color:#0e7490; border-color:#a5f3fc; background:#ecfeff; font-weight:700;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL', calibFilter: 'NEED_ALL', isOver: 'ALL', search: '' })">
+                      📏 검정필요 수위계(3년주기)
+                    </button>
+                    <button class="btn btn-outline btn-sm" style="color:#dc2626; border-color:#fecaca; background:#fef2f2; font-weight:700;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'ALL', isOver: '1', calibFilter: 'ALL', search: '' })">
+                      ⚠️ 내용연수 초과설비
+                    </button>
                     <button class="btn btn-primary btn-sm" onclick="window.equipmentManager.openAddDeviceModal()">
                       <span>➕</span> <span>새 장비 신규 등록</span>
                     </button>
-                    <button class="btn btn-outline btn-sm" onclick="window.equipmentManager.downloadBulkTemplate()">
-                      <span>📥</span> <span>엑셀 다운로드</span>
+                    <button class="btn btn-outline btn-sm" onclick="window.equipmentManager.exportFilteredDevicesExcel()">
+                      <span>📥</span> <span>현재 조건 엑셀 다운로드</span>
                     </button>
                   </div>
                 </div>
 
-                <!-- Category Pills -->
+                <!-- Category Pills (with official lifespan years) -->
                 <div class="eq-pill-scroll-row" style="display: flex; gap: 6px; flex-wrap: wrap;">
-                  <button class="eq-cat-pill active" data-cat="ALL" onclick="window.equipmentManager.setDeviceCategory('ALL')">전체 (2,113)</button>
-                  <button class="eq-cat-pill" data-cat="FLOWMETER" onclick="window.equipmentManager.setDeviceCategory('FLOWMETER')">1. 유속계 (645)</button>
-                  <button class="eq-cat-pill" data-cat="WATER_LEVEL" onclick="window.equipmentManager.setDeviceCategory('WATER_LEVEL')">2. 수위계 (233)</button>
-                  <button class="eq-cat-pill" data-cat="MOUNT" onclick="window.equipmentManager.setDeviceCategory('MOUNT')">3. 센서지지대 (176)</button>
-                  <button class="eq-cat-pill" data-cat="CONTROL" onclick="window.equipmentManager.setDeviceCategory('CONTROL')">4. 제어시스템 (176)</button>
-                  <button class="eq-cat-pill" data-cat="SHELTER" onclick="window.equipmentManager.setDeviceCategory('SHELTER')">5. 관측국사 (176)</button>
-                  <button class="eq-cat-pill" data-cat="UNDERWATER" onclick="window.equipmentManager.setDeviceCategory('UNDERWATER')">6. 수중센서보호장치 (176)</button>
-                  <button class="eq-cat-pill" data-cat="LIGHTNING" onclick="window.equipmentManager.setDeviceCategory('LIGHTNING')">7. 낙뢰보호장치 (176)</button>
-                  <button class="eq-cat-pill" data-cat="CCTV" onclick="window.equipmentManager.setDeviceCategory('CCTV')">8. 영상정보처리기기 (179)</button>
-                  <button class="eq-cat-pill" data-cat="ANCILLARY" onclick="window.equipmentManager.setDeviceCategory('ANCILLARY')">9. 부대시설 (176)</button>
+                  <button class="eq-cat-pill active" data-cat="ALL" onclick="window.equipmentManager.setDeviceCategory('ALL')">전체 (1,845)</button>
+                  <button class="eq-cat-pill" data-cat="FLOWMETER" onclick="window.equipmentManager.setDeviceCategory('FLOWMETER')">1. 유속계 (646 · 내용연수 13년 · 검정 2년)</button>
+                  <button class="eq-cat-pill" data-cat="WATER_LEVEL" onclick="window.equipmentManager.setDeviceCategory('WATER_LEVEL')">2. 수위계 (224 · 내용연수 10년 · 검정 3년)</button>
+                  <button class="eq-cat-pill" data-cat="MOUNT" onclick="window.equipmentManager.setDeviceCategory('MOUNT')">3. 센서지지대 (176 · 12년)</button>
+                  <button class="eq-cat-pill" data-cat="CONTROL" onclick="window.equipmentManager.setDeviceCategory('CONTROL')">4. 제어시스템 (176 · 8년)</button>
+                  <button class="eq-cat-pill" data-cat="SHELTER" onclick="window.equipmentManager.setDeviceCategory('SHELTER')">5. 관측국사 (81 · 8년)</button>
+                  <button class="eq-cat-pill" data-cat="UNDERWATER" onclick="window.equipmentManager.setDeviceCategory('UNDERWATER')">6. 수중센서보호장치 (60 · 7년)</button>
+                  <button class="eq-cat-pill" data-cat="LIGHTNING" onclick="window.equipmentManager.setDeviceCategory('LIGHTNING')">7. 낙뢰보호장치 (134 · 7년)</button>
+                  <button class="eq-cat-pill" data-cat="CCTV" onclick="window.equipmentManager.setDeviceCategory('CCTV')">8. 영상정보처리기기 (172 · 9년)</button>
+                  <button class="eq-cat-pill" data-cat="ANCILLARY" onclick="window.equipmentManager.setDeviceCategory('ANCILLARY')">9. 부대시설 (176 · 10년)</button>
                 </div>
 
                 <!-- Search & Filters -->
-                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                  <div class="search-input-wrapper" style="min-width: 260px; flex: 1;">
+                <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                  <div class="search-input-wrapper" style="min-width: 240px; flex: 1;">
                     <span class="search-icon">🔍</span>
                     <input type="text" id="eq-dev-search" class="search-input" placeholder="모델명, S/N, 자산번호, 지점명 검색..." oninput="window.equipmentManager.deviceSearch = this.value; window.equipmentManager.devicePage = 1; window.equipmentManager.loadDevices();" style="width: 100%;">
                   </div>
+
+                  <select id="eq-dev-calib-filter" class="filter-select" onchange="window.equipmentManager.deviceCalibFilter = this.value; window.equipmentManager.devicePage = 1; window.equipmentManager.loadDevices();" style="font-weight:700; color:#1e40af; border-color:#93c5fd;">
+                    <option value="ALL">전체 검정상태 (유속계 2년·수위계 3년)</option>
+                    <option value="NEED_ALL">🎯 검정필요 전체 (만료경과 + 금년만료)</option>
+                    <option value="NEED_CERT">📜 공식검정일 기재분 중 검정필요</option>
+                    <option value="OVERDUE">🚨 검정만료 (만료일 경과)</option>
+                    <option value="DUE_SOON">⏳ 금년 검정도래 (2026년 내 만료)</option>
+                    <option value="DUE_2027">📅 차기(2027년) 검정도래 예정</option>
+                    <option value="VALID">✅ 검정유효 (정상)</option>
+                    <option value="NO_RECORD">⚪ 검정기록 없음 (미기재)</option>
+                  </select>
+
+                  <select id="eq-dev-lifespan-filter" class="filter-select" onchange="window.equipmentManager.deviceLifespanFilter = this.value; window.equipmentManager.devicePage = 1; window.equipmentManager.loadDevices();" style="font-weight:700;">
+                    <option value="ALL">전체 내용연수</option>
+                    <option value="1">⚠️ 내용연수 초과 (노후설비)</option>
+                    <option value="0">🟢 내용연수 이내 (정상)</option>
+                  </select>
 
                   <select id="eq-dev-status" class="filter-select" onchange="window.equipmentManager.deviceStatus = this.value; window.equipmentManager.devicePage = 1; window.equipmentManager.loadDevices();">
                     <option value="ALL">전체 운영상태</option>
@@ -1099,6 +1127,7 @@
                     <option value="SPARE">📦 예비품·보관품</option>
                     <option value="REPAIRING">🚨 수리중</option>
                     <option value="DISPOSAL">🗑️ 폐품·불용</option>
+                    <option value="RETURNED">📦 자산반납 / 반납완료 (45대)</option>
                     <option value="UNASSIGNED">🏢 본원/미배정 보관설비</option>
                   </select>
 
@@ -1117,16 +1146,16 @@
                   <table class="custom-table" style="width: 100%;">
                     <thead>
                       <tr>
-                        <th style="width: 50px; text-align: center;">No.</th>
-                        <th style="width: 110px;">장비 ID</th>
-                        <th style="width: 110px;">구분</th>
+                        <th style="width: 45px; text-align: center;">No.</th>
+                        <th style="width: 95px;">장비 ID</th>
+                        <th style="width: 105px;">설비 구분</th>
                         <th>모델명 / 규격</th>
                         <th>제조번호 (S/N)</th>
-                        <th>자산번호</th>
-                        <th>배정 관측소</th>
-                        <th style="width: 90px; text-align: center;">상태</th>
-                        <th>보관처 / 위치</th>
-                        <th style="width: 155px; text-align: center;">작업 관리</th>
+                        <th>배정 관측소 (위치)</th>
+                        <th style="width: 85px; text-align: center;">상태</th>
+                        <th style="width: 155px; text-align: center;">취득 / 내용연수 (만료)</th>
+                        <th style="width: 185px; text-align: center;">검정일 / 만료일 (주기·상태)</th>
+                        <th style="width: 150px; text-align: center;">작업 관리</th>
                       </tr>
                     </thead>
                     <tbody id="eq-all-devices-tbody">
@@ -3197,17 +3226,17 @@
           </div>
           <div class="form-group" style="margin-bottom: 0.8rem;">
             <label class="form-label">설비 구분 (카테고리) *</label>
-            <select id="eq-add-category" class="filter-select" style="width: 100%;" required>
-              <option value="FLOWMETER">1. 유속계</option>
-              <option value="WATER_LEVEL">2. 수위계</option>
-              <option value="MOUNT">3. 센서지지대</option>
-              <option value="CONTROL">4. 제어시스템</option>
-              <option value="SHELTER">5. 관측국사</option>
-              <option value="UNDERWATER">6. 수중센서보호장치</option>
-              <option value="LIGHTNING">7. 낙뢰보호장치</option>
-              <option value="CCTV">8. 영상정보처리기기</option>
-              <option value="ANCILLARY">9. 부대시설</option>
-              <option value="ETC">기타</option>
+            <select id="eq-add-category" class="filter-select" style="width: 100%;" onchange="window.equipmentManager.onAddCategoryChange(this.value)" required>
+              <option value="FLOWMETER">1. 유속계 (내용연수 13년 / 검정주기 2년 필수)</option>
+              <option value="WATER_LEVEL">2. 수위계 (내용연수 10년 / 검정주기 3년 필수)</option>
+              <option value="MOUNT">3. 센서지지대 (내용연수 12년)</option>
+              <option value="CONTROL">4. 제어시스템 (내용연수 8년)</option>
+              <option value="SHELTER">5. 관측국사 (내용연수 8년)</option>
+              <option value="UNDERWATER">6. 수중센서보호장치 (내용연수 7년)</option>
+              <option value="LIGHTNING">7. 낙뢰보호장치 (내용연수 7년)</option>
+              <option value="CCTV">8. 영상정보처리기기 (내용연수 9년)</option>
+              <option value="ANCILLARY">9. 부대시설 (내용연수 10년)</option>
+              <option value="ETC">기타 (내용연수 10년)</option>
             </select>
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 0.8rem;">
@@ -3232,7 +3261,44 @@
                 <option value="SPARE">예비품</option>
                 <option value="REPAIRING">수리중</option>
                 <option value="DISPOSAL">폐품</option>
+                <option value="RETURNED">자산반납 (반납완료)</option>
               </select>
+            </div>
+          </div>
+          <!-- 취득년도 및 내용연수 정보 -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; margin-bottom: 0.8rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.7rem 0.9rem;">
+            <div class="form-group">
+              <label class="form-label" style="font-weight:700;">취득년도 *</label>
+              <input type="number" id="eq-add-acq-date" class="form-input" value="2026" min="1990" max="2040" oninput="window.equipmentManager.onAddLifespanInputChange()" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="font-weight:700;">조달청 내용연수(년) *</label>
+              <input type="number" id="eq-add-lifespan-years" class="form-input" value="13" min="1" max="30" oninput="window.equipmentManager.onAddLifespanInputChange()" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="font-weight:700;">내용연수 만료년도</label>
+              <input type="text" id="eq-add-lifespan-end" class="form-input" value="2039년 (이내)" readonly style="background:#f1f5f9; font-weight:700; color:#1e40af;">
+            </div>
+          </div>
+          <!-- 유속계(2년) / 수위계(3년) 검정일 및 만료일 영역 -->
+          <div id="eq-add-calib-box" style="background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:0.8rem 0.95rem; margin-bottom:0.8rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.55rem;">
+              <span id="eq-add-calib-title" style="font-size:0.82rem; font-weight:800; color:#b45309;">🎯 유속계·수위계 법정 검정 정보 (검정기록 있을 시 입력)</span>
+              <span class="badge badge-gray" style="font-size:0.7rem; font-weight:700;">기록 있을 시 입력</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700; color:#92400e;">최근 검정일</label>
+                <input type="date" id="eq-add-calib-date" class="form-input" onchange="window.equipmentManager.onAddCalibDateChange()">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700; color:#92400e;">검정 만료일 (자동계산)</label>
+                <input type="date" id="eq-add-calib-expire" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700; color:#92400e;">검정구분 / 성적서</label>
+                <input type="text" id="eq-add-calib-cert" class="form-input" value="공식검정성적서" placeholder="예: 공식검정성적서">
+              </div>
             </div>
           </div>
           <div class="form-group" style="margin-bottom: 0.8rem;">
@@ -3377,6 +3443,7 @@
               <option value="SPARE">📦 예비품·보관품 (창고/차량/지점 보관)</option>
               <option value="REPAIRING">🚨 수리중 (점검/정비업체 의뢰)</option>
               <option value="DISPOSAL">🗑️ 폐품 (불용/폐기 대상)</option>
+              <option value="RETURNED">📦 자산반납 (반납완료)</option>
             </select>
           </div>
           <div class="form-group" style="margin-bottom: 0.8rem; position: relative;">
@@ -3452,6 +3519,7 @@
                   <option value="SPARE">📦 예비품·보관품 (대기/보관)</option>
                   <option value="REPAIRING">🚨 수리중 (점검/수리중)</option>
                   <option value="DISPOSAL">🗑️ 폐품 (불용/폐기)</option>
+                  <option value="RETURNED">📦 자산반납 (반납완료)</option>
                 </select>
               </div>
               <div class="form-group" style="position: relative;">
@@ -3492,17 +3560,17 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 0.75rem;">
               <div class="form-group">
                 <label class="form-label" style="font-weight:700;">설비 구분 (카테고리) *</label>
-                <select id="eq-edit-category" class="filter-select" style="width: 100%;" required>
-                  <option value="FLOWMETER">1. 유속계</option>
-                  <option value="WATER_LEVEL">2. 수위계</option>
-                  <option value="MOUNT">3. 센서지지대</option>
-                  <option value="CONTROL">4. 제어시스템</option>
-                  <option value="SHELTER">5. 관측국사</option>
-                  <option value="UNDERWATER">6. 수중센서보호장치</option>
-                  <option value="LIGHTNING">7. 낙뢰보호장치</option>
-                  <option value="CCTV">8. 영상정보처리기기</option>
-                  <option value="ANCILLARY">9. 부대시설</option>
-                  <option value="ETC">기타</option>
+                <select id="eq-edit-category" class="filter-select" style="width: 100%;" onchange="window.equipmentManager.onEditCategoryChange(this.value)" required>
+                  <option value="FLOWMETER">1. 유속계 (내용연수 13년 / 검정주기 2년 필수)</option>
+                  <option value="WATER_LEVEL">2. 수위계 (내용연수 10년 / 검정주기 3년 필수)</option>
+                  <option value="MOUNT">3. 센서지지대 (내용연수 12년)</option>
+                  <option value="CONTROL">4. 제어시스템 (내용연수 8년)</option>
+                  <option value="SHELTER">5. 관측국사 (내용연수 8년)</option>
+                  <option value="UNDERWATER">6. 수중센서보호장치 (내용연수 7년)</option>
+                  <option value="LIGHTNING">7. 낙뢰보호장치 (내용연수 7년)</option>
+                  <option value="CCTV">8. 영상정보처리기기 (내용연수 9년)</option>
+                  <option value="ANCILLARY">9. 부대시설 (내용연수 10년)</option>
+                  <option value="ETC">기타 (내용연수 10년)</option>
                 </select>
               </div>
               <div class="form-group">
@@ -3511,7 +3579,7 @@
               </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr 110px; gap: 0.8rem; margin-bottom: 0.75rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 0.75rem;">
               <div class="form-group">
                 <label class="form-label" style="font-weight:700;">제조번호 (S/N)</label>
                 <input type="text" id="eq-edit-sn" class="form-input" placeholder="예: 24258648">
@@ -3520,9 +3588,50 @@
                 <label class="form-label" style="font-weight:700;">자산번호</label>
                 <input type="text" id="eq-edit-asset" class="form-input" placeholder="예: 2024-FLOW-012">
               </div>
+            </div>
+
+            <!-- 내용연수(Lifespan) 정보 -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 0.8rem; margin-bottom: 0.75rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.65rem 0.85rem;">
               <div class="form-group">
                 <label class="form-label" style="font-weight:700;">취득년도</label>
-                <input type="text" id="eq-edit-acq-date" class="form-input" placeholder="예: 2023">
+                <input type="text" id="eq-edit-acq-date" class="form-input" placeholder="예: 2023" oninput="window.equipmentManager.onEditLifespanInputChange()">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700;">조달청 내용연수(년)</label>
+                <input type="number" id="eq-edit-lifespan-years" class="form-input" placeholder="예: 13" min="1" max="30" oninput="window.equipmentManager.onEditLifespanInputChange()">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700;">내용연수 만료년도 (초과여부)</label>
+                <input type="text" id="eq-edit-lifespan-end" class="form-input" readonly style="background:#f1f5f9; font-weight:700; color:#1e40af;">
+              </div>
+            </div>
+
+            <!-- 유속계(2년 주기) / 수위계(3년 주기) 검정 정보 영역 -->
+            <div id="eq-edit-calib-box" style="background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:0.75rem 0.9rem; margin-bottom:0.75rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; flex-wrap:wrap; gap:4px;">
+                <span id="eq-edit-calib-title" style="font-size:0.82rem; font-weight:800; color:#b45309;">🎯 유속계·수위계 법정 검정 정보 (2년/3년 주기 · 기록 있을 시 입력)</span>
+                <span id="eq-edit-calib-status-badge" class="badge badge-gray" style="font-size:0.7rem; font-weight:700;">기록 있을 시 입력</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-bottom:0.6rem;">
+                <div class="form-group">
+                  <label class="form-label" style="font-weight:700; color:#92400e;">최근 검정일</label>
+                  <input type="date" id="eq-edit-calib-date" class="form-input" onchange="window.equipmentManager.onEditCalibDateChange()">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" style="font-weight:700; color:#92400e;">검정 만료일</label>
+                  <input type="date" id="eq-edit-calib-expire" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" style="font-weight:700; color:#92400e;">검정구분 / 성적서</label>
+                  <input type="text" id="eq-edit-calib-cert" class="form-input" placeholder="예: 공식검정성적서">
+                </div>
+              </div>
+              <!-- 검정 이력 바로가기 버튼 및 최근 이력 요약 -->
+              <div style="display:flex; justify-content:space-between; align-items:center; background:#ffffff; border:1px solid #fed7aa; border-radius:6px; padding:6px 10px;">
+                <span id="eq-edit-calib-hist-summary" style="font-size:0.75rem; color:#9a3412; font-weight:600;">📜 누적 검정 이력 확인</span>
+                <button type="button" class="btn btn-outline btn-sm" style="font-size:0.73rem; font-weight:700; color:#9a3412; border-color:#fed7aa; background:#fff7ed; padding:2px 8px;" onclick="const id=document.getElementById('eq-edit-id').value; window.equipmentManager.openCalibModal(id);">
+                  📋 검정 이력 전체보기 및 새 검정 등록 ➔
+                </button>
               </div>
             </div>
 
@@ -3599,6 +3708,126 @@
     </div>
   </div>
 
+  <!-- 5. Equipment Calibration History Modal (장비 검정 이력 누적 대장 및 새 검정 등록) -->
+  <div class="modal-backdrop" id="eq-calib-modal">
+    <div class="modal-dialog" style="max-width: 900px; width: 94vw; max-height: 94vh;">
+      <div class="modal-header">
+        <div class="modal-title" style="display:flex; align-items:center; gap:8px;">
+          <span>🎯</span>
+          <span>장비 법정 검정 이력 관리 및 신규 검정 등록</span>
+          <code id="eq-calib-id-badge" style="font-size:0.82rem; background:#eff6ff; color:#1e40af; padding:2px 8px; border-radius:6px; font-weight:700;">EQ-00000</code>
+        </div>
+        <button class="modal-close" onclick="window.equipmentManager.closeCalibModal()">✕</button>
+      </div>
+      <div class="modal-body" style="max-height: 80vh; overflow-y: auto; padding: 1.25rem 1.6rem;">
+        <input type="hidden" id="eq-calib-target-id">
+
+        <!-- 장비 기본 정보 헤더 카드 -->
+        <div id="eq-calib-device-summary" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:0.85rem 1rem; margin-bottom:1.1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem;">
+          <div>
+            <div style="font-size:0.95rem; font-weight:800; color:#1e3a8a;" id="eq-calib-summary-name">-</div>
+            <div style="font-size:0.78rem; color:#64748b; margin-top:3px;" id="eq-calib-summary-sub">지점: - | S/N: - | 취득년도: -</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span id="eq-calib-summary-cycle" class="badge badge-purple" style="font-size:0.74rem; font-weight:700;">검정 2년 주기</span>
+            <span id="eq-calib-summary-status" class="badge badge-green" style="font-size:0.74rem; font-weight:700;">✅ 유효</span>
+          </div>
+        </div>
+
+        <!-- 1. 새 검정 결과 등록 폼 -->
+        <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:1rem 1.15rem; margin-bottom:1.25rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+            <div style="font-size:0.86rem; font-weight:800; color:#b45309; display:flex; align-items:center; gap:6px;">
+              <span>➕</span>
+              <span>새 법정 검정 결과 등록 (이력 추가 및 최근 검정일 자동 갱신)</span>
+            </div>
+            <span class="badge badge-amber" style="font-size:0.7rem; font-weight:700;">실시 즉시 장비 대장 반영</span>
+          </div>
+          <form onsubmit="window.equipmentManager.submitNewCalibration(event)">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:0.75rem; margin-bottom:0.75rem;">
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700; color:#92400e;">검정 실시일자 *</label>
+                <input type="date" id="eq-calib-input-date" class="form-input" onchange="window.equipmentManager.onNewCalibDateChange()" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700; color:#92400e;">검정 만료일자 (자동산정) *</label>
+                <input type="date" id="eq-calib-input-expire" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700; color:#92400e;">검정 실시/대행 기관</label>
+                <input type="text" id="eq-calib-input-agency" class="form-input" value="한국수자원조사기술원" placeholder="예: 한국수자원조사기술원, K-water, 한국표준과학연구원">
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:0.75rem; margin-bottom:0.75rem;">
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700; color:#92400e;">검정 성적서 번호</label>
+                <input type="text" id="eq-calib-input-cert" class="form-input" placeholder="예: 2026-CAL-F012">
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700; color:#92400e;">판정 결과 *</label>
+                <select id="eq-calib-input-status" class="filter-select" style="width:100%; font-weight:700;" required>
+                  <option value="합격">🟢 합격 (정상 계측)</option>
+                  <option value="조건부합격">🟡 조건부합격 (옵셋 보정)</option>
+                  <option value="보정완료">⚖️ 보정완료 (영점 재설정)</option>
+                  <option value="불합격">🔴 불합격 (수리·교체 필요)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" style="font-weight:700; color:#92400e;">검정 수수료/비용(원)</label>
+                <input type="number" id="eq-calib-input-cost" class="form-input" placeholder="0" min="0">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0.75rem;">
+              <label class="form-label" style="font-weight:700; color:#92400e;">검정 특이사항 및 오차율 메모</label>
+              <input type="text" id="eq-calib-input-memo" class="form-input" placeholder="예: 오차율 0.8% 이내 정상, 센서 렌즈 세척 및 교정 완료 등 자유 입력">
+            </div>
+
+            <div style="display:flex; justify-content:flex-end;">
+              <button type="submit" class="btn btn-primary" style="font-weight:700; background:#d97706; border-color:#d97706;">
+                💾 새 검정 결과 등록 및 장비 만료일 갱신
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- 2. 역대 검정 이력 누적 테이블 -->
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:0.95rem 1.15rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.65rem;">
+            <div style="font-size:0.86rem; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:6px;">
+              <span>📜</span>
+              <span>이 장비의 역대 검정 이력 누적 대장 (총 <b id="eq-calib-history-count" style="color:#1e40af;">0</b>건)</span>
+            </div>
+          </div>
+          <div class="table-responsive" style="max-height:280px; overflow-y:auto;">
+            <table class="custom-table" style="width:100%; font-size:0.82rem;">
+              <thead>
+                <tr>
+                  <th style="width:45px; text-align:center;">차수</th>
+                  <th style="width:105px; text-align:center;">검정일자</th>
+                  <th style="width:105px; text-align:center;">만료일자</th>
+                  <th style="width:75px; text-align:center;">주기</th>
+                  <th>검정기관</th>
+                  <th>성적서번호</th>
+                  <th style="width:85px; text-align:center;">판정</th>
+                  <th>특이사항 / 비고</th>
+                  <th style="width:65px; text-align:center;">삭제</th>
+                </tr>
+              </thead>
+              <tbody id="eq-calib-history-tbody">
+                <tr><td colspan="9" style="text-align:center; padding:2rem; color:#94a3b8;">검정 이력을 불러오는 중...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <button type="button" class="btn btn-outline" onclick="window.equipmentManager.closeCalibModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container"></div>
 
@@ -3615,14 +3844,14 @@
   <script src="js/maintenance.js?v=3.7"></script>
   <script src="js/history.js?v=3.7"></script>
   <script src="js/calibration.js?v=3.7"></script>
-  <script src="js/equipment.js?v=1.6"></script>
+  <script src="js/equipment.js?v=1.7"></script>
   <script src="js/schedule.js?v=3.7"></script>
   <script src="js/monitor.js?v=3.8"></script>
   <script src="js/waterlevel.js?v=3.7"></script>
   <script src="js/logs.js?v=3.7"></script>
   <script src="js/timeseriesChart.js?v=4.6"></script>
   <script src="js/timeseriesMenu.js?v=4.6"></script>
-  <script src="js/modal.js?v=4.4"></script>
+  <script src="js/modal.js?v=4.5"></script>
   <script src="js/excel.js?v=4.3"></script>
   <script src="js/app.js?v=3.7"></script>
 </body>

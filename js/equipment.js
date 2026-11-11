@@ -18,6 +18,8 @@ class EquipmentManager {
 
     this.deviceCategory = "all";
     this.deviceStatus = "all";
+    this.deviceCalibFilter = "ALL";
+    this.deviceLifespanFilter = "ALL";
     this.deviceSearch = "";
     this.devicePage = 1;
     this.deviceLimit = 50;
@@ -234,12 +236,143 @@ class EquipmentManager {
     this.onTabActivated();
   }
 
+  /**
+   * Standard Lifespan (조달청 고시 제2024-30호) & Calibration Cycle Helpers
+   */
+  getStandardLifespan(category) {
+    const map = {
+      FLOWMETER: 13,
+      WATER_LEVEL: 10,
+      MOUNT: 12,
+      CONTROL: 8,
+      SHELTER: 8,
+      UNDERWATER: 7,
+      LIGHTNING: 7,
+      CCTV: 9,
+      ANCILLARY: 10,
+      ETC: 10
+    };
+    return map[category] || 10;
+  }
+
+  getCalibCycleYears(category) {
+    if (category === "FLOWMETER") return 2;
+    if (category === "WATER_LEVEL") return 3;
+    return 0;
+  }
+
+  calcExpireDate(recentDateStr, cycleYears) {
+    if (!recentDateStr || !cycleYears) return "";
+    const parts = String(recentDateStr).trim().split("-").map(Number);
+    if (parts.length !== 3 || isNaN(parts[0])) return "";
+    const dt = new Date(Date.UTC(parts[0] + cycleYears, parts[1] - 1, parts[2]));
+    dt.setUTCDate(dt.getUTCDate() - 1);
+    return dt.toISOString().split("T")[0];
+  }
+
+  renderLifespanCell(d) {
+    const acq = d.acquisition_date || "-";
+    const yrs = d.lifespan_years || this.getStandardLifespan(d.category);
+    const endYr = d.lifespan_end_year || (acq && /^\d{4}$/.test(String(acq)) ? (parseInt(acq, 10) + yrs) : "-");
+    const isOver = Number(d.is_lifespan_over) === 1;
+    const badge = isOver
+      ? `<span class="badge badge-red" style="font-size:0.68rem; font-weight:700; color:#dc2626; background:#fee2e2; padding:1px 6px;">⚠️ 초과 (${endYr}년 만료)</span>`
+      : `<span class="badge badge-green" style="font-size:0.68rem; font-weight:600; padding:1px 6px;">🟢 이내 (${endYr}년 만료)</span>`;
+    return `
+      <div style="font-size:0.78rem; line-height:1.35;">
+        <div><b>${acq}년</b> 취득 · 내용연수 <b>${yrs}년</b></div>
+        <div style="margin-top:2px;">${badge}</div>
+      </div>
+    `;
+  }
+
+  renderCalibCell(d) {
+    if (d.category !== "FLOWMETER" && d.category !== "WATER_LEVEL") {
+      return `<span style="color:#94a3b8; font-size:0.75rem;">- (비대상)</span>`;
+    }
+    if (d.status === "RETURNED") {
+      return `
+        <div style="font-size:0.75rem; color:#7e22ce;">
+          <span class="badge" style="background:#f3e8ff; color:#7e22ce; border:1px solid #d8b4fe; font-weight:700; font-size:0.68rem; padding:1px 6px;">📦 반납완료 (검정제외)</span>
+          <div style="color:#94a3b8; font-size:0.72rem; margin-top:2px;">자산반납 종결 설비</div>
+        </div>
+      `;
+    }
+    const cycleLabel = d.category === "FLOWMETER" ? "2년주기" : "3년주기";
+    const recent = (d.recent_calib_date && d.recent_calib_date !== "-") ? d.recent_calib_date : "";
+    const expire = (d.calib_expire_date && d.calib_expire_date !== "-") ? d.calib_expire_date : "";
+
+    if (!recent && !expire) {
+      return `
+        <div style="font-size:0.76rem; line-height:1.35;">
+          <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+            <span class="badge" style="font-size:0.68rem; font-weight:700; padding:1px 6px; color:#475569; background:#f1f5f9; border:1px solid #cbd5e1;">⚪ 검정기록 없음 (${cycleLabel})</span>
+            <button type="button" class="btn btn-outline btn-sm" style="padding:0 5px; font-size:0.68rem; color:#d97706; border-color:#fde68a; background:#fffbeb; font-weight:700;" onclick="event.stopPropagation(); window.equipmentManager.openCalibModal('${d.equipment_id}')" title="이 장비의 검정 이력 누적 대장 조회 및 새 검정 등록">
+              ➕ 검정등록
+            </button>
+          </div>
+          <div style="color:#94a3b8; margin-top:2px; font-size:0.73rem;">
+            최근검정: <i>미기재</i> | 만료일: <i>미기재</i>
+          </div>
+        </div>
+      `;
+    }
+
+    let statusBadge = `<span class="badge badge-green" style="font-size:0.68rem; font-weight:700; padding:1px 6px;">✅ 유효 (${cycleLabel})</span>`;
+    if (d.calib_status === "overdue" || (expire && expire < "2026-11-03")) {
+      statusBadge = `<span class="badge badge-red" style="font-size:0.68rem; font-weight:800; color:#b91c1c; background:#fee2e2; padding:1px 6px;">🚨 검정만료 (${cycleLabel})</span>`;
+    } else if (d.calib_status === "due_soon" || (expire && expire >= "2026-11-03" && expire <= "2026-12-31")) {
+      statusBadge = `<span class="badge badge-amber" style="font-size:0.68rem; font-weight:800; color:#b45309; background:#fef3c7; padding:1px 6px;">⏳ 금년만료 (${cycleLabel})</span>`;
+    } else if (expire && expire >= "2027-01-01" && expire <= "2027-12-31") {
+      statusBadge = `<span class="badge badge-blue" style="font-size:0.68rem; font-weight:700; padding:1px 6px;">📅 2027년 도래 (${cycleLabel})</span>`;
+    }
+
+    const certText = d.calib_cert_no ? `<span style="font-size:0.66rem; color:#1e40af; font-weight:700;" title="${d.calib_cert_no}">[${d.calib_cert_no}]</span>` : "";
+
+    return `
+      <div style="font-size:0.76rem; line-height:1.35;">
+        <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+          ${statusBadge} ${certText}
+          <button type="button" class="btn btn-outline btn-sm" style="padding:0 5px; font-size:0.68rem; color:#d97706; border-color:#fde68a; background:#fffbeb; font-weight:700;" onclick="event.stopPropagation(); window.equipmentManager.openCalibModal('${d.equipment_id}')" title="이 장비의 검정 이력 누적 대장 조회 및 새 검정 등록">
+            📋 이력
+          </button>
+        </div>
+        <div style="color:#334155; margin-top:2px;">
+          검정: <code>${recent || "-"}</code> | 만료: <b style="color:${(d.calib_status === 'overdue' || d.calib_status === 'due_soon') ? '#dc2626' : '#0f172a'};">${expire || "-"}</b>
+        </div>
+      </div>
+    `;
+  }
+
   async loadKPIs() {
     try {
-      const res = await window.apiClient.getEquipmentDevices({ limit: 1 });
-      if (res.success) {
+      const res = await window.apiClient.getEquipmentDashboard();
+      if (res && res.success) {
+        const ov = res.overview || {};
         const totalEl = document.getElementById("kpi-eq-total-count");
-        if (totalEl) totalEl.textContent = `${res.total || 2113}대/식`;
+        if (totalEl) totalEl.textContent = `${(ov.total || 1844).toLocaleString()}점`;
+
+        const opEl = document.getElementById("kpi-eq-operating-count");
+        if (opEl) opEl.textContent = `${(ov.operating || 1727).toLocaleString()}`;
+
+        const flowTotal = (res.flowModels || []).reduce((s, m) => s + m.total, 0);
+        const waterTotal = (res.waterModels || []).reduce((s, m) => s + m.total, 0);
+        const flowEl = document.getElementById("kpi-eq-flow-count");
+        if (flowEl) flowEl.textContent = `${flowTotal}대`;
+        const waterEl = document.getElementById("kpi-eq-water-count");
+        if (waterEl) waterEl.textContent = `${waterTotal}대`;
+
+        const calibSummary = res.calibSummary || [];
+        const flowCalib = calibSummary.find(c => c.category === "FLOWMETER") || {};
+        const waterCalib = calibSummary.find(c => c.category === "WATER_LEVEL") || {};
+
+        const flowNeedEl = document.getElementById("kpi-eq-flow-need");
+        if (flowNeedEl) flowNeedEl.textContent = `${flowCalib.need_calib || 0}`;
+        const waterNeedEl = document.getElementById("kpi-eq-water-need");
+        if (waterNeedEl) waterNeedEl.textContent = `${waterCalib.need_calib || 0}`;
+
+        const lifeEl = document.getElementById("kpi-eq-lifespan-over-count");
+        if (lifeEl) lifeEl.textContent = `${(ov.lifespan_over || 0).toLocaleString()}점`;
       }
     } catch (e) {
       console.error(e);
@@ -269,26 +402,18 @@ class EquipmentManager {
       const elFlow = document.getElementById("dash-kpi-flowmeter");
       if (elFlow) elFlow.textContent = `${flowTotal.toLocaleString()}대`;
 
-      const flowNonContact = (res.flowModels || []).filter(m => m.method.includes("비접촉")).reduce((s, m) => s + m.total, 0);
-      const flowContact = flowTotal - flowNonContact;
-      const elFnc = document.getElementById("dash-kpi-flow-noncontact");
-      if (elFnc) elFnc.textContent = `${flowNonContact.toLocaleString()}대 (${((flowNonContact / (flowTotal || 1)) * 100).toFixed(1)}%)`;
-      const elFc = document.getElementById("dash-kpi-flow-contact");
-      if (elFc) elFc.textContent = `${flowContact.toLocaleString()}대 (${((flowContact / (flowTotal || 1)) * 100).toFixed(1)}%)`;
-
       const waterTotal = (res.waterModels || []).reduce((s, m) => s + m.total, 0);
       const elWater = document.getElementById("dash-kpi-waterlevel");
       if (elWater) elWater.textContent = `${waterTotal.toLocaleString()}대`;
 
-      const waterRadar = (res.waterModels || []).filter(m => m.method.includes("레이더")).reduce((s, m) => s + m.total, 0);
-      const waterPressure = waterTotal - waterRadar;
-      const elWr = document.getElementById("dash-kpi-water-radar");
-      if (elWr) elWr.textContent = `${waterRadar}대 (${((waterRadar / (waterTotal || 1)) * 100).toFixed(1)}%)`;
-      const elWp = document.getElementById("dash-kpi-water-pressure");
-      if (elWp) elWp.textContent = `${waterPressure}대 (${((waterPressure / (waterTotal || 1)) * 100).toFixed(1)}%)`;
+      const calibSummary = res.calibSummary || [];
+      const flowCalib = calibSummary.find(c => c.category === "FLOWMETER") || {};
+      const waterCalib = calibSummary.find(c => c.category === "WATER_LEVEL") || {};
 
-      const elRepair = document.getElementById("dash-kpi-repair");
-      if (elRepair) elRepair.textContent = `수리 ${ov.active_repairs || 0} / 예비 ${ov.spare || 0}`;
+      const elFlowNeed = document.getElementById("dash-kpi-flow-need");
+      if (elFlowNeed) elFlowNeed.textContent = `${flowCalib.need_calib || 0}`;
+      const elWaterNeed = document.getElementById("dash-kpi-water-need");
+      if (elWaterNeed) elWaterNeed.textContent = `${waterCalib.need_calib || 0}`;
 
       const elLife = document.getElementById("dash-kpi-lifespan");
       if (elLife) elLife.textContent = `${ov.lifespan_over || 0}점`;
@@ -297,7 +422,7 @@ class EquipmentManager {
       const flowTbody = document.getElementById("dash-flowmeter-tbody");
       if (flowTbody) {
         if (!res.flowModels || res.flowModels.length === 0) {
-          flowTbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:2rem; color:#94a3b8;">유속계 모델 데이터가 없습니다.</td></tr>`;
+          flowTbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:2rem; color:#94a3b8;">유속계 모델 데이터가 없습니다.</td></tr>`;
         } else {
           flowTbody.innerHTML = res.flowModels.map((m, idx) => {
             const isNonContact = m.method.includes("비접촉");
@@ -311,7 +436,21 @@ class EquipmentManager {
             const spareHtml = m.spare > 0 ? `<span class="badge badge-amber" style="font-weight:700;">${m.spare}대</span>` : `<span style="color:#94a3b8;">-</span>`;
             const repairHtml = m.repairing > 0 ? `<span class="badge badge-red" style="font-weight:700;">${m.repairing}대</span>` : `<span style="color:#94a3b8;">-</span>`;
             const disposalHtml = m.disposal > 0 ? `<span class="badge badge-gray" style="font-weight:700;">${m.disposal}대</span>` : `<span style="color:#94a3b8;">-</span>`;
-            const lifeHtml = m.lifespan_over > 0 ? `<span class="badge badge-red" style="font-weight:700; color:#dc2626; background:#fee2e2;">⚠️ ${m.lifespan_over}대</span>` : `<span style="color:#94a3b8;">정상</span>`;
+            const returnedHtml = m.returned > 0 ? `<span class="badge" style="background:#f3e8ff; color:#7e22ce; font-weight:700; border:1px solid #d8b4fe; cursor:pointer;" onclick="event.stopPropagation(); window.equipmentManager.goToDevicesWithFilter({ category: 'FLOWMETER', search: '${m.model_name}', status: 'RETURNED' })">📦 ${m.returned}대</span>` : `<span style="color:#94a3b8;">-</span>`;
+            let calibParts = [];
+            if (m.calib_need > 0) {
+              calibParts.push(`<span class="badge badge-amber" style="font-weight:800; color:#b45309; background:#fef3c7;" onclick="event.stopPropagation(); window.equipmentManager.goToDevicesWithFilter({ category: 'FLOWMETER', search: '${m.model_name}', calibFilter: 'NEED_ALL' })">🎯 필요 ${m.calib_need}</span>`);
+            }
+            if (m.calib_valid > 0) {
+              calibParts.push(`<span style="color:#16a34a; font-size:0.75rem; font-weight:700;">✅ 유효 ${m.calib_valid}</span>`);
+            }
+            if (m.calib_none > 0) {
+              calibParts.push(`<span style="color:#64748b; font-size:0.73rem;" onclick="event.stopPropagation(); window.equipmentManager.goToDevicesWithFilter({ category: 'FLOWMETER', search: '${m.model_name}', calibFilter: 'NO_RECORD' })">⚪ 미기재 ${m.calib_none}</span>`);
+            }
+            const calibHtml = calibParts.length > 0 ? calibParts.join("<br>") : `<span style="color:#94a3b8;">-</span>`;
+            const lifeHtml = m.lifespan_over > 0
+              ? `<span class="badge badge-red" style="font-weight:700; color:#dc2626; background:#fee2e2;" onclick="event.stopPropagation(); window.equipmentManager.goToDevicesWithFilter({ category: 'FLOWMETER', search: '${m.model_name}', isOver: '1' })">⚠️ ${m.lifespan_over}대</span>`
+              : `<span style="color:#94a3b8;">이내</span>`;
 
             return `
               <tr style="cursor:pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'FLOWMETER', search: '${m.model_name}' })" title="클릭 시 [${m.model_name}] 장비 상세 목록으로 이동">
@@ -333,6 +472,8 @@ class EquipmentManager {
                 <td style="text-align:center;">${spareHtml}</td>
                 <td style="text-align:center;">${repairHtml}</td>
                 <td style="text-align:center;">${disposalHtml}</td>
+                <td style="text-align:center;">${returnedHtml}</td>
+                <td style="text-align:center;">${calibHtml}</td>
                 <td style="text-align:center;">${lifeHtml}</td>
                 <td style="text-align:center;">
                   <button type="button" class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem; font-weight:700;" onclick="event.stopPropagation(); window.equipmentManager.goToDevicesWithFilter({ category: 'FLOWMETER', search: '${m.model_name}' })">
@@ -349,7 +490,7 @@ class EquipmentManager {
       const waterTbody = document.getElementById("dash-waterlevel-tbody");
       if (waterTbody) {
         if (!res.waterModels || res.waterModels.length === 0) {
-          waterTbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:2rem; color:#94a3b8;">수위계 모델 데이터가 없습니다.</td></tr>`;
+          waterTbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:2rem; color:#94a3b8;">수위계 모델 데이터가 없습니다.</td></tr>`;
         } else {
           waterTbody.innerHTML = res.waterModels.map((m, idx) => {
             const isRadar = m.method.includes("레이더");
@@ -363,10 +504,25 @@ class EquipmentManager {
             const spareHtml = m.spare > 0 ? `<span class="badge badge-amber" style="font-weight:700;">${m.spare}대</span>` : `<span style="color:#94a3b8;">-</span>`;
             const repairHtml = m.repairing > 0 ? `<span class="badge badge-red" style="font-weight:700;">${m.repairing}대</span>` : `<span style="color:#94a3b8;">-</span>`;
             const disposalHtml = m.disposal > 0 ? `<span class="badge badge-gray" style="font-weight:700;">${m.disposal}대</span>` : `<span style="color:#94a3b8;">-</span>`;
-            const lifeHtml = m.lifespan_over > 0 ? `<span class="badge badge-red" style="font-weight:700; color:#dc2626; background:#fee2e2;">⚠️ ${m.lifespan_over}대</span>` : `<span style="color:#94a3b8;">정상</span>`;
+            const returnedHtml = m.returned > 0 ? `<span class="badge" style="background:#f3e8ff; color:#7e22ce; font-weight:700; border:1px solid #d8b4fe; cursor:pointer;" onclick="event.stopPropagation(); window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL', search: '${searchKey}', status: 'RETURNED' })">📦 ${m.returned}대</span>` : `<span style="color:#94a3b8;">-</span>`;
+            const searchKey = m.clean_model === "기타/미지정" ? "" : m.clean_model;
+            let calibParts = [];
+            if (m.calib_need > 0) {
+              calibParts.push(`<span class="badge badge-amber" style="font-weight:800; color:#b45309; background:#fef3c7;" onclick="event.stopPropagation(); window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL', search: '${searchKey}', calibFilter: 'NEED_ALL' })">🎯 필요 ${m.calib_need}</span>`);
+            }
+            if (m.calib_valid > 0) {
+              calibParts.push(`<span style="color:#16a34a; font-size:0.75rem; font-weight:700;">✅ 유효 ${m.calib_valid}</span>`);
+            }
+            if (m.calib_none > 0) {
+              calibParts.push(`<span style="color:#64748b; font-size:0.73rem;" onclick="event.stopPropagation(); window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL', search: '${searchKey}', calibFilter: 'NO_RECORD' })">⚪ 미기재 ${m.calib_none}</span>`);
+            }
+            const calibHtml = calibParts.length > 0 ? calibParts.join("<br>") : `<span style="color:#94a3b8;">-</span>`;
+            const lifeHtml = m.lifespan_over > 0
+              ? `<span class="badge badge-red" style="font-weight:700; color:#dc2626; background:#fee2e2;" onclick="event.stopPropagation(); window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL', search: '${searchKey}', isOver: '1' })">⚠️ ${m.lifespan_over}대</span>`
+              : `<span style="color:#94a3b8;">이내</span>`;
 
             return `
-              <tr style="cursor:pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL', search: '${m.clean_model === '기타/미지정' ? '' : m.clean_model}' })" title="클릭 시 [${m.clean_model}] 장비 상세 목록으로 이동">
+              <tr style="cursor:pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL', search: '${searchKey}' })" title="클릭 시 [${m.clean_model}] 장비 상세 목록으로 이동">
                 <td style="text-align:center;"><b>${idx + 1}</b></td>
                 <td>
                   <b style="color:#1e3a8a; font-size:0.92rem;">${m.clean_model}</b>
@@ -385,9 +541,11 @@ class EquipmentManager {
                 <td style="text-align:center;">${spareHtml}</td>
                 <td style="text-align:center;">${repairHtml}</td>
                 <td style="text-align:center;">${disposalHtml}</td>
+                <td style="text-align:center;">${returnedHtml}</td>
+                <td style="text-align:center;">${calibHtml}</td>
                 <td style="text-align:center;">${lifeHtml}</td>
                 <td style="text-align:center;">
-                  <button type="button" class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem; font-weight:700;" onclick="event.stopPropagation(); window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL', search: '${m.clean_model === '기타/미지정' ? '' : m.clean_model}' })">
+                  <button type="button" class="btn btn-outline btn-sm" style="padding:2px 8px; font-size:0.72rem; font-weight:700;" onclick="event.stopPropagation(); window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL', search: '${searchKey}' })">
                     조회 ➔
                   </button>
                 </td>
@@ -412,21 +570,24 @@ class EquipmentManager {
           ANCILLARY: "🔌"
         };
 
-        const totalAll = ov.total || 2113;
+        const totalAll = ov.total || 1844;
         catBox.innerHTML = `
           <div style="display:flex; flex-direction:column; gap:8px;">
             ${(res.categories || []).map(c => {
               const icon = catIcons[c.category] || "📦";
               const pct = ((c.total / totalAll) * 100).toFixed(1);
               const opPct = ((c.operating / c.total) * 100).toFixed(0);
+              const stdLife = c.lifespan_years || this.getStandardLifespan(c.category);
 
               return `
                 <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:9px 12px; cursor:pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: '${c.category}' })" title="클릭 시 [${c.category_name}] 대장으로 이동">
-                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                    <div style="display:flex; align-items:center; gap:8px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; flex-wrap:wrap; gap:4px;">
+                    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                       <span style="font-size:1.1rem;">${icon}</span>
                       <b style="font-size:0.88rem; color:#0f172a;">${c.category_name}</b>
-                      <span class="badge badge-gray" style="font-size:0.7rem;">${c.category}</span>
+                      <span class="badge badge-blue" style="font-size:0.68rem; font-weight:700;">내용연수 ${stdLife}년</span>
+                      ${c.calib_need > 0 ? `<span class="badge badge-amber" style="font-size:0.68rem; font-weight:700;">🎯 검정필요 ${c.calib_need}대</span>` : ""}
+                      ${c.lifespan_over > 0 ? `<span class="badge badge-red" style="font-size:0.68rem; font-weight:700;">⚠️ 연수초과 ${c.lifespan_over}점</span>` : ""}
                     </div>
                     <div style="text-align:right;">
                       <b style="font-size:0.92rem; color:#1e40af;">${c.total}점</b>
@@ -438,10 +599,11 @@ class EquipmentManager {
                     <div style="width:${(c.spare / c.total) * 100}%; background:#f59e0b;" title="예비품 ${c.spare}대"></div>
                     <div style="width:${(c.repairing / c.total) * 100}%; background:#ef4444;" title="수리중 ${c.repairing}대"></div>
                     <div style="width:${(c.disposal / c.total) * 100}%; background:#94a3b8;" title="폐품 ${c.disposal}대"></div>
+                    <div style="width:${(c.returned / c.total) * 100}%; background:#a855f7;" title="자산반납 ${c.returned}대"></div>
                   </div>
                   <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:#64748b;">
                     <span>운영: <b style="color:#166534;">${c.operating}</b>대 (${opPct}%)</span>
-                    <span>예비: <b style="color:#b45309;">${c.spare}</b> | 수리: <b style="color:#b91c1c;">${c.repairing}</b> | 불용: <b>${c.disposal}</b></span>
+                    <span>예비: <b style="color:#b45309;">${c.spare}</b> | 수리: <b style="color:#b91c1c;">${c.repairing}</b> | 불용: <b>${c.disposal}</b>${c.returned > 0 ? ` | 반납: <b style="color:#7e22ce;">${c.returned}</b>` : ""}</span>
                   </div>
                 </div>
               `;
@@ -510,23 +672,34 @@ class EquipmentManager {
       window.app.switchTab("equipment");
     }
     this.switchSubTab("devices");
-    if (filter.category) {
-      this.deviceCategory = filter.category;
-      document.querySelectorAll(".eq-cat-pill").forEach(p => {
-        if (p.dataset.cat && p.dataset.cat.toUpperCase() === filter.category.toUpperCase()) p.classList.add("active");
-        else p.classList.remove("active");
-      });
-    }
-    if (filter.status) {
-      this.deviceStatus = filter.status;
-      const stEl = document.getElementById("eq-dev-status");
-      if (stEl) stEl.value = filter.status;
-    }
-    if (filter.search !== undefined) {
-      this.deviceSearch = filter.search;
-      const sEl = document.getElementById("eq-dev-search");
-      if (sEl) sEl.value = filter.search;
-    }
+
+    const catVal = filter.category !== undefined ? filter.category : "all";
+    this.deviceCategory = catVal;
+    document.querySelectorAll(".eq-cat-pill").forEach(p => {
+      if (p.dataset.cat && p.dataset.cat.toUpperCase() === String(catVal).toUpperCase()) p.classList.add("active");
+      else p.classList.remove("active");
+    });
+
+    const stVal = filter.status !== undefined ? filter.status : "all";
+    this.deviceStatus = stVal;
+    const stEl = document.getElementById("eq-dev-status");
+    if (stEl) stEl.value = stVal;
+
+    const calibVal = filter.calibFilter !== undefined ? filter.calibFilter : "ALL";
+    this.deviceCalibFilter = calibVal;
+    const cEl = document.getElementById("eq-dev-calib-filter");
+    if (cEl) cEl.value = calibVal;
+
+    const lifeVal = filter.isOver !== undefined ? String(filter.isOver) : "ALL";
+    this.deviceLifespanFilter = lifeVal;
+    const lEl = document.getElementById("eq-dev-lifespan-filter");
+    if (lEl) lEl.value = lifeVal;
+
+    const searchVal = filter.search !== undefined ? filter.search : "";
+    this.deviceSearch = searchVal;
+    const sEl = document.getElementById("eq-dev-search");
+    if (sEl) sEl.value = searchVal;
+
     this.devicePage = 1;
     this.loadDevices();
   }
@@ -564,7 +737,7 @@ class EquipmentManager {
       const wb = XLSX.utils.book_new();
 
       // Sheet 1: 유속계 모델별 현황
-      const flowHeaders = ["순번", "유속계 모델명", "계측 방식", "총 보유대수", "점유율(%)", "운영중", "예비품", "수리중", "불용/폐기", "내구연한초과"];
+      const flowHeaders = ["순번", "유속계 모델명", "계측 방식", "총 보유대수", "점유율(%)", "운영중", "예비품", "수리중", "불용/폐기", "자산반납", "검정필요(2년주기)", "내용연수초과(13년)"];
       const flowTotal = (d.flowModels || []).reduce((s, m) => s + m.total, 0);
       const flowRows = (d.flowModels || []).map((m, i) => [
         i + 1,
@@ -576,10 +749,12 @@ class EquipmentManager {
         m.spare,
         m.repairing,
         m.disposal,
-        m.lifespan_over
+        m.returned || 0,
+        m.calib_need || 0,
+        m.lifespan_over || 0
       ]);
       const wsFlow = XLSX.utils.aoa_to_sheet([
-        ["🌊 한국수자원조사기술원 전국 자동유량관측시설 유속계 기종별·모델별 보유 현황"],
+        ["🌊 한국수자원조사기술원 전국 자동유량관측시설 유속계 기종별·모델별 보유 현황 (내용연수 13년 · 검정주기 2년)"],
         [`총 ${flowTotal}대 | 기준일시: ${new Date().toLocaleString("ko-KR")}`],
         [],
         flowHeaders,
@@ -588,7 +763,7 @@ class EquipmentManager {
       XLSX.utils.book_append_sheet(wb, wsFlow, "1. 유속계 모델별 현황");
 
       // Sheet 2: 수위계 모델별 현황
-      const waterHeaders = ["순번", "수위계 모델명", "계측 방식", "총 보유대수", "점유율(%)", "운영중", "예비품", "수리중", "불용/폐기", "내구연한초과"];
+      const waterHeaders = ["순번", "수위계 모델명", "계측 방식", "총 보유대수", "점유율(%)", "운영중", "예비품", "수리중", "불용/폐기", "자산반납", "검정필요(3년주기)", "내용연수초과(10년)"];
       const waterTotal = (d.waterModels || []).reduce((s, m) => s + m.total, 0);
       const waterRows = (d.waterModels || []).map((m, i) => [
         i + 1,
@@ -600,10 +775,12 @@ class EquipmentManager {
         m.spare,
         m.repairing,
         m.disposal,
-        m.lifespan_over
+        m.returned || 0,
+        m.calib_need || 0,
+        m.lifespan_over || 0
       ]);
       const wsWater = XLSX.utils.aoa_to_sheet([
-        ["📏 한국수자원조사기술원 전국 자동유량관측시설 수위계 기종별·모델별 보유 현황"],
+        ["📏 한국수자원조사기술원 전국 자동유량관측시설 수위계 기종별·모델별 보유 현황 (내용연수 10년 · 검정주기 3년)"],
         [`총 ${waterTotal}대 | 기준일시: ${new Date().toLocaleString("ko-KR")}`],
         [],
         waterHeaders,
@@ -612,20 +789,23 @@ class EquipmentManager {
       XLSX.utils.book_append_sheet(wb, wsWater, "2. 수위계 모델별 현황");
 
       // Sheet 3: 9대 설비 카테고리 종합 현황
-      const catHeaders = ["설비 코드", "설비 구분(카테고리)", "총 보유점수", "운영중", "예비품", "수리중", "불용/폐품", "내구연한초과"];
+      const catHeaders = ["설비 코드", "설비 구분(카테고리)", "조달청 내용연수(년)", "총 보유점수", "운영중", "예비품", "수리중", "불용/폐품", "자산반납", "검정필요", "내용연수초과"];
       const catRows = (d.categories || []).map(c => [
         c.category,
         c.category_name,
+        c.lifespan_years || this.getStandardLifespan(c.category),
         c.total,
         c.operating,
         c.spare,
         c.repairing,
         c.disposal,
-        c.lifespan_over
+        c.returned || 0,
+        c.calib_need || 0,
+        c.lifespan_over || 0
       ]);
       const wsCat = XLSX.utils.aoa_to_sheet([
-        ["🏢 전국 자동유량관측시설 9대 설비 카테고리별 자산 종합 현황"],
-        [`총 2,113점 | 기준일시: ${new Date().toLocaleString("ko-KR")}`],
+        ["🏢 전국 자동유량관측시설 9대 설비 카테고리별 자산 종합 현황 (조달청 고시 제2024-30호 내용연수 반영)"],
+        [`총 ${(d.overview && d.overview.total) || 1844}점 | 기준일시: ${new Date().toLocaleString("ko-KR")}`],
         [],
         catHeaders,
         ...catRows
@@ -693,12 +873,18 @@ class EquipmentManager {
         // Render station cards
         listEl.innerHTML = this.stations.map(st => {
           const isSelected = this.selectedStationId === st.id;
-          const isCalib = st.calib_2026 === 1;
+          const calibDueCnt = st.calib_due_count || 0;
+          const lifeOverCnt = st.lifespan_over_count || 0;
           const isRepair = (st.repairing_count || 0) > 0;
           const isSpare = (st.spare_count || 0) > 0;
           const isPlanned2026 = (st.total_devices || 0) === 0 || st.install_year === "2026";
 
-          let calibBadge = isCalib ? `<span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.7rem; font-weight:700;">🎯 검정대상</span>` : "";
+          let calibBadge = calibDueCnt > 0
+            ? `<span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.7rem; font-weight:700;">🎯 검정필요 (${calibDueCnt})</span>`
+            : (st.calib_2026 === 1 ? `<span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.7rem; font-weight:700;">🎯 검정대상</span>` : "");
+          let lifeBadge = lifeOverCnt > 0
+            ? `<span class="badge" style="background:#fee2e2; color:#dc2626; font-size:0.7rem; font-weight:700;">⚠️ 연수초과 (${lifeOverCnt})</span>`
+            : "";
           let spareBadge = isSpare ? `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.7rem; font-weight:700;">📦 예비·보관 (${st.spare_count})</span>` : "";
           let repairBadge = isRepair ? `<span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.7rem; font-weight:700;">🚨 수리중 (${st.repairing_count})</span>` : "";
 
@@ -724,6 +910,7 @@ class EquipmentManager {
               <div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">
                 ${equipBadges}
                 ${calibBadge}
+                ${lifeBadge}
                 ${spareBadge}
                 ${repairBadge}
               </div>
@@ -886,7 +1073,7 @@ class EquipmentManager {
 
     // Operating devices table rows
     const opRowsHtml = operatingDevices.length === 0 
-      ? `<tr><td colspan="7" style="text-align:center; padding:2rem; color:#94a3b8;">현재 운영 중으로 등록된 장비가 없습니다.</td></tr>`
+      ? `<tr><td colspan="9" style="text-align:center; padding:2rem; color:#94a3b8;">현재 운영 중으로 등록된 장비가 없습니다.</td></tr>`
       : operatingDevices.map((d, idx) => {
           let catBadge = `<span class="badge badge-gray">${d.category_name}</span>`;
           if (d.category === "FLOWMETER") catBadge = `<span class="badge badge-blue">🌊 유속계</span>`;
@@ -909,12 +1096,19 @@ class EquipmentManager {
                 <code style="font-weight:700; color:#1e40af; background:#eff6ff; padding:2px 6px; border-radius:4px;">${d.serial_no || "-"}</code>
               </td>
               <td><span style="font-size:0.8rem; color:#475569;">${d.asset_no || d.asset_no_temp || "-"}</span></td>
+              <td>${this.renderLifespanCell(d)}</td>
+              <td>${this.renderCalibCell(d)}</td>
               <td style="text-align:center;"><span class="badge badge-green">● 운영중</span></td>
               <td style="text-align:center;">
                 <div style="display:flex; gap:4px; justify-content:center; flex-wrap:wrap;">
-                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:#1e40af; border-color:#bfdbfe;" onclick="window.equipmentManager.openEditDeviceModal('${d.equipment_id}')" title="모델명, S/N, 상태, 배치지점 등 상세 수정">
+                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:#1e40af; border-color:#bfdbfe;" onclick="window.equipmentManager.openEditDeviceModal('${d.equipment_id}')" title="모델명, S/N, 내용연수, 검정일, 상태 등 상세 수정">
                     ✏️ 수정
                   </button>
+                  ${(d.category === 'FLOWMETER' || d.category === 'WATER_LEVEL') ? `
+                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:#d97706; border-color:#fde68a; background:#fffbeb; font-weight:700;" onclick="window.equipmentManager.openCalibModal('${d.equipment_id}')" title="검정 이력 대장 및 새 검정 등록">
+                    🎯 검정
+                  </button>
+                  ` : ''}
                   <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem;" onclick="window.equipmentManager.openStatusModal('${d.equipment_id}', '${d.status}', '${safeLoc}', ${d.station_id || 'null'})" title="상태/보관위치 변경">
                     🔄 상태
                   </button>
@@ -932,12 +1126,13 @@ class EquipmentManager {
 
     // Other devices (spares, stored, repairing, disposal)
     const otherRowsHtml = otherDevices.length === 0
-      ? `<tr><td colspan="7" style="text-align:center; padding:1.5rem; color:#94a3b8;">해당 지점에 연계된 예비·보관·수리·철거 장비가 없습니다.</td></tr>`
+      ? `<tr><td colspan="9" style="text-align:center; padding:1.5rem; color:#94a3b8;">해당 지점에 연계된 예비·보관·수리·철거 장비가 없습니다.</td></tr>`
       : otherDevices.map((d, idx) => {
           let stBadge = `<span class="badge badge-gray">${d.status_label || d.status}</span>`;
           if (d.status === "SPARE") stBadge = `<span class="badge badge-amber">📦 예비품</span>`;
           else if (d.status === "REPAIRING") stBadge = `<span class="badge badge-red">🚨 수리중</span>`;
           else if (d.status === "DISPOSAL") stBadge = `<span class="badge badge-gray">🗑️ 폐품</span>`;
+          else if (d.status === "RETURNED") stBadge = `<span class="badge" style="background:#f3e8ff; color:#7e22ce; border:1px solid #d8b4fe; font-weight:700;">📦 ${d.status_label || "자산반납"}</span>`;
 
           const safeLoc = (d.location || "").replace(/'/g, "\\'");
 
@@ -950,6 +1145,8 @@ class EquipmentManager {
                 <div style="font-size:0.73rem; color:#64748b;">ID: <code>${d.equipment_id}</code> ${d.asset_no ? `| 자산: ${d.asset_no}` : ""}</div>
               </td>
               <td><code style="font-weight:700; color:#1e40af; background:#f8fafc; padding:2px 6px; border-radius:4px;">${d.serial_no || "-"}</code></td>
+              <td>${this.renderLifespanCell(d)}</td>
+              <td>${this.renderCalibCell(d)}</td>
               <td style="text-align:center;">${stBadge}</td>
               <td>
                 <span style="font-size:0.8rem; color:#475569; font-weight:600;">${d.location || "-"}</span>
@@ -957,9 +1154,14 @@ class EquipmentManager {
               </td>
               <td style="text-align:center;">
                 <div style="display:flex; gap:4px; justify-content:center; flex-wrap:wrap;">
-                  <button class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.72rem; color:#1e40af; border-color:#bfdbfe; font-weight:700;" onclick="window.equipmentManager.openEditDeviceModal('${d.equipment_id}')" title="예비품/보관품/수리품 제원·상태·보관처 직접 수정">
+                  <button class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.72rem; color:#1e40af; border-color:#bfdbfe; font-weight:700;" onclick="window.equipmentManager.openEditDeviceModal('${d.equipment_id}')" title="예비품/보관품/수리품 제원·내용연수·검정일·상태 직접 수정">
                     ✏️ 수정
                   </button>
+                  ${(d.category === 'FLOWMETER' || d.category === 'WATER_LEVEL') ? `
+                  <button class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.72rem; color:#d97706; border-color:#fde68a; background:#fffbeb; font-weight:700;" onclick="window.equipmentManager.openCalibModal('${d.equipment_id}')" title="검정 이력 대장 및 새 검정 등록">
+                    🎯 검정
+                  </button>
+                  ` : ''}
                   <button class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.72rem;" onclick="window.equipmentManager.openStatusModal('${d.equipment_id}', '${d.status}', '${safeLoc}', ${d.station_id || 'null'})" title="운영중 전환 또는 상태·보관위치 변경">
                     🔄 상태
                   </button>
@@ -1136,6 +1338,8 @@ class EquipmentManager {
                   <th>모델명 (장비 ID)</th>
                   <th>제조번호 (S/N)</th>
                   <th>자산번호</th>
+                  <th>취득 / 내용연수 (만료)</th>
+                  <th>검정일 / 만료일 (주기)</th>
                   <th style="width:80px; text-align:center;">상태</th>
                   <th style="width:185px; text-align:center;">작업 관리</th>
                 </tr>
@@ -1169,6 +1373,8 @@ class EquipmentManager {
                   <th style="width:95px; text-align:center;">구분</th>
                   <th>모델명 (장비 ID / 자산번호)</th>
                   <th>제조번호 (S/N)</th>
+                  <th>취득 / 내용연수 (만료)</th>
+                  <th>검정일 / 만료일 (주기)</th>
                   <th style="width:85px; text-align:center;">상태</th>
                   <th>보관처 / 위치</th>
                   <th style="width:170px; text-align:center;">작업 관리</th>
@@ -1207,12 +1413,14 @@ class EquipmentManager {
     const countEl = document.getElementById("eq-all-devices-count");
     if (!tbody) return;
 
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:3rem; color:#64748b;">장비 목록을 조회하는 중...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:3rem; color:#64748b;">장비 목록을 조회하는 중...</td></tr>`;
 
     try {
       const params = {
         category: this.deviceCategory,
         status: this.deviceStatus,
+        calibFilter: this.deviceCalibFilter,
+        isOver: this.deviceLifespanFilter,
         search: this.deviceSearch,
         page: this.devicePage,
         limit: this.deviceLimit
@@ -1227,7 +1435,7 @@ class EquipmentManager {
         if (countEl) countEl.textContent = `${(res.total || 0).toLocaleString()}대/식`;
 
         if (!res.devices || res.devices.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:3rem; color:#94a3b8;">조건에 해당하는 장비가 없습니다.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:3rem; color:#94a3b8;">조건에 해당하는 장비가 없습니다.</td></tr>`;
           this.renderDevicePagination(res);
           return;
         }
@@ -1242,6 +1450,7 @@ class EquipmentManager {
           if (d.status === "SPARE") stBadge = `<span class="badge badge-amber">예비품</span>`;
           else if (d.status === "REPAIRING") stBadge = `<span class="badge badge-red">수리중</span>`;
           else if (d.status === "DISPOSAL") stBadge = `<span class="badge badge-gray">폐품</span>`;
+          else if (d.status === "RETURNED") stBadge = `<span class="badge" style="background:#f3e8ff; color:#7e22ce; border:1px solid #d8b4fe; font-weight:700;">📦 ${d.status_label || "자산반납"}</span>`;
 
           const safeStName = (d.station_name || "").replace(/'/g, "\\'");
           const safeLoc = (d.location || "").replace(/'/g, "\\'");
@@ -1251,11 +1460,13 @@ class EquipmentManager {
             : `window.equipmentManager.openEditDeviceModal('${d.equipment_id}')`;
           const rowTitle = d.station_id
             ? `클릭 시 [${d.station_name}] 장비 현황으로 이동`
-            : `클릭 시 [${d.equipment_id}] 보관/예비품 상세 정보 및 배치지점 수정`;
+            : (d.status === "RETURNED" ? `클릭 시 [${d.equipment_id}] 자산반납 상세 정보 확인` : `클릭 시 [${d.equipment_id}] 보관/예비품 상세 정보 및 배치지점 수정`);
 
-          const stationDisplay = d.station_name
-            ? `<b style="color:#1e40af;">📍 ${d.station_name}</b>`
-            : `<span class="badge badge-amber" style="background:#fef3c7; color:#92400e; font-weight:700;">🏢 미배정(본원/보관)</span>`;
+          const stationDisplay = d.status === "RETURNED"
+            ? `<span class="badge" style="background:#f3e8ff; color:#7e22ce; font-weight:700; border:1px solid #d8b4fe;">📦 반납완료 (배정해제)</span>`
+            : (d.station_name
+                ? `<b style="color:#1e40af;">📍 ${d.station_name}</b>`
+                : `<span class="badge badge-amber" style="background:#fef3c7; color:#92400e; font-weight:700;">🏢 미배정(본원/보관)</span>`);
 
           return `
             <tr style="cursor:pointer;" onclick="${rowClickHandler}" title="${rowTitle}">
@@ -1265,14 +1476,21 @@ class EquipmentManager {
               <td><b>${d.model_name || "-"}</b></td>
               <td><code style="font-weight:700; color:#1e40af;">${d.serial_no || "-"}</code></td>
               <td>${d.asset_no || d.asset_no_temp || "-"}</td>
+              <td>${this.renderLifespanCell(d)}</td>
+              <td>${this.renderCalibCell(d)}</td>
               <td>${stationDisplay}</td>
               <td style="text-align:center;">${stBadge}</td>
               <td>${d.location || "-"}</td>
               <td style="text-align:center;" onclick="event.stopPropagation();">
                 <div style="display:flex; gap:4px; justify-content:center;">
-                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:#1e40af; border-color:#bfdbfe; font-weight:700;" onclick="window.equipmentManager.openEditDeviceModal('${d.equipment_id}')" title="장비 정보/상태/배치지점 통합 수정">
+                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:#1e40af; border-color:#bfdbfe; font-weight:700;" onclick="window.equipmentManager.openEditDeviceModal('${d.equipment_id}')" title="장비 정보/내용연수/검정일/상태/배치지점 통합 수정">
                     ✏️ 수정
                   </button>
+                  ${(d.category === 'FLOWMETER' || d.category === 'WATER_LEVEL') ? `
+                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:#d97706; border-color:#fde68a; background:#fffbeb; font-weight:700;" onclick="window.equipmentManager.openCalibModal('${d.equipment_id}')" title="검정 이력 대장 및 새 검정 등록">
+                    🎯 검정
+                  </button>
+                  ` : ''}
                   <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem;" onclick="window.equipmentManager.openStatusModal('${d.equipment_id}', '${d.status}', '${safeLoc}', ${d.station_id || 'null'})" title="상태 및 보관처 빠른 변경">
                     🔄 상태
                   </button>
@@ -1293,7 +1511,75 @@ class EquipmentManager {
       }
     } catch (e) {
       console.error(e);
-      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:3rem; color:#dc2626;">조회 중 오류가 발생했습니다.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:3rem; color:#dc2626;">조회 중 오류가 발생했습니다.</td></tr>`;
+    }
+  }
+
+  setDeviceCalibFilter(val) {
+    this.deviceCalibFilter = val || "ALL";
+    this.devicePage = 1;
+    this.loadDevices();
+  }
+
+  setDeviceLifespanFilter(val) {
+    this.deviceLifespanFilter = val || "ALL";
+    this.devicePage = 1;
+    this.loadDevices();
+  }
+
+  async exportFilteredDevicesExcel() {
+    if (!window.XLSX) {
+      alert("엑셀 라이브러리(SheetJS)를 불러올 수 없습니다.");
+      return;
+    }
+    try {
+      const res = await window.apiClient.getEquipmentDevices({
+        category: this.deviceCategory,
+        status: this.deviceStatus,
+        calibFilter: this.deviceCalibFilter,
+        isOver: this.deviceLifespanFilter,
+        search: this.deviceSearch,
+        limit: "all"
+      });
+      if (!res.success || !res.devices || res.devices.length === 0) {
+        alert("다운로드할 장비 내역이 없습니다.");
+        return;
+      }
+
+      const rows = res.devices.map((d, i) => {
+        const cycle = this.getCalibCycleYears(d.category);
+        return {
+          "순번": i + 1,
+          "장비ID": d.equipment_id,
+          "설비구분": d.category_name,
+          "모델명": d.model_name || "-",
+          "제조번호(S/N)": d.serial_no || "-",
+          "자산번호": d.asset_no || d.asset_no_temp || "-",
+          "취득년도": d.acquisition_date || "-",
+          "조달청 내용연수(년)": d.lifespan_years || this.getStandardLifespan(d.category),
+          "내용연수 만료년도": d.lifespan_end_year || "-",
+          "내용연수 초과여부": Number(d.is_lifespan_over) === 1 ? "초과" : "이내",
+          "검정주기": cycle > 0 ? `${cycle}년` : "비대상",
+          "최근검정일": d.recent_calib_date || "-",
+          "검정만료일": d.calib_expire_date || "-",
+          "검정상태": d.calib_status === "overdue" ? "검정만료" : (d.calib_status === "due_soon" ? "금년만료(검정필요)" : (d.calib_status === "valid" ? "유효" : "-")),
+          "검정구분/성적서": d.calib_cert_no || "-",
+          "관측소명": d.station_name || "미배정(본원/보관)",
+          "권역": d.region || "-",
+          "운영상태": d.status_label || d.status,
+          "보관위치": d.location || "-",
+          "비고": d.memo || ""
+        };
+      });
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, "장비대장_조회목록");
+      const today = new Date().toISOString().split("T")[0].replace(/-/g, "");
+      XLSX.writeFile(wb, `자동유량관측시설_장비대장_조회목록_${res.devices.length}건_${today}.xlsx`);
+      if (window.app) window.app.showToast(`현재 조회 조건 장비 목록(${res.devices.length}건) 엑셀이 다운로드되었습니다.`, "success");
+    } catch (e) {
+      alert("엑셀 다운로드 오류: " + e.message);
     }
   }
 
@@ -1845,7 +2131,78 @@ class EquipmentManager {
     document.getElementById("eq-add-location").value = defaultStatus === "SPARE" ? "기술원보관(예비품)" : "현장설치";
     document.getElementById("eq-add-memo").value = "";
 
+    const curYear = new Date().getFullYear();
+    const acqEl = document.getElementById("eq-add-acq-date");
+    if (acqEl) acqEl.value = String(curYear);
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const calibDateEl = document.getElementById("eq-add-calib-date");
+    if (calibDateEl) calibDateEl.value = todayStr;
+    const calibCertEl = document.getElementById("eq-add-calib-cert");
+    if (calibCertEl) calibCertEl.value = "공식검정성적서";
+
+    this.onAddCategoryChange("FLOWMETER");
+
     modal.classList.add("active");
+  }
+
+  onAddCategoryChange(category) {
+    const stdLife = this.getStandardLifespan(category);
+    const lifeEl = document.getElementById("eq-add-lifespan-years");
+    if (lifeEl) lifeEl.value = stdLife;
+    this.onAddLifespanInputChange();
+
+    const calibBox = document.getElementById("eq-add-calib-box");
+    const calibTitle = document.getElementById("eq-add-calib-title");
+    const calibDateEl = document.getElementById("eq-add-calib-date");
+    const calibExpEl = document.getElementById("eq-add-calib-expire");
+    const cycle = this.getCalibCycleYears(category);
+
+    if (cycle > 0) {
+      if (calibBox) calibBox.style.display = "block";
+      if (calibTitle) {
+        calibTitle.textContent = category === "FLOWMETER"
+          ? "🎯 유속계 법정 검정 정보 (2년 주기 · 검정기록 있을 시 입력)"
+          : "🎯 수위계 법정 검정 정보 (3년 주기 · 검정기록 있을 시 입력)";
+      }
+      if (calibDateEl) calibDateEl.required = false;
+      if (calibExpEl) calibExpEl.required = false;
+      this.onAddCalibDateChange();
+    } else {
+      if (calibBox) calibBox.style.display = "none";
+      if (calibDateEl) calibDateEl.required = false;
+      if (calibExpEl) calibExpEl.required = false;
+    }
+  }
+
+  onAddLifespanInputChange() {
+    const acqEl = document.getElementById("eq-add-acq-date");
+    const lifeEl = document.getElementById("eq-add-lifespan-years");
+    const endEl = document.getElementById("eq-add-lifespan-end");
+    if (!acqEl || !lifeEl || !endEl) return;
+
+    const acqYr = parseInt(acqEl.value, 10);
+    const yrs = parseInt(lifeEl.value, 10);
+    if (!isNaN(acqYr) && !isNaN(yrs)) {
+      const endYr = acqYr + yrs;
+      const isOver = 2026 > endYr;
+      endEl.value = `${endYr}년 (${isOver ? "⚠️ 내용연수 초과" : "🟢 이내"})`;
+      endEl.style.color = isOver ? "#dc2626" : "#1e40af";
+    } else {
+      endEl.value = "-";
+    }
+  }
+
+  onAddCalibDateChange() {
+    const catEl = document.getElementById("eq-add-category");
+    const calibDateEl = document.getElementById("eq-add-calib-date");
+    const calibExpEl = document.getElementById("eq-add-calib-expire");
+    if (!catEl || !calibDateEl || !calibExpEl) return;
+
+    const cycle = this.getCalibCycleYears(catEl.value);
+    if (cycle > 0 && calibDateEl.value) {
+      calibExpEl.value = this.calcExpireDate(calibDateEl.value, cycle);
+    }
   }
 
   closeAddDeviceModal() {
@@ -1863,6 +2220,16 @@ class EquipmentManager {
     const status = document.getElementById("eq-add-status").value;
     const location = document.getElementById("eq-add-location").value.trim();
     const memo = document.getElementById("eq-add-memo").value.trim();
+    const acquisition_date = (document.getElementById("eq-add-acq-date")?.value || "").trim();
+    const lifespan_years = parseInt(document.getElementById("eq-add-lifespan-years")?.value, 10) || this.getStandardLifespan(cat);
+    const recent_calib_date = (document.getElementById("eq-add-calib-date")?.value || "").trim();
+    const calib_expire_date = (document.getElementById("eq-add-calib-expire")?.value || "").trim();
+    const calib_cert_no = (document.getElementById("eq-add-calib-cert")?.value || "").trim();
+
+    let final_calib_expire = calib_expire_date;
+    if ((cat === "FLOWMETER" || cat === "WATER_LEVEL") && recent_calib_date && !final_calib_expire) {
+      final_calib_expire = this.calcExpireDate(recent_calib_date, this.getCalibCycleYears(cat));
+    }
 
     const catNameMap = {
       FLOWMETER: "유속계",
@@ -1886,6 +2253,11 @@ class EquipmentManager {
       asset_no: asset,
       status,
       location,
+      acquisition_date,
+      lifespan_years,
+      recent_calib_date: (cat === "FLOWMETER" || cat === "WATER_LEVEL") ? (recent_calib_date || null) : null,
+      calib_expire_date: (cat === "FLOWMETER" || cat === "WATER_LEVEL") ? (final_calib_expire || null) : null,
+      calib_cert_no: (cat === "FLOWMETER" || cat === "WATER_LEVEL") ? (calib_cert_no || null) : null,
       memo
     };
 
@@ -1895,6 +2267,8 @@ class EquipmentManager {
         if (window.app) window.app.showToast(`신규 장비가 성공적으로 등록되었습니다. (ID: ${res.equipmentId})`, "success");
         this.closeAddDeviceModal();
         if (this.selectedStationId) this.selectStation(this.selectedStationId);
+        this.loadDevices();
+        this.loadDashboard();
         this.loadKPIs();
       } else {
         alert("등록 실패: " + res.message);
@@ -2608,6 +2982,8 @@ class EquipmentManager {
       locInput.value = "리버앤씨(수리점검)";
     } else if (newStatus === "DISPOSAL") {
       locInput.value = "불용창고(폐기대기)";
+    } else if (newStatus === "RETURNED") {
+      locInput.value = "자산반납(처분완료)";
     }
   }
 
@@ -2676,6 +3052,24 @@ class EquipmentManager {
       document.getElementById("eq-edit-sn").value = d.serial_no || "";
       document.getElementById("eq-edit-asset").value = d.asset_no || d.asset_no_temp || "";
       document.getElementById("eq-edit-acq-date").value = d.acquisition_date || "";
+      const lifeYrsEl = document.getElementById("eq-edit-lifespan-years");
+      if (lifeYrsEl) lifeYrsEl.value = d.lifespan_years || this.getStandardLifespan(d.category);
+      this.onEditLifespanInputChange();
+
+      const calibDateEl = document.getElementById("eq-edit-calib-date");
+      const calibExpEl = document.getElementById("eq-edit-calib-expire");
+      const calibCertEl = document.getElementById("eq-edit-calib-cert");
+      if (calibDateEl) calibDateEl.value = d.recent_calib_date || "";
+      if (calibExpEl) calibExpEl.value = d.calib_expire_date || "";
+      if (calibCertEl) calibCertEl.value = d.calib_cert_no || "";
+      this.onEditCategoryChange(d.category || "FLOWMETER", false);
+
+      const calibHistSummary = document.getElementById("eq-edit-calib-hist-summary");
+      if (calibHistSummary) {
+        const histCount = (res.calibrationHistory || []).length;
+        calibHistSummary.innerHTML = `📜 누적 검정 이력: <b style="color:#c2410c;">${histCount}건</b> 등록됨`;
+      }
+
       document.getElementById("eq-edit-memo").value = d.memo || "";
 
       // Render audit history
@@ -2720,6 +3114,70 @@ class EquipmentManager {
       locInput.value = "리버앤씨(수리점검)";
     } else if (newStatus === "DISPOSAL") {
       locInput.value = "불용창고(폐기대기)";
+    } else if (newStatus === "RETURNED") {
+      locInput.value = "자산반납(처분완료)";
+    }
+  }
+
+  onEditCategoryChange(category, resetLifespan = true) {
+    if (resetLifespan) {
+      const lifeEl = document.getElementById("eq-edit-lifespan-years");
+      if (lifeEl) lifeEl.value = this.getStandardLifespan(category);
+      this.onEditLifespanInputChange();
+    }
+    const calibBox = document.getElementById("eq-edit-calib-box");
+    const calibTitle = document.getElementById("eq-edit-calib-title");
+    const calibDateEl = document.getElementById("eq-edit-calib-date");
+    const calibExpEl = document.getElementById("eq-edit-calib-expire");
+    const cycle = this.getCalibCycleYears(category);
+
+    if (cycle > 0) {
+      if (calibBox) calibBox.style.display = "block";
+      if (calibTitle) {
+        calibTitle.textContent = category === "FLOWMETER"
+          ? "🎯 유속계 법정 검정 정보 (2년 주기 · 검정기록 있을 시 입력)"
+          : "🎯 수위계 법정 검정 정보 (3년 주기 · 검정기록 있을 시 입력)";
+      }
+      if (calibDateEl) calibDateEl.required = false;
+      if (calibExpEl) calibExpEl.required = false;
+      if (calibDateEl && calibDateEl.value && (!calibExpEl || !calibExpEl.value)) {
+        this.onEditCalibDateChange();
+      }
+    } else {
+      if (calibBox) calibBox.style.display = "none";
+      if (calibDateEl) calibDateEl.required = false;
+      if (calibExpEl) calibExpEl.required = false;
+    }
+  }
+
+  onEditLifespanInputChange() {
+    const acqEl = document.getElementById("eq-edit-acq-date");
+    const lifeEl = document.getElementById("eq-edit-lifespan-years");
+    const endEl = document.getElementById("eq-edit-lifespan-end");
+    if (!acqEl || !lifeEl || !endEl) return;
+
+    const m = String(acqEl.value || "").match(/(19\d{2}|20\d{2})/);
+    const acqYr = m ? parseInt(m[1], 10) : NaN;
+    const yrs = parseInt(lifeEl.value, 10);
+    if (!isNaN(acqYr) && !isNaN(yrs)) {
+      const endYr = acqYr + yrs;
+      const isOver = 2026 > endYr;
+      endEl.value = `${endYr}년 (${isOver ? "⚠️ 내용연수 초과" : "🟢 이내"})`;
+      endEl.style.color = isOver ? "#dc2626" : "#1e40af";
+    } else {
+      endEl.value = "-";
+    }
+  }
+
+  onEditCalibDateChange() {
+    const catEl = document.getElementById("eq-edit-category");
+    const calibDateEl = document.getElementById("eq-edit-calib-date");
+    const calibExpEl = document.getElementById("eq-edit-calib-expire");
+    if (!catEl || !calibDateEl || !calibExpEl) return;
+
+    const cycle = this.getCalibCycleYears(catEl.value);
+    if (cycle > 0 && calibDateEl.value) {
+      calibExpEl.value = this.calcExpireDate(calibDateEl.value, cycle);
     }
   }
 
@@ -2739,8 +3197,17 @@ class EquipmentManager {
     const serial_no = document.getElementById("eq-edit-sn").value.trim();
     const asset_no = document.getElementById("eq-edit-asset").value.trim();
     const acquisition_date = document.getElementById("eq-edit-acq-date").value.trim();
+    const lifespan_years = parseInt(document.getElementById("eq-edit-lifespan-years")?.value, 10) || this.getStandardLifespan(category);
+    const recent_calib_date = (document.getElementById("eq-edit-calib-date")?.value || "").trim();
+    const calib_expire_date = (document.getElementById("eq-edit-calib-expire")?.value || "").trim();
+    const calib_cert_no = (document.getElementById("eq-edit-calib-cert")?.value || "").trim();
     const memo = document.getElementById("eq-edit-memo").value.trim();
     const reason = document.getElementById("eq-edit-reason").value.trim();
+
+    let final_calib_expire = calib_expire_date;
+    if ((category === "FLOWMETER" || category === "WATER_LEVEL") && recent_calib_date && !final_calib_expire) {
+      final_calib_expire = this.calcExpireDate(recent_calib_date, this.getCalibCycleYears(category));
+    }
 
     const payload = {
       status,
@@ -2751,6 +3218,10 @@ class EquipmentManager {
       serial_no,
       asset_no,
       acquisition_date,
+      lifespan_years,
+      recent_calib_date: (category === "FLOWMETER" || category === "WATER_LEVEL") ? (recent_calib_date || null) : null,
+      calib_expire_date: (category === "FLOWMETER" || category === "WATER_LEVEL") ? (final_calib_expire || null) : null,
+      calib_cert_no: (category === "FLOWMETER" || category === "WATER_LEVEL") ? (calib_cert_no || null) : null,
       memo,
       reason: reason || "웹 시스템 장비 상세 수정"
     };
@@ -2848,6 +3319,221 @@ class EquipmentManager {
   }
 
   // ==========================================
+  // CALIBRATION HISTORY MANAGEMENT (검정 이력 누적 대장)
+  // ==========================================
+
+  async openCalibModal(equipmentId) {
+    const modal = document.getElementById("eq-calib-modal");
+    if (!modal || !equipmentId) return;
+
+    document.getElementById("eq-calib-target-id").value = equipmentId;
+    const badge = document.getElementById("eq-calib-id-badge");
+    if (badge) badge.textContent = equipmentId;
+
+    const tbody = document.getElementById("eq-calib-history-tbody");
+    if (tbody) tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:2rem; color:#94a3b8;">검정 이력을 불러오는 중...</td></tr>`;
+
+    try {
+      const res = await window.apiClient.getEquipmentDeviceDetail(equipmentId);
+      if (!res || !res.success || !res.device) {
+        alert("장비 검정 정보를 불러올 수 없습니다.");
+        return;
+      }
+
+      const d = res.device;
+      this.calibModalTargetCategory = d.category;
+      this.calibModalEquipmentId = equipmentId;
+
+      // Header summary
+      const nameEl = document.getElementById("eq-calib-summary-name");
+      if (nameEl) nameEl.textContent = `${d.category_name || d.category} - ${d.model_name || "미등록 모델"}`;
+
+      const subEl = document.getElementById("eq-calib-summary-sub");
+      if (subEl) {
+        subEl.innerHTML = `지점: <b>${d.station_name || "미배정(보관)"}</b> | S/N: <code>${d.serial_no || "-"}</code> | 취득: ${d.acquisition_date || "-"}년 | 내용연수: ${d.lifespan_years || this.getStandardLifespan(d.category)}년`;
+      }
+
+      const cycle = this.getCalibCycleYears(d.category);
+      const cycleEl = document.getElementById("eq-calib-summary-cycle");
+      if (cycleEl) {
+        cycleEl.textContent = cycle > 0 ? `법정 ${cycle}년 주기` : "검정 비대상";
+        cycleEl.className = cycle === 2 ? "badge badge-blue" : (cycle === 3 ? "badge badge-cyan" : "badge badge-gray");
+      }
+
+      const stEl = document.getElementById("eq-calib-summary-status");
+      if (stEl) {
+        if (d.calib_status === "overdue") {
+          stEl.className = "badge badge-red";
+          stEl.innerHTML = "🚨 검정만료 (검정시급)";
+        } else if (d.calib_status === "due_soon") {
+          stEl.className = "badge badge-amber";
+          stEl.innerHTML = "⏳ 금년만료 도래";
+        } else {
+          stEl.className = "badge badge-green";
+          stEl.innerHTML = "✅ 유효";
+        }
+      }
+
+      // Default registration form values
+      const todayStr = new Date().toISOString().split("T")[0];
+      const dateInp = document.getElementById("eq-calib-input-date");
+      const expInp = document.getElementById("eq-calib-input-expire");
+      if (dateInp) dateInp.value = todayStr;
+      if (expInp) expInp.value = this.calcExpireDate(todayStr, cycle > 0 ? cycle : 2);
+
+      const agencyInp = document.getElementById("eq-calib-input-agency");
+      if (agencyInp && !agencyInp.value) agencyInp.value = "한국수자원조사기술원";
+
+      const certInp = document.getElementById("eq-calib-input-cert");
+      if (certInp) certInp.value = "";
+
+      const resSelect = document.getElementById("eq-calib-input-status");
+      if (resSelect) resSelect.value = "합격";
+
+      const costInp = document.getElementById("eq-calib-input-cost");
+      if (costInp) costInp.value = "";
+
+      const memoInp = document.getElementById("eq-calib-input-memo");
+      if (memoInp) memoInp.value = "";
+
+      // Calibration History Records
+      const historyList = res.calibrationHistory || [];
+      const countEl = document.getElementById("eq-calib-history-count");
+      if (countEl) countEl.textContent = historyList.length;
+
+      if (tbody) {
+        if (historyList.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:2rem; color:#94a3b8;">누적된 검정 이력이 없습니다. 위의 양식을 통해 첫 검정을 등록하세요.</td></tr>`;
+        } else {
+          tbody.innerHTML = historyList.map((item, idx) => {
+            const turn = historyList.length - idx;
+            let resBadge = `<span class="badge badge-green">🟢 합격</span>`;
+            if (item.result_status === "조건부합격") resBadge = `<span class="badge badge-amber">🟡 조건부합격</span>`;
+            else if (item.result_status === "보정완료") resBadge = `<span class="badge badge-blue">⚖️ 보정완료</span>`;
+            else if (item.result_status === "불합격") resBadge = `<span class="badge badge-red">🔴 불합격</span>`;
+
+            const isOverdue = item.expire_date && item.expire_date < "2026-01-01";
+            const expireColor = isOverdue ? "#dc2626" : "#1e40af";
+
+            return `
+              <tr>
+                <td style="text-align:center; font-weight:700;">${turn}차</td>
+                <td style="text-align:center;"><b>${item.calib_date}</b></td>
+                <td style="text-align:center;"><b style="color:${expireColor};">${item.expire_date || "-"}</b></td>
+                <td style="text-align:center;"><span class="badge badge-purple" style="font-size:0.7rem;">${item.cycle_years || cycle}년</span></td>
+                <td>${item.agency || "-"}</td>
+                <td><code>${item.cert_no || "-"}</code></td>
+                <td style="text-align:center;">${resBadge}</td>
+                <td style="font-size:0.75rem; color:#475569;">
+                  ${item.calib_cost ? `<span style="color:#0f766e; font-weight:700;">₩${Number(item.calib_cost).toLocaleString()}</span> · ` : ""}${item.memo || "-"}
+                </td>
+                <td style="text-align:center;">
+                  <button type="button" class="btn btn-outline btn-sm" style="padding:1px 6px; font-size:0.7rem; color:#dc2626; border-color:#fca5a5;" onclick="window.equipmentManager.deleteCalibrationRecord(${item.id}, '${equipmentId}')" title="이 검정 기록 삭제">
+                    ✕
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join("");
+        }
+      }
+
+      modal.classList.add("active");
+    } catch (err) {
+      console.error(err);
+      alert("검정 이력 조회 오류: " + err.message);
+    }
+  }
+
+  closeCalibModal() {
+    const modal = document.getElementById("eq-calib-modal");
+    if (modal) modal.classList.remove("active");
+  }
+
+  onNewCalibDateChange() {
+    const dateInp = document.getElementById("eq-calib-input-date");
+    const expInp = document.getElementById("eq-calib-input-expire");
+    if (!dateInp || !expInp) return;
+
+    const cycle = this.getCalibCycleYears(this.calibModalTargetCategory) || 2;
+    if (dateInp.value) {
+      expInp.value = this.calcExpireDate(dateInp.value, cycle);
+    }
+  }
+
+  async submitNewCalibration(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const equipmentId = document.getElementById("eq-calib-target-id")?.value;
+    if (!equipmentId) return;
+
+    const calib_date = document.getElementById("eq-calib-input-date")?.value;
+    const expire_date = document.getElementById("eq-calib-input-expire")?.value;
+    const agency = (document.getElementById("eq-calib-input-agency")?.value || "").trim();
+    const cert_no = (document.getElementById("eq-calib-input-cert")?.value || "").trim();
+    const result_status = document.getElementById("eq-calib-input-status")?.value || "합격";
+    const rawCost = document.getElementById("eq-calib-input-cost")?.value;
+    const calib_cost = rawCost ? parseInt(rawCost, 10) : 0;
+    const memo = (document.getElementById("eq-calib-input-memo")?.value || "").trim();
+
+    if (!calib_date || !expire_date) {
+      alert("검정 실시일자와 만료일자는 필수 입력값입니다.");
+      return;
+    }
+
+    const cycle = this.getCalibCycleYears(this.calibModalTargetCategory) || 2;
+    const payload = {
+      calib_date,
+      cycle_years: cycle,
+      expire_date,
+      agency: agency || "한국수자원조사기술원",
+      cert_no: cert_no || null,
+      result_status,
+      calib_cost,
+      memo
+    };
+
+    try {
+      const res = await window.apiClient.createEquipmentCalibration(equipmentId, payload);
+      if (res.success) {
+        if (window.app) window.app.showToast(`새 검정 결과가 등록되고 장비 검정일이 갱신되었습니다.`, "success");
+        // Refresh calib modal
+        await this.openCalibModal(equipmentId);
+        // Refresh background views
+        if (this.selectedStationId) this.selectStation(this.selectedStationId);
+        this.loadStationsSummary();
+        this.loadDevices();
+        this.loadDashboard();
+        this.loadKPIs();
+      } else {
+        alert("검정 등록 실패: " + (res.message || res.error));
+      }
+    } catch (err) {
+      alert("검정 등록 오류: " + err.message);
+    }
+  }
+
+  async deleteCalibrationRecord(historyId, equipmentId) {
+    if (!confirm("해당 검정 기록을 삭제하시겠습니까?\n\n(삭제 시 이 장비의 최근 검정일과 만료일이 직전 검정 이력으로 자동 재계산됩니다)")) return;
+
+    try {
+      const res = await window.apiClient.deleteEquipmentCalibration(historyId);
+      if (res.success) {
+        if (window.app) window.app.showToast("검정 기록이 삭제되었습니다.", "success");
+        await this.openCalibModal(equipmentId);
+        if (this.selectedStationId) this.selectStation(this.selectedStationId);
+        this.loadStationsSummary();
+        this.loadDevices();
+        this.loadDashboard();
+        this.loadKPIs();
+      } else {
+        alert("삭제 실패: " + (res.message || res.error));
+      }
+    } catch (err) {
+      alert("삭제 오류: " + err.message);
+    }
+  }
+
+  // ==========================================
   // EXCEL TEMPLATES & BULK UPLOAD (Section 11)
   // ==========================================
 
@@ -2875,9 +3561,14 @@ class EquipmentManager {
         "운영상태": d.status_label || d.status,
         "보관위치": d.location || "현장설치",
         "취득년도": d.acquisition_date || "-",
-        "검정상태": d.calib_status || "-",
+        "내용연수(년)": d.lifespan_years || this.getStandardLifespan(d.category),
+        "내용연수만료년도": d.lifespan_end_year || "-",
+        "내용연수초과여부": Number(d.is_lifespan_over) === 1 ? "초과" : "이내",
+        "검정주기": this.getCalibCycleYears(d.category) > 0 ? `${this.getCalibCycleYears(d.category)}년` : "비대상",
         "최근검정일": d.recent_calib_date || "-",
-        "성적서번호": d.calib_cert_no || "-"
+        "검정만료일": d.calib_expire_date || "-",
+        "검정상태": d.calib_status === "overdue" ? "검정만료" : (d.calib_status === "due_soon" ? "금년만료(검정필요)" : (d.calib_status === "valid" ? "유효" : "-")),
+        "성적서/구분": d.calib_cert_no || "-"
       }));
       const wsDev = XLSX.utils.json_to_sheet(devRows);
       XLSX.utils.book_append_sheet(wb, wsDev, "장비목록");
@@ -2916,6 +3607,10 @@ class EquipmentManager {
         "모델명": d.model_name,
         "제조번호(S/N)": d.serial_no,
         "자산번호": d.asset_no,
+        "취득년도": d.acquisition_date || "",
+        "내용연수(년)": d.lifespan_years || this.getStandardLifespan(d.category),
+        "최근검정일(YYYY-MM-DD)": d.recent_calib_date || "",
+        "검정만료일(YYYY-MM-DD)": d.calib_expire_date || "",
         "보관위치": d.location,
         "비고": d.memo || ""
       }));
@@ -2949,6 +3644,10 @@ class EquipmentManager {
           model_name: r["모델명"],
           serial_no: r["제조번호(S/N)"] || r["제조번호"] || r["serial_no"],
           asset_no: r["자산번호"] || r["asset_no"],
+          acquisition_date: r["취득년도"] !== undefined ? String(r["취득년도"]) : r["acquisition_date"],
+          lifespan_years: r["내용연수(년)"] !== undefined ? r["내용연수(년)"] : r["lifespan_years"],
+          recent_calib_date: r["최근검정일(YYYY-MM-DD)"] || r["최근검정일"] || r["recent_calib_date"],
+          calib_expire_date: r["검정만료일(YYYY-MM-DD)"] || r["검정만료일"] || r["calib_expire_date"],
           location: r["보관위치"] || r["location"],
           memo: r["비고"] || r["memo"]
         }));

@@ -317,12 +317,56 @@ async function initDb() {
       )
     `);
 
+    // Equipment Calibration History Table (연도별 누적 검정 이력 관리)
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS equipment_calibration_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        equipment_id TEXT NOT NULL,
+        station_id INTEGER,
+        station_name TEXT,
+        category TEXT NOT NULL,
+        model_name TEXT,
+        serial_no TEXT,
+        calib_date TEXT NOT NULL,
+        cycle_years INTEGER DEFAULT 2,
+        expire_date TEXT NOT NULL,
+        agency TEXT DEFAULT '한국수자원조사기술원',
+        cert_no TEXT,
+        result_status TEXT DEFAULT '합격',
+        calib_cost INTEGER DEFAULT 0,
+        memo TEXT,
+        created_by TEXT DEFAULT '관리자',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Seed initial calibration history from existing equipment_master records (1회차 기본 이력 자동 적재)
+    sqliteDb.run(`
+      INSERT OR IGNORE INTO equipment_calibration_history 
+        (equipment_id, station_id, station_name, category, model_name, serial_no, calib_date, cycle_years, expire_date, agency, cert_no, result_status, memo, created_by)
+      SELECT 
+        equipment_id, station_id, station_name, category, model_name, serial_no, recent_calib_date, 
+        CASE WHEN category = 'FLOWMETER' THEN 2 ELSE 3 END,
+        calib_expire_date, '한국수자원조사기술원', calib_cert_no, '합격', 
+        CASE WHEN calib_cert_no LIKE '%취득%' THEN '취득년도 기준 초기 산정 이력' ELSE '물품관리대장 기재 검정 이력' END,
+        '시스템초기화'
+      FROM equipment_master
+      WHERE category IN ('FLOWMETER', 'WATER_LEVEL')
+        AND recent_calib_date IS NOT NULL AND recent_calib_date != '' AND recent_calib_date != '-'
+        AND NOT EXISTS (
+          SELECT 1 FROM equipment_calibration_history h WHERE h.equipment_id = equipment_master.equipment_id
+        )
+    `);
+
     sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_station ON equipment_master (station_id)`);
     sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_category ON equipment_master (category)`);
     sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_sn ON equipment_master (serial_no)`);
     sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_status ON equipment_master (status)`);
     sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_work_st ON equipment_work (station_id)`);
     sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_action_work ON equipment_action (work_id)`);
+    sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_calib_hist_eq ON equipment_calibration_history (equipment_id)`);
+    sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_calib_hist_date ON equipment_calibration_history (calib_date)`);
   });
 
   // B. Seed Supabase Cloud DB

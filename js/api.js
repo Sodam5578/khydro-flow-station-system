@@ -434,6 +434,39 @@ class ApiClient {
     return await res.json();
   }
 
+  async getEquipmentCalibrations(equipmentId) {
+    const res = await fetch(`${this.baseUrl}/equipment/devices/${encodeURIComponent(equipmentId)}/calibrations`, {
+      headers: this.getHeaders()
+    });
+    return await res.json();
+  }
+
+  async createEquipmentCalibration(equipmentId, data) {
+    const res = await fetch(`${this.baseUrl}/equipment/devices/${encodeURIComponent(equipmentId)}/calibrations`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return await res.json();
+  }
+
+  async updateEquipmentCalibration(historyId, data) {
+    const res = await fetch(`${this.baseUrl}/equipment/calibrations/${encodeURIComponent(historyId)}`, {
+      method: "PUT",
+      headers: this.getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return await res.json();
+  }
+
+  async deleteEquipmentCalibration(historyId) {
+    const res = await fetch(`${this.baseUrl}/equipment/calibrations/${encodeURIComponent(historyId)}`, {
+      method: "DELETE",
+      headers: this.getHeaders()
+    });
+    return await res.json();
+  }
+
   async createEquipmentDevice(data) {
     const res = await fetch(`${this.baseUrl}/equipment/devices`, {
       method: "POST",

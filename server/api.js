@@ -1152,6 +1152,47 @@ router.get("/equipment/devices/:id", verifyToken, async (req, res) => {
   }
 });
 
+// 20-4a-1. Get Calibration History for Equipment
+router.get("/equipment/devices/:id/calibrations", verifyToken, async (req, res) => {
+  try {
+    const records = await equipmentService.getDeviceCalibrations(req.params.id);
+    res.json({ success: true, count: records.length, records });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 20-4a-2. Add New Calibration Record for Equipment
+router.post("/equipment/devices/:id/calibrations", verifyToken, async (req, res) => {
+  try {
+    const result = await equipmentService.addCalibrationRecord(req.params.id, req.body, req.user);
+    logActivity(req.user, "검정이력등록", req.params.id, `새 검정 등록 (일자: ${req.body.calib_date || "-"})`, req.ip);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message, message: e.message });
+  }
+});
+
+// 20-4a-3. Update Calibration Record
+router.put("/equipment/calibrations/:historyId", verifyToken, async (req, res) => {
+  try {
+    const result = await equipmentService.updateCalibrationRecord(req.params.historyId, req.body, req.user);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message, message: e.message });
+  }
+});
+
+// 20-4a-4. Delete Calibration Record
+router.delete("/equipment/calibrations/:historyId", verifyToken, async (req, res) => {
+  try {
+    const result = await equipmentService.deleteCalibrationRecord(req.params.historyId, req.user);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message, message: e.message });
+  }
+});
+
 // 20-4b. Update Single Equipment Full Details (Model, S/N, Asset No, Station, Status, Location, Memo)
 router.put("/equipment/devices/:id", verifyToken, async (req, res) => {
   try {

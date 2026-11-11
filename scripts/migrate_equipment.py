@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 migrate_equipment.py
-Parses '(관리용)자동유량측정시설(176개소) 물품관리대장 총괄표_260918.xlsx'
+Parses '(관리용)자동유량측정시설(176개소) 물품관리대장 총괄표_261103.xlsx'
 and ingests equipment_master, equipment_work, equipment_action, equipment_repair
 into local SQLite database (data/khydro.db).
 """
@@ -14,7 +14,7 @@ import json
 import re
 import openpyxl
 
-EXCEL_PATH = '/Users/sechan/Documents/06_AI_Agent/02-자동유량측정시설_현황정리/(관리용)자동유량측정시설(176개소) 물품관리대장 총괄표_260918.xlsx'
+EXCEL_PATH = '/Users/sechan/Documents/06_AI_Agent/02-자동유량측정시설_현황정리/(관리용)자동유량측정시설(176개소) 물품관리대장 총괄표_261103.xlsx'
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../data/khydro.db')
 STATIONS_JSON = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../data/stations_initial.json')
 
@@ -206,6 +206,7 @@ def main():
 
     # Clear existing equipment tables for clean idempotent load
     cur.execute("DELETE FROM equipment_master")
+    cur.execute("DELETE FROM equipment_calibration_history")
     cur.execute("DELETE FROM equipment_work")
     cur.execute("DELETE FROM equipment_action")
     cur.execute("DELETE FROM equipment_repair")
@@ -236,34 +237,94 @@ def main():
         }
     print(f"✓ Found {len(calib_map)} periodic calibration stations to link with flowmeters.")
 
+    # 3.5 Pre-scan 0_지점별내역 & replacement history for missing acq_date / install dates
+    station_acq_map = {}
+    if '0_지점별내역' in wb.sheetnames:
+        ws0 = wb['0_지점별내역']
+        cur_st0 = ""
+        for r in list(ws0.iter_rows(values_only=True))[7:]:
+            c0 = clean_val(r[0]) if len(r) > 0 else ""
+            c2 = clean_val(r[2]) if len(r) > 2 else ""
+            c7 = clean_val(r[7]) if len(r) > 7 else ""
+            if c2 and c0.isdigit():
+                cur_st0 = c2
+            elif c0 and not c0.isdigit():
+                cur_st0 = c0
+            if cur_st0 and c2 and c7 and c7.isdigit() and len(c7) == 4:
+                station_acq_map[(norm_name(cur_st0), c2)] = c7
+                if c2 in ['센서지지대', '제어시스템', '유속계'] and (norm_name(cur_st0), 'PRIMARY') not in station_acq_map:
+                    station_acq_map[(norm_name(cur_st0), 'PRIMARY')] = c7
+
+    sn_install_date_map = {}
+    for h_sname, d_col, desc_col in [('1-1. 유속계 이력', 3, 8), ('2-1.수위계 이력', 2, 7)]:
+        if h_sname in wb.sheetnames:
+            for r in list(wb[h_sname].iter_rows(values_only=True))[1:]:
+                dt_raw = clean_val(r[d_col]) if len(r) > d_col else ""
+                if dt_raw.endswith("00:00:00"):
+                    dt_raw = dt_raw.split(" ")[0]
+                desc_raw = clean_val(r[desc_col]) if len(r) > desc_col else ""
+                if dt_raw and len(dt_raw) >= 10 and desc_raw:
+                    for tok in re.findall(r'\b\d{5,8}\b', desc_raw):
+                        sn_install_date_map[tok] = dt_raw[:10]
+
+    def add_years_minus_one_day(date_str, years):
+        import datetime
+        try:
+            dt = datetime.datetime.strptime(date_str[:10], "%Y-%m-%d").date()
+            try:
+                target = dt.replace(year=dt.year + years)
+            except ValueError:
+                target = dt.replace(year=dt.year + years, day=28)
+            target = target - datetime.timedelta(days=1)
+            return target.strftime("%Y-%m-%d")
+        except Exception:
+            return ""
+
+    def format_excel_date(val):
+        import datetime
+        if isinstance(val, (datetime.datetime, datetime.date)):
+            return val.strftime("%Y-%m-%d")
+        s = clean_val(val)
+        if not s or s in ['-', 'None', '무', '미제출']:
+            return ""
+        if s.endswith("00:00:00"):
+            s = s.split(" ")[0]
+        m = re.match(r'^(\d{4})[-./](\d{1,2})[-./](\d{1,2})', s)
+        if m:
+            return f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+        return ""
+
     # 4. Ingest Equipment Sheets (1 to 9)
+    # Official 조달청 고시 제2024-30호 내용연수 기준:
+    # 1.유속계(13년), 2.수위계(10년), 3.센서지지대(12년), 4.제어시스템(8년),
+    # 5.관측국사(8년), 6.수중센서보호장치(7년), 7.낙뢰보호장치(7년), 8.영상정보처리기기(9년), 9.부대시설(10년)
     sheet_meta = [
         ('1. 유속계', 'FLOWMETER', '유속계', 6, 13),
         ('2. 수위계', 'WATER_LEVEL', '수위계', 6, 10),
-        ('3. 센서지지대', 'MOUNT', '센서지지대', 2, 10),
-        ('4. 제어시스템', 'CONTROL', '제어시스템', 2, 11),
+        ('3. 센서지지대', 'MOUNT', '센서지지대', 2, 12),
+        ('4. 제어시스템', 'CONTROL', '제어시스템', 2, 8),
         ('5. 관측국사', 'SHELTER', '관측국사', 2, 8),
-        ('6. 수중센서보호장치', 'UNDERWATER', '수중센서보호장치', 2, 10),
-        ('7. 낙뢰보호장치', 'LIGHTNING', '낙뢰보호장치', 2, 9),
-        ('8. 영상정보처리기기', 'CCTV', '영상정보처리기기', 2, 5),
+        ('6. 수중센서보호장치', 'UNDERWATER', '수중센서보호장치', 2, 7),
+        ('7. 낙뢰보호장치', 'LIGHTNING', '낙뢰보호장치', 2, 7),
+        ('8. 영상정보처리기기', 'CCTV', '영상정보처리기기', 2, 9),
         ('9. 부대시설 설치', 'ANCILLARY', '부대시설', 2, 10)
     ]
+
+    TODAY_STR = "2026-11-03"
 
     for sname, cat, cat_name, h_row_idx, def_lifespan in sheet_meta:
         if sname not in wb.sheetnames:
             continue
         ws = wb[sname]
         all_rows = list(ws.iter_rows(values_only=True))
-        if len(all_rows) <= h_row_idx:
+        if len(all_rows) <= h_row_idx + 2:
             continue
-
-        h_main = all_rows[h_row_idx]
-        h_sub = all_rows[h_row_idx + 1] if len(all_rows) > h_row_idx + 1 else []
 
         current_station_str = ""
         sheet_count = 0
 
-        for r_idx, r in enumerate(all_rows[h_row_idx + 1:], start=h_row_idx + 2):
+        # Start at h_row_idx + 2 to skip both main header and sub-header row (년도 / 초과유무 / 카메라·녹화기)
+        for r_idx, r in enumerate(all_rows[h_row_idx + 2:], start=h_row_idx + 3):
             # Check station propagation
             val_col1 = clean_val(r[1]) if len(r) > 1 else ""
             val_col2 = clean_val(r[2]) if len(r) > 2 else ""
@@ -275,94 +336,255 @@ def main():
 
             manage_no = clean_val(r[2]) if len(r) > 2 else ""
             asset_no_temp = clean_val(r[3]) if len(r) > 3 else ""
-            model_name = clean_val(r[4]) if len(r) > 4 else ""
-            qty_raw = clean_val(r[5]) if len(r) > 5 else "1"
-            try:
-                qty = int(qty_raw)
-            except:
-                qty = 1
-            sn = clean_val(r[6]) if len(r) > 6 else ""
 
-            # Check if this is an empty row
+            if cat == 'CCTV':
+                # Sheet 8 has 2 columns for model: Col 4 (카메라) and Col 5 (녹화기)
+                cam_model = clean_val(r[4]) if len(r) > 4 else ""
+                nvr_model = clean_val(r[5]) if len(r) > 5 else ""
+                if cam_model and cam_model != '-' and nvr_model and nvr_model != '-':
+                    model_name = f"{cam_model} / {nvr_model}"
+                elif cam_model and cam_model != '-':
+                    model_name = cam_model
+                elif nvr_model and nvr_model != '-':
+                    model_name = nvr_model
+                else:
+                    model_name = "-"
+                qty_raw = clean_val(r[6]) if len(r) > 6 else ""
+                sn = clean_val(r[7]) if len(r) > 7 else ""
+                acq_date = clean_val(r[8]) if len(r) > 8 else ""
+                lifespan_end = clean_val(r[9]) if len(r) > 9 else ""
+                is_over_str = clean_val(r[10]) if len(r) > 10 else ""
+                asset_no = clean_val(r[12]) if len(r) > 12 else ""
+                acq_cost_raw = clean_val(r[13]) if len(r) > 13 else "0"
+            else:
+                model_name = clean_val(r[4]) if len(r) > 4 else ""
+                qty_raw = clean_val(r[5]) if len(r) > 5 else ""
+                sn = clean_val(r[6]) if len(r) > 6 else ""
+                acq_date = clean_val(r[7]) if len(r) > 7 else ""
+                lifespan_end = clean_val(r[8]) if len(r) > 8 else ""
+                is_over_str = clean_val(r[9]) if len(r) > 9 else ""
+                asset_no = clean_val(r[11]) if len(r) > 11 else ""
+                acq_cost_raw = clean_val(r[12]) if len(r) > 12 else "0"
+
+            # Check if this is an empty or summary row
             if not model_name and not sn and not manage_no:
                 continue
-
-            # Special case for headers/footers
-            if model_name in ['합계', '총계', '소계', '총괄내역']:
+            if model_name in ['합계', '총계', '소계', '총괄내역', '카메라', '종류']:
+                continue
+            if cat in ['FLOWMETER', 'WATER_LEVEL'] and model_name in ['', '-']:
                 continue
 
-            acq_date = clean_val(r[7]) if len(r) > 7 else ""
-            lifespan_end = clean_val(r[8]) if len(r) > 8 else ""
-            is_over_str = clean_val(r[9]) if len(r) > 9 else ""
-            is_over = 1 if '초과' in is_over_str else 0
+            # For sheets 1~8, skip placeholder '-' rows where the station has no such equipment installed
+            if cat != 'ANCILLARY':
+                if model_name in ['', '-'] and sn in ['', '-'] and (manage_no in ['', '-'] or not qty_raw):
+                    continue
+            else:
+                # For 9. 부대시설 설치, if qty is 1, give it a clear standard model name
+                if not qty_raw or qty_raw in ['-', '0']:
+                    continue
+                if model_name in ['', '-']:
+                    model_name = "계측·전원·통신 부대시설 일식"
 
-            asset_no = clean_val(r[11]) if len(r) > 11 else ""
-            acq_cost_raw = clean_val(r[12]) if len(r) > 12 else "0"
+            try:
+                qty = int(float(qty_raw)) if qty_raw else 1
+            except:
+                qty = 1
+
             try:
                 acq_cost = int(float(acq_cost_raw))
             except:
                 acq_cost = 0
 
-            # Status detection
-            # In Flowmeter (Sheet 1) & Water Level (Sheet 2):
+            # Normalize acquisition year (4-digit year)
+            acq_year_str = ""
+            m_yr = re.search(r'(19\d{2}|20\d{2})', str(acq_date))
+            if m_yr:
+                acq_year_str = m_yr.group(1)
+            if not acq_year_str and asset_no_temp:
+                m_tmp = re.match(r'^(20\d{2})-', asset_no_temp)
+                if m_tmp:
+                    acq_year_str = m_tmp.group(1)
+            if not acq_year_str and current_station_str:
+                norm_st = norm_name(current_station_str)
+                acq_year_str = (
+                    station_acq_map.get((norm_st, cat_name))
+                    or station_acq_map.get((norm_st, 'PRIMARY'))
+                    or ""
+                )
+            if not acq_year_str and lifespan_end.isdigit() and len(lifespan_end) == 4:
+                acq_year_str = str(int(lifespan_end) - def_lifespan)
+            if not acq_year_str:
+                acq_year_str = "2020"
+
+            acq_date = acq_year_str
+
+            # Compute lifespan_end_year & is_lifespan_over (Current reference year: 2026)
+            if lifespan_end.isdigit() and len(lifespan_end) == 4:
+                lifespan_end_year = lifespan_end
+            else:
+                lifespan_end_year = str(int(acq_year_str) + def_lifespan)
+
+            end_yr_int = int(lifespan_end_year)
+            # If lifespan_end_year < 2026 (or marked 초과 in Excel and <= 2026), mark as lifespan over
+            if end_yr_int < 2026 or ('초과' in is_over_str and end_yr_int <= 2026):
+                is_over = 1
+            else:
+                is_over = 0
+
+            # Status & Return detection
             status = 'OPERATING'
             status_label = '운영중'
             location = '현장설치'
+            is_returned = False
+            return_group = ""
 
-            # Inspect status cols (15=운영중, 16=예비품, 17=수리중, 18=폐품)
-            if len(r) > 18:
-                col15 = clean_val(r[15]).upper()
-                col16 = clean_val(r[16]).upper()
-                col17 = clean_val(r[17]).upper()
-                col18 = clean_val(r[18]).upper()
-                if 'O' in col18 or '폐' in col18:
-                    status = 'DISPOSAL'
-                    status_label = '폐품'
-                    location = '불용/폐기'
-                elif 'O' in col17 or '수리' in col17:
-                    status = 'REPAIRING'
-                    status_label = '수리중'
-                    location = '수리업체(리버앤씨)'
-                elif 'O' in col16 or '예비' in col16:
-                    status = 'SPARE'
-                    status_label = '예비품'
-                    location = '기술원보관'
-                elif 'O' in col15:
-                    status = 'OPERATING'
-                    status_label = '운영중'
-                    location = '현장설치'
+            # Check if this row is a returned item (반납 장비 별도 분리 관리)
+            if cat == 'FLOWMETER' and (r_idx >= 623 and r_idx <= 654):
+                is_returned = True
+                status = 'RETURNED'
+                station_id = None
+                station_code = ""
+                manage_no = "자산반납"
+                if r_idx <= 628:
+                    return_group = "26년 자산반납"
+                    status_label = '자산반납'
+                    station_name = '기술원(자산반납)'
+                    location = '리버앤씨(반납폐기대기)'
+                elif r_idx <= 641:
+                    return_group = "26년 반납완료"
+                    status_label = '반납완료'
+                    station_name = '기술원(자산반납)'
+                    location = clean_val(r[25]) or '리버앤씨 화성공장(반납완료)'
+                else:
+                    return_group = "25년 한강홍수통제소 반납완료"
+                    status_label = '반납완료'
+                    station_name = '한강홍수통제소(반납)'
+                    location = '한강홍수통제소 반납완료'
+            elif cat == 'WATER_LEVEL' and (manage_no == '자산반납' or '수자원기획실-2760' in str(r[1]) or (r_idx >= 231 and r_idx <= 243)):
+                is_returned = True
+                status = 'RETURNED'
+                status_label = '자산반납'
+                station_id = None
+                station_code = ""
+                station_name = '기술원(자산반납)'
+                location = '기술원(자산반납)'
+                manage_no = "자산반납"
+                return_group = "수자원기획실-2760 자산반납"
 
-            # Location from Col 25 if exists
-            if len(r) > 25 and clean_val(r[25]):
-                location = clean_val(r[25])
+            if not is_returned:
+                # Inspect status cols (15=운영중, 16=예비품, 17=수리중, 18=폐품)
+                if len(r) > 18 and cat in ['FLOWMETER', 'WATER_LEVEL']:
+                    col15 = clean_val(r[15]).upper()
+                    col16 = clean_val(r[16]).upper()
+                    col17 = clean_val(r[17]).upper()
+                    col18 = clean_val(r[18]).upper()
+                    if 'O' in col18 or '○' in col18 or '폐' in col18:
+                        status = 'DISPOSAL'
+                        status_label = '폐품'
+                        location = '불용/폐기'
+                    elif 'O' in col17 or '○' in col17 or '수리' in col17:
+                        status = 'REPAIRING'
+                        status_label = '수리중'
+                        location = '수리업체(리버앤씨)'
+                    elif 'O' in col16 or '○' in col16 or '예비' in col16:
+                        status = 'SPARE'
+                        status_label = '예비품'
+                        location = '기술원보관'
+                    elif 'O' in col15 or '○' in col15:
+                        status = 'OPERATING'
+                        status_label = '운영중'
+                        location = '현장설치'
 
-            # Find matching station
-            st_obj = find_station(current_station_str)
-            station_id = st_obj['id'] if st_obj else None
-            station_name = st_obj['name'] if st_obj else current_station_str
-            station_code = st_obj['code'] if st_obj else ""
+                # Location from Col 25 if exists
+                if len(r) > 25 and clean_val(r[25]):
+                    location = clean_val(r[25])
 
-            # If station not found or in storage
-            if not station_id:
-                if status == 'OPERATING':
-                    status = 'SPARE'
-                    status_label = '예비품'
-                if not location or location == '현장설치':
-                    location = current_station_str or '기술원'
+                # Find matching station
+                st_obj = find_station(current_station_str)
+                station_id = st_obj['id'] if st_obj else None
+                station_name = st_obj['name'] if st_obj else current_station_str
+                station_code = st_obj['code'] if st_obj else ""
 
-            # Calibration info for flowmeters
-            calib_status = 'pending'
+                # If station not found or in storage
+                if not station_id:
+                    if status == 'OPERATING':
+                        status = 'SPARE'
+                        status_label = '예비품'
+                    if not location or location == '현장설치':
+                        location = current_station_str or '기술원'
+
+            # Calibration info for FLOWMETER (2-year cycle) and WATER_LEVEL (3-year cycle)
+            calib_status = ''
             recent_calib_date = ''
             calib_cert_no = ''
-            calib_expire = clean_val(r[14]) if len(r) > 14 else ""
-            if calib_expire.endswith('00:00:00'):
-                calib_expire = calib_expire.split(' ')[0]
+            calib_expire = ''
+            memo_str = ''
 
-            if station_id and station_id in calib_map and cat == 'FLOWMETER':
-                c_info = calib_map[station_id]
-                calib_status = c_info['calib_status']
-                recent_calib_date = c_info['recent_calib_date']
-                calib_cert_no = c_info['calib_cert_no']
+            if is_returned:
+                # 반납 완료 장비는 현장 운영 설비가 아니므로 법정 검정 대상에서 완전 제외
+                calib_status = 'none'
+                recent_calib_date = ''
+                calib_cert_no = ''
+                calib_expire = ''
+            elif cat in ['FLOWMETER', 'WATER_LEVEL']:
+                calib_cycle = 2 if cat == 'FLOWMETER' else 3
+                excel_recent = format_excel_date(r[13]) if len(r) > 13 else ""
+                excel_expire = format_excel_date(r[14]) if len(r) > 14 else ""
+
+                if excel_recent and excel_expire:
+                    recent_calib_date = excel_recent
+                    calib_expire = excel_expire
+                    calib_cert_no = '검정성적서 보유'
+                elif excel_recent and not excel_expire:
+                    recent_calib_date = excel_recent
+                    calib_expire = add_years_minus_one_day(excel_recent, calib_cycle)
+                    calib_cert_no = '검정성적서 보유'
+                elif not excel_recent and excel_expire:
+                    calib_expire = excel_expire
+                    recent_calib_date = add_years_minus_one_day(excel_expire, -calib_cycle)
+                    calib_cert_no = '검정성적서 보유'
+                else:
+                    # 검정일 정보가 없는 장비는 임의 생성하지 않고 공란 처리
+                    recent_calib_date = ""
+                    calib_expire = ""
+                    calib_cert_no = ""
+                    calib_status = "none"
+
+                if calib_expire:
+                    if calib_expire < TODAY_STR:
+                        calib_status = 'overdue'   # 검정만료 (기한경과)
+                    elif calib_expire <= '2026-12-31':
+                        calib_status = 'due_soon'  # 당해연도 검정도래 (임박)
+                    else:
+                        calib_status = 'valid'     # 검정유효 (정상)
+                else:
+                    calib_status = 'none'
+
+            # Integrate remarks/notes from Excel
+            excel_memo = ""
+            if cat in ['FLOWMETER', 'WATER_LEVEL']:
+                m_extra = clean_val(r[26]) if len(r) > 26 else ""
+                m_bigo = clean_val(r[27]) if len(r) > 27 else ""
+                parts = [p for p in [m_extra, m_bigo] if p and p != '-']
+                excel_memo = " | ".join(parts)
+                if is_returned:
+                    orig_st = current_station_str if current_station_str and not any(k in current_station_str for k in ['반납', '수자원기획실']) else ""
+                    prefix = f"[{return_group}]" + (f" (과거 설치 지점: {orig_st})" if orig_st else "")
+                    excel_memo = f"{prefix} | {excel_memo}".strip(" |")
+            elif cat == 'CCTV':
+                m_bigo = clean_val(r[16]) if len(r) > 16 else ""
+                if m_bigo and m_bigo != '-':
+                    excel_memo = m_bigo
+            else:
+                m_bigo = clean_val(r[15]) if len(r) > 15 else ""
+                if m_bigo and m_bigo != '-':
+                    excel_memo = m_bigo
+
+            if excel_memo:
+                if memo_str:
+                    memo_str = f"{memo_str} ({excel_memo})"
+                else:
+                    memo_str = excel_memo
 
             eq_id_str = f"EQ-{eq_counter:05d}"
             eq_counter += 1
@@ -376,23 +598,43 @@ def main():
                     acquisition_date, acquisition_cost, lifespan_years,
                     lifespan_end_year, is_lifespan_over,
                     calib_status, recent_calib_date, calib_cert_no, calib_expire_date,
-                    source_sheet, source_row
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    memo, source_sheet, source_row
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 eq_id_str, station_id, station_name, station_code,
                 cat, cat_name, cat_name, manage_no,
                 model_name, "", sn, asset_no, asset_no_temp,
                 qty, status, status_label, location,
                 acq_date, acq_cost, def_lifespan,
-                lifespan_end, is_over,
+                lifespan_end_year, is_over,
                 calib_status, recent_calib_date, calib_cert_no, calib_expire,
-                sname, r_idx
+                memo_str, sname, r_idx
             ))
 
             sheet_count += 1
             total_inserted_eq += 1
 
-        print(f"  ✓ [{cat_name}] {sheet_count} items ingested.")
+        print(f"  ✓ [{cat_name} (내용연수 {def_lifespan}년)] {sheet_count} items ingested.")
+
+    # 4.5 Seed Calibration History records for all FLOWMETER and WATER_LEVEL
+    print("\n📜 [Calibration History] Ingesting initial calibration records for flowmeters and water level gauges...")
+    cur.execute("""
+      INSERT INTO equipment_calibration_history 
+        (equipment_id, station_id, station_name, category, model_name, serial_no, calib_date, cycle_years, expire_date, agency, cert_no, result_status, memo, created_by)
+      SELECT 
+        equipment_id, station_id, station_name, category, model_name, serial_no, recent_calib_date, 
+        CASE WHEN category = 'FLOWMETER' THEN 2 ELSE 3 END,
+        calib_expire_date, '한국수자원조사기술원', calib_cert_no, '합격', 
+        CASE WHEN calib_cert_no LIKE '%취득%' THEN '취득년도 기준 초기 산정 이력' ELSE '물품관리대장(261103) 기재 검정 이력' END,
+        '시스템초기화'
+      FROM equipment_master
+      WHERE category IN ('FLOWMETER', 'WATER_LEVEL')
+        AND status != 'RETURNED'
+        AND recent_calib_date IS NOT NULL AND recent_calib_date != '' AND recent_calib_date != '-'
+    """)
+    cur.execute("SELECT count(*) FROM equipment_calibration_history")
+    calib_hist_count = cur.fetchone()[0]
+    print(f"  ✓ Ingested {calib_hist_count} initial calibration records into equipment_calibration_history.")
 
     # 5. Ingest Historical Actions (1-1. 유속계 이력 & 2-1. 수위계 이력)
     print("\n🔨 [Historical Actions Migration] Parsing action history with granular clause tokenizer...")
