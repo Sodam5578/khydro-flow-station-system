@@ -16,7 +16,7 @@ class EquipmentManager {
     this.stationRegion = "all";
     this.stationFilterType = "all"; // all, calib2026, hasHistory, inRepair
 
-    this.deviceCategory = "all";
+    this.deviceCategory = "FLOWMETER";
     this.deviceStatus = "all";
     this.deviceCalibFilter = "ALL";
     this.deviceLifespanFilter = "ALL";
@@ -58,6 +58,16 @@ class EquipmentManager {
     } else if (this.activeTab === "stations") {
       this.loadStationsSummary();
     } else if (this.activeTab === "devices") {
+      if (!this.deviceCategory || this.deviceCategory.toUpperCase() === "ALL") {
+        this.deviceCategory = "FLOWMETER";
+      }
+      document.querySelectorAll(".eq-cat-pill").forEach(p => {
+        if (p.dataset.cat && p.dataset.cat.toUpperCase() === String(this.deviceCategory).toUpperCase()) {
+          p.classList.add("active");
+        } else {
+          p.classList.remove("active");
+        }
+      });
       this.loadDevices();
     } else if (this.activeTab === "repairs") {
       this.loadRepairs();
@@ -673,7 +683,10 @@ class EquipmentManager {
     }
     this.switchSubTab("devices");
 
-    const catVal = filter.category !== undefined ? filter.category : "all";
+    let catVal = filter.category !== undefined ? filter.category : (this.deviceCategory || "FLOWMETER");
+    if (!catVal || catVal.toUpperCase() === "ALL") {
+      catVal = "FLOWMETER";
+    }
     this.deviceCategory = catVal;
     document.querySelectorAll(".eq-cat-pill").forEach(p => {
       if (p.dataset.cat && p.dataset.cat.toUpperCase() === String(catVal).toUpperCase()) p.classList.add("active");
@@ -709,7 +722,7 @@ class EquipmentManager {
       window.app.switchTab("equipment");
     }
     if (region.includes("본원") || region.includes("미배정")) {
-      this.goToDevicesWithFilter({ category: "all", status: "UNASSIGNED", search: "" });
+      this.goToDevicesWithFilter({ category: "FLOWMETER", status: "UNASSIGNED", search: "" });
       return;
     }
     this.switchSubTab("stations");
@@ -1649,6 +1662,9 @@ class EquipmentManager {
   }
 
   setDeviceCategory(cat) {
+    if (!cat || cat.toUpperCase() === "ALL") {
+      cat = "FLOWMETER";
+    }
     this.deviceCategory = cat;
     this.devicePage = 1;
     document.querySelectorAll(".eq-cat-pill").forEach(p => {

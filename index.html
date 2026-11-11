@@ -727,7 +727,7 @@
         <section class="view-panel" id="view-equipment">
           <!-- Top KPI Summary Cards -->
           <div class="kpi-grid">
-            <div class="kpi-card" style="cursor:pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'ALL' })" title="클릭 시 전체 장비대장으로 이동">
+            <div class="kpi-card" style="cursor:pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'FLOWMETER' })" title="클릭 시 장비대장으로 이동">
               <div class="kpi-icon blue">📦</div>
               <div class="kpi-content">
                 <div class="kpi-label">전체 설비·자산 총괄</div>
@@ -814,7 +814,7 @@
 
             <!-- Row 1: Executive KPI Cards (4대 핵심 지표) -->
             <div class="kpi-grid" style="margin-bottom: 1.25rem;">
-              <div class="kpi-card" style="cursor: pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'ALL' })" title="클릭 시 전체 장비대장으로 이동">
+              <div class="kpi-card" style="cursor: pointer;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'FLOWMETER' })" title="클릭 시 장비대장으로 이동">
                 <div class="kpi-icon blue">📦</div>
                 <div class="kpi-content">
                   <div class="kpi-label">전체 설비·자산</div>
@@ -1061,8 +1061,8 @@
               <div class="card-header" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                   <div class="card-title">
-                    <span>📋</span> 9대 설비 전체 물품관리대장 (내용연수 & 유속계·수위계 검정관리)
-                    <span class="badge badge-blue" id="eq-all-devices-count" style="margin-left: 8px;">1,845대/식</span>
+                    <span>📋</span> 9대 설비 물품관리대장 (내용연수 & 유속계·수위계 검정관리)
+                    <span class="badge badge-blue" id="eq-all-devices-count" style="margin-left: 8px;">646대/식</span>
                   </div>
                   <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                     <button class="btn btn-outline btn-sm" style="color:#1e40af; border-color:#bfdbfe; background:#eff6ff; font-weight:700;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'FLOWMETER', calibFilter: 'NEED_ALL', isOver: 'ALL', search: '' })">
@@ -1071,7 +1071,7 @@
                     <button class="btn btn-outline btn-sm" style="color:#0e7490; border-color:#a5f3fc; background:#ecfeff; font-weight:700;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL', calibFilter: 'NEED_ALL', isOver: 'ALL', search: '' })">
                       📏 검정필요 수위계(3년주기)
                     </button>
-                    <button class="btn btn-outline btn-sm" style="color:#dc2626; border-color:#fecaca; background:#fef2f2; font-weight:700;" onclick="window.equipmentManager.goToDevicesWithFilter({ category: 'ALL', isOver: '1', calibFilter: 'ALL', search: '' })">
+                    <button class="btn btn-outline btn-sm" style="color:#dc2626; border-color:#fecaca; background:#fef2f2; font-weight:700;" onclick="window.equipmentManager.goToDevicesWithFilter({ isOver: '1', calibFilter: 'ALL', search: '' })">
                       ⚠️ 내용연수 초과설비
                     </button>
                     <button class="btn btn-primary btn-sm" onclick="window.equipmentManager.openAddDeviceModal()">
@@ -1085,8 +1085,7 @@
 
                 <!-- Category Pills (with official lifespan years) -->
                 <div class="eq-pill-scroll-row" style="display: flex; gap: 6px; flex-wrap: wrap;">
-                  <button class="eq-cat-pill active" data-cat="ALL" onclick="window.equipmentManager.setDeviceCategory('ALL')">전체 (1,845)</button>
-                  <button class="eq-cat-pill" data-cat="FLOWMETER" onclick="window.equipmentManager.setDeviceCategory('FLOWMETER')">1. 유속계 (646 · 내용연수 13년 · 검정 2년)</button>
+                  <button class="eq-cat-pill active" data-cat="FLOWMETER" onclick="window.equipmentManager.setDeviceCategory('FLOWMETER')">1. 유속계 (646 · 내용연수 13년 · 검정 2년)</button>
                   <button class="eq-cat-pill" data-cat="WATER_LEVEL" onclick="window.equipmentManager.setDeviceCategory('WATER_LEVEL')">2. 수위계 (224 · 내용연수 10년 · 검정 3년)</button>
                   <button class="eq-cat-pill" data-cat="MOUNT" onclick="window.equipmentManager.setDeviceCategory('MOUNT')">3. 센서지지대 (176 · 12년)</button>
                   <button class="eq-cat-pill" data-cat="CONTROL" onclick="window.equipmentManager.setDeviceCategory('CONTROL')">4. 제어시스템 (176 · 8년)</button>
@@ -1143,7 +1142,7 @@
                     <option value="100">100개씩 보기</option>
                     <option value="200">200개씩 보기</option>
                     <option value="500">500개씩 보기</option>
-                    <option value="all">전체 보기 (1,845대)</option>
+                    <option value="all">전체 보기</option>
                   </select>
                 </div>
               </div>
