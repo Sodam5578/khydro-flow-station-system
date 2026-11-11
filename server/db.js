@@ -360,6 +360,7 @@ async function initDb() {
     `);
 
     sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_station ON equipment_master (station_id)`);
+    sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_station_code ON equipment_master (station_code)`);
     sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_category ON equipment_master (category)`);
     sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_sn ON equipment_master (serial_no)`);
     sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_status ON equipment_master (status)`);

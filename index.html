@@ -1101,8 +1101,12 @@
                 <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
                   <div class="search-input-wrapper" style="min-width: 240px; flex: 1;">
                     <span class="search-icon">🔍</span>
-                    <input type="text" id="eq-dev-search" class="search-input" placeholder="모델명, S/N, 자산번호, 지점명 검색..." oninput="window.equipmentManager.deviceSearch = this.value; window.equipmentManager.devicePage = 1; window.equipmentManager.loadDevices();" style="width: 100%;">
+                    <input type="text" id="eq-dev-search" class="search-input" placeholder="관측소명, 지점코드, 모델명, S/N, 자산번호 검색..." oninput="window.equipmentManager.deviceSearch = this.value; window.equipmentManager.devicePage = 1; window.equipmentManager.loadDevices();" style="width: 100%;">
                   </div>
+
+                  <span class="badge" style="font-size:0.75rem; font-weight:700; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; padding:6px 10px; white-space:nowrap;" title="전체 장비가 관측소 코드(1001529 ➔ 1002550...) 순서로 정렬되어 표시됩니다.">
+                    🔢 관측소코드 오름차순
+                  </span>
 
                   <select id="eq-dev-calib-filter" class="filter-select" onchange="window.equipmentManager.deviceCalibFilter = this.value; window.equipmentManager.devicePage = 1; window.equipmentManager.loadDevices();" style="font-weight:700; color:#1e40af; border-color:#93c5fd;">
                     <option value="ALL">전체 검정상태 (유속계 2년·수위계 3년)</option>
@@ -1142,24 +1146,22 @@
               </div>
 
               <div class="card-body" style="padding: 0;">
-                <div class="table-responsive" style="max-height: 600px;">
+                <div class="table-responsive" style="max-height: 650px;">
                   <table class="custom-table" style="width: 100%;">
                     <thead>
                       <tr>
                         <th style="width: 45px; text-align: center;">No.</th>
-                        <th style="width: 95px;">장비 ID</th>
-                        <th style="width: 105px;">설비 구분</th>
-                        <th>모델명 / 규격</th>
-                        <th>제조번호 (S/N)</th>
-                        <th>배정 관측소 (위치)</th>
-                        <th style="width: 85px; text-align: center;">상태</th>
-                        <th style="width: 155px; text-align: center;">취득 / 내용연수 (만료)</th>
-                        <th style="width: 185px; text-align: center;">검정일 / 만료일 (주기·상태)</th>
-                        <th style="width: 150px; text-align: center;">작업 관리</th>
+                        <th style="width: 175px;">📍 관측소 (지점코드)</th>
+                        <th style="width: 110px; text-align: center;">설비 구분</th>
+                        <th style="min-width: 220px;">장비 모델명 및 제원 (S/N · 자산번호)</th>
+                        <th style="width: 95px; text-align: center;">운영상태</th>
+                        <th style="width: 155px; text-align: center;">내용연수 (조달청 고시)</th>
+                        <th style="width: 195px; text-align: center;">정기검정 (유속계·수위계)</th>
+                        <th style="width: 135px; text-align: center;">관리 / 작업</th>
                       </tr>
                     </thead>
                     <tbody id="eq-all-devices-tbody">
-                      <!-- Dynamically loaded from equipment.js -->
+                      <tr><td colspan="8" style="text-align: center; padding: 3rem; color: #64748b;">장비 목록을 조회하는 중...</td></tr>
                     </tbody>
                   </table>
                 </div>

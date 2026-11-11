@@ -402,6 +402,8 @@ class EquipmentService {
       isOver = "all",
       calibFilter = "all",
       calibOnly = false,
+      sortBy = "station_code",
+      sortOrder = "asc",
       page = 1,
       limit = 50
     } = filters;
@@ -461,6 +463,7 @@ class EquipmentService {
       const q = `%${search.toLowerCase()}%`;
       whereClause += ` AND (
         LOWER(COALESCE(station_name, '')) LIKE ? OR 
+        LOWER(COALESCE(station_code, '')) LIKE ? OR 
         LOWER(COALESCE(model_name, '')) LIKE ? OR 
         LOWER(COALESCE(serial_no, '')) LIKE ? OR 
         LOWER(COALESCE(asset_no, '')) LIKE ? OR 
@@ -469,7 +472,7 @@ class EquipmentService {
         LOWER(COALESCE(equipment_id, '')) LIKE ? OR
         LOWER(COALESCE(memo, '')) LIKE ?
       )`;
-      params.push(q, q, q, q, q, q, q, q);
+      params.push(q, q, q, q, q, q, q, q, q);
     }
 
     const countRow = await this.get(`SELECT COUNT(*) as total FROM equipment_master ${whereClause}`, params);
@@ -480,9 +483,38 @@ class EquipmentService {
     const parsedPage = isAll ? 1 : Math.max(1, parseInt(page, 10) || 1);
     const offset = isAll ? 0 : (parsedPage - 1) * parsedLimit;
 
+    // Default Order: 관측소 코드 오름차순 (station_code ASC)
+    // 관측소 코드가 없는 미배정/보관/반납품은 뒤쪽으로 배치
+    let orderByClause = "";
+    if (sortBy === "id") {
+      orderByClause = `ORDER BY id ${String(sortOrder).toLowerCase() === "desc" ? "DESC" : "ASC"}`;
+    } else {
+      const dir = String(sortOrder).toLowerCase() === "desc" ? "DESC" : "ASC";
+      orderByClause = `
+        ORDER BY 
+          CASE WHEN station_code IS NULL OR TRIM(station_code) = '' THEN 1 ELSE 0 END ASC,
+          station_code ${dir},
+          CASE WHEN station_name IS NULL OR TRIM(station_name) = '' THEN 1 ELSE 0 END ASC,
+          station_name ${dir},
+          CASE category 
+            WHEN 'FLOWMETER' THEN 1 
+            WHEN 'WATER_LEVEL' THEN 2 
+            WHEN 'CONTROL' THEN 3 
+            WHEN 'CCTV' THEN 4 
+            WHEN 'MOUNT' THEN 5 
+            WHEN 'SHELTER' THEN 6 
+            WHEN 'LIGHTNING' THEN 7 
+            WHEN 'UNDERWATER' THEN 8 
+            WHEN 'ANCILLARY' THEN 9 
+            ELSE 10 
+          END ASC,
+          id ASC
+      `;
+    }
+
     const sql = isAll
-      ? `SELECT * FROM equipment_master ${whereClause} ORDER BY id ASC`
-      : `SELECT * FROM equipment_master ${whereClause} ORDER BY id ASC LIMIT ? OFFSET ?`;
+      ? `SELECT * FROM equipment_master ${whereClause} ${orderByClause}`
+      : `SELECT * FROM equipment_master ${whereClause} ${orderByClause} LIMIT ? OFFSET ?`;
 
     const queryParams = isAll ? params : [...params, parsedLimit, offset];
     const rows = await this.all(sql, queryParams);

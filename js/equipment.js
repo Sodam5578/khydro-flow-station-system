@@ -279,8 +279,8 @@ class EquipmentManager {
       ? `<span class="badge badge-red" style="font-size:0.68rem; font-weight:700; color:#dc2626; background:#fee2e2; padding:1px 6px;">⚠️ 초과 (${endYr}년 만료)</span>`
       : `<span class="badge badge-green" style="font-size:0.68rem; font-weight:600; padding:1px 6px;">🟢 이내 (${endYr}년 만료)</span>`;
     return `
-      <div style="font-size:0.78rem; line-height:1.35;">
-        <div><b>${acq}년</b> 취득 · 내용연수 <b>${yrs}년</b></div>
+      <div style="font-size:0.78rem; line-height:1.35; text-align:center;">
+        <div><b>${acq}년</b> 취득 · <b>${yrs}년</b> 기준</div>
         <div style="margin-top:2px;">${badge}</div>
       </div>
     `;
@@ -288,11 +288,11 @@ class EquipmentManager {
 
   renderCalibCell(d) {
     if (d.category !== "FLOWMETER" && d.category !== "WATER_LEVEL") {
-      return `<span style="color:#94a3b8; font-size:0.75rem;">- (비대상)</span>`;
+      return `<div style="text-align:center; color:#94a3b8; font-size:0.75rem;">- (비대상)</div>`;
     }
     if (d.status === "RETURNED") {
       return `
-        <div style="font-size:0.75rem; color:#7e22ce;">
+        <div style="font-size:0.75rem; color:#7e22ce; text-align:center;">
           <span class="badge" style="background:#f3e8ff; color:#7e22ce; border:1px solid #d8b4fe; font-weight:700; font-size:0.68rem; padding:1px 6px;">📦 반납완료 (검정제외)</span>
           <div style="color:#94a3b8; font-size:0.72rem; margin-top:2px;">자산반납 종결 설비</div>
         </div>
@@ -304,15 +304,15 @@ class EquipmentManager {
 
     if (!recent && !expire) {
       return `
-        <div style="font-size:0.76rem; line-height:1.35;">
-          <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+        <div style="font-size:0.76rem; line-height:1.35; text-align:center;">
+          <div style="display:flex; justify-content:center; align-items:center; gap:4px; flex-wrap:wrap;">
             <span class="badge" style="font-size:0.68rem; font-weight:700; padding:1px 6px; color:#475569; background:#f1f5f9; border:1px solid #cbd5e1;">⚪ 검정기록 없음 (${cycleLabel})</span>
             <button type="button" class="btn btn-outline btn-sm" style="padding:0 5px; font-size:0.68rem; color:#d97706; border-color:#fde68a; background:#fffbeb; font-weight:700;" onclick="event.stopPropagation(); window.equipmentManager.openCalibModal('${d.equipment_id}')" title="이 장비의 검정 이력 누적 대장 조회 및 새 검정 등록">
-              ➕ 검정등록
+              ➕ 등록
             </button>
           </div>
-          <div style="color:#94a3b8; margin-top:2px; font-size:0.73rem;">
-            최근검정: <i>미기재</i> | 만료일: <i>미기재</i>
+          <div style="color:#94a3b8; margin-top:2px; font-size:0.72rem;">
+            최근검정: <i>미기재</i> | 만료: <i>미기재</i>
           </div>
         </div>
       `;
@@ -330,8 +330,8 @@ class EquipmentManager {
     const certText = d.calib_cert_no ? `<span style="font-size:0.66rem; color:#1e40af; font-weight:700;" title="${d.calib_cert_no}">[${d.calib_cert_no}]</span>` : "";
 
     return `
-      <div style="font-size:0.76rem; line-height:1.35;">
-        <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
+      <div style="font-size:0.76rem; line-height:1.35; text-align:center;">
+        <div style="display:flex; justify-content:center; align-items:center; gap:4px; flex-wrap:wrap;">
           ${statusBadge} ${certText}
           <button type="button" class="btn btn-outline btn-sm" style="padding:0 5px; font-size:0.68rem; color:#d97706; border-color:#fde68a; background:#fffbeb; font-weight:700;" onclick="event.stopPropagation(); window.equipmentManager.openCalibModal('${d.equipment_id}')" title="이 장비의 검정 이력 누적 대장 조회 및 새 검정 등록">
             📋 이력
@@ -1413,7 +1413,7 @@ class EquipmentManager {
     const countEl = document.getElementById("eq-all-devices-count");
     if (!tbody) return;
 
-    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:3rem; color:#64748b;">장비 목록을 조회하는 중...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:3rem; color:#64748b;">장비 목록을 조회하는 중...</td></tr>`;
 
     try {
       const params = {
@@ -1422,6 +1422,8 @@ class EquipmentManager {
         calibFilter: this.deviceCalibFilter,
         isOver: this.deviceLifespanFilter,
         search: this.deviceSearch,
+        sortBy: "station_code",
+        sortOrder: "asc",
         page: this.devicePage,
         limit: this.deviceLimit
       };
@@ -1435,7 +1437,7 @@ class EquipmentManager {
         if (countEl) countEl.textContent = `${(res.total || 0).toLocaleString()}대/식`;
 
         if (!res.devices || res.devices.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:3rem; color:#94a3b8;">조건에 해당하는 장비가 없습니다.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:3rem; color:#94a3b8;">조건에 해당하는 장비가 없습니다.</td></tr>`;
           this.renderDevicePagination(res);
           return;
         }
@@ -1446,56 +1448,97 @@ class EquipmentManager {
 
         tbody.innerHTML = res.devices.map((d, idx) => {
           const rowNo = startOffset + idx + 1;
-          let stBadge = `<span class="badge badge-green">운영중</span>`;
-          if (d.status === "SPARE") stBadge = `<span class="badge badge-amber">예비품</span>`;
-          else if (d.status === "REPAIRING") stBadge = `<span class="badge badge-red">수리중</span>`;
-          else if (d.status === "DISPOSAL") stBadge = `<span class="badge badge-gray">폐품</span>`;
-          else if (d.status === "RETURNED") stBadge = `<span class="badge" style="background:#f3e8ff; color:#7e22ce; border:1px solid #d8b4fe; font-weight:700;">📦 ${d.status_label || "자산반납"}</span>`;
+          let stBadge = `<span class="badge badge-green" style="font-size:0.75rem; font-weight:700;">● 운영중</span>`;
+          if (d.status === "SPARE") stBadge = `<span class="badge badge-amber" style="font-size:0.75rem; font-weight:700;">📦 예비품</span>`;
+          else if (d.status === "REPAIRING") stBadge = `<span class="badge badge-red" style="font-size:0.75rem; font-weight:700;">🚨 수리중</span>`;
+          else if (d.status === "DISPOSAL") stBadge = `<span class="badge badge-gray" style="font-size:0.75rem; font-weight:700;">🗑️ 폐품</span>`;
+          else if (d.status === "RETURNED") stBadge = `<span class="badge" style="background:#f3e8ff; color:#7e22ce; border:1px solid #d8b4fe; font-size:0.75rem; font-weight:700;">📦 ${d.status_label || "자산반납"}</span>`;
+
+          let catBadge = `<span class="badge badge-gray" style="font-size:0.74rem; font-weight:700;">${d.category_name}</span>`;
+          if (d.category === "FLOWMETER") catBadge = `<span class="badge badge-blue" style="font-size:0.74rem; font-weight:700;">🌊 유속계</span>`;
+          else if (d.category === "WATER_LEVEL") catBadge = `<span class="badge badge-cyan" style="font-size:0.74rem; font-weight:700;">📏 수위계</span>`;
+          else if (d.category === "CONTROL") catBadge = `<span class="badge badge-amber" style="font-size:0.74rem; font-weight:700;">💻 제어기</span>`;
+          else if (d.category === "CCTV") catBadge = `<span class="badge badge-green" style="font-size:0.74rem; font-weight:700;">📹 CCTV</span>`;
+          else if (d.category === "LIGHTNING") catBadge = `<span class="badge badge-purple" style="font-size:0.74rem; font-weight:700;">⚡ 낙뢰SPD</span>`;
+          else if (d.category === "MOUNT") catBadge = `<span class="badge badge-gray" style="font-size:0.74rem; font-weight:700;">🏗️ 지지대</span>`;
+          else if (d.category === "SHELTER") catBadge = `<span class="badge badge-gray" style="font-size:0.74rem; font-weight:700;">🏠 국사</span>`;
+          else if (d.category === "UNDERWATER") catBadge = `<span class="badge badge-gray" style="font-size:0.74rem; font-weight:700;">🛡️ 수중보호</span>`;
+          else if (d.category === "ANCILLARY") catBadge = `<span class="badge badge-gray" style="font-size:0.74rem; font-weight:700;">🔌 부대시설</span>`;
 
           const safeStName = (d.station_name || "").replace(/'/g, "\\'");
           const safeLoc = (d.location || "").replace(/'/g, "\\'");
           const targetSection = d.status === "OPERATING" ? "devices" : "repairs";
+
+          // Station Column Display
+          let stationCellHtml = "";
+          if (d.status === "RETURNED") {
+            stationCellHtml = `
+              <div>
+                <span class="badge" style="background:#f3e8ff; color:#7e22ce; font-weight:700; border:1px solid #d8b4fe; font-size:0.72rem; padding:2px 7px;">📦 자산반납</span>
+                <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;" title="${d.memo || ''}">처분완료 (배정해제)</div>
+              </div>
+            `;
+          } else if (d.station_name) {
+            stationCellHtml = `
+              <div onclick="event.stopPropagation(); window.equipmentManager.navigateToStation(${d.station_id}, '${safeStName}', '${targetSection}')" title="클릭 시 [${d.station_name}] 관측소 장비 현황으로 이동" style="cursor:pointer;">
+                <div style="font-weight:700; color:#1e40af; font-size:0.88rem; display:flex; align-items:center; gap:4px;">
+                  <span>📍</span> <span>${d.station_name}</span>
+                </div>
+                <div style="font-size:0.75rem; color:#64748b; margin-top:2px; display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
+                  <code style="background:#eff6ff; color:#1e40af; padding:1px 5px; border-radius:4px; font-weight:700; font-size:0.73rem; border:1px solid #bfdbfe;">${d.station_code || "-"}</code>
+                  ${d.location && d.location !== '현장설치' ? `<span style="color:#64748b; font-size:0.72rem;">· ${d.location}</span>` : ''}
+                </div>
+              </div>
+            `;
+          } else {
+            stationCellHtml = `
+              <div>
+                <span class="badge badge-amber" style="background:#fef3c7; color:#92400e; font-weight:700; font-size:0.72rem; padding:2px 7px;">🏢 미배정 (본원/보관)</span>
+                <div style="font-size:0.72rem; color:#64748b; margin-top:2px;">${d.location || '중앙창고'}</div>
+              </div>
+            `;
+          }
+
+          // Model & Specification Info Display
+          const assetDisplay = (d.asset_no || d.asset_no_temp) ? `<span style="color:#475569; font-size:0.73rem;">· 자산: <b style="color:#334155;">${d.asset_no || d.asset_no_temp}</b></span>` : "";
+          const modelCellHtml = `
+            <div>
+              <div style="font-size:0.88rem; font-weight:700; color:#0f172a; letter-spacing:-0.2px;">
+                ${d.model_name || "-"}
+              </div>
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:3px; font-size:0.75rem;">
+                <span style="color:#475569;">S/N: <code style="font-weight:700; color:#1e40af; background:#f8fafc; padding:1px 5px; border-radius:3px; border:1px solid #e2e8f0;">${d.serial_no || "-"}</code></span>
+                ${assetDisplay}
+                <span style="color:#94a3b8; font-size:0.7rem;">(${d.equipment_id})</span>
+              </div>
+            </div>
+          `;
+
           const rowClickHandler = d.station_id
             ? `window.equipmentManager.navigateToStation(${d.station_id}, '${safeStName}', '${targetSection}')`
             : `window.equipmentManager.openEditDeviceModal('${d.equipment_id}')`;
-          const rowTitle = d.station_id
-            ? `클릭 시 [${d.station_name}] 장비 현황으로 이동`
-            : (d.status === "RETURNED" ? `클릭 시 [${d.equipment_id}] 자산반납 상세 정보 확인` : `클릭 시 [${d.equipment_id}] 보관/예비품 상세 정보 및 배치지점 수정`);
-
-          const stationDisplay = d.status === "RETURNED"
-            ? `<span class="badge" style="background:#f3e8ff; color:#7e22ce; font-weight:700; border:1px solid #d8b4fe;">📦 반납완료 (배정해제)</span>`
-            : (d.station_name
-                ? `<b style="color:#1e40af;">📍 ${d.station_name}</b>`
-                : `<span class="badge badge-amber" style="background:#fef3c7; color:#92400e; font-weight:700;">🏢 미배정(본원/보관)</span>`);
 
           return `
-            <tr style="cursor:pointer;" onclick="${rowClickHandler}" title="${rowTitle}">
+            <tr style="cursor:pointer;" onclick="${rowClickHandler}" title="클릭 시 장비 상세 및 관측소 조회">
               <td style="text-align:center;"><b>${rowNo}</b></td>
-              <td><code>${d.equipment_id}</code></td>
-              <td><span class="badge badge-gray">${d.category_name}</span></td>
-              <td><b>${d.model_name || "-"}</b></td>
-              <td><code style="font-weight:700; color:#1e40af;">${d.serial_no || "-"}</code></td>
-              <td>${d.asset_no || d.asset_no_temp || "-"}</td>
-              <td>${this.renderLifespanCell(d)}</td>
-              <td>${this.renderCalibCell(d)}</td>
-              <td>${stationDisplay}</td>
+              <td>${stationCellHtml}</td>
+              <td style="text-align:center;">${catBadge}</td>
+              <td>${modelCellHtml}</td>
               <td style="text-align:center;">${stBadge}</td>
-              <td>${d.location || "-"}</td>
+              <td style="text-align:center;">${this.renderLifespanCell(d)}</td>
+              <td style="text-align:center;">${this.renderCalibCell(d)}</td>
               <td style="text-align:center;" onclick="event.stopPropagation();">
-                <div style="display:flex; gap:4px; justify-content:center;">
-                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:#1e40af; border-color:#bfdbfe; font-weight:700;" onclick="window.equipmentManager.openEditDeviceModal('${d.equipment_id}')" title="장비 정보/내용연수/검정일/상태/배치지점 통합 수정">
+                <div style="display:flex; gap:4px; justify-content:center; flex-wrap:wrap;">
+                  <button type="button" class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.73rem; color:#1e40af; border-color:#bfdbfe; font-weight:700; background:#f8fafc;" onclick="window.equipmentManager.openEditDeviceModal('${d.equipment_id}')" title="장비 정보/내용연수/검정일/상태/배치지점 통합 수정">
                     ✏️ 수정
                   </button>
                   ${(d.category === 'FLOWMETER' || d.category === 'WATER_LEVEL') ? `
-                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:#d97706; border-color:#fde68a; background:#fffbeb; font-weight:700;" onclick="window.equipmentManager.openCalibModal('${d.equipment_id}')" title="검정 이력 대장 및 새 검정 등록">
+                  <button type="button" class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.73rem; color:#d97706; border-color:#fde68a; background:#fffbeb; font-weight:700;" onclick="window.equipmentManager.openCalibModal('${d.equipment_id}')" title="검정 이력 대장 및 새 검정 등록">
                     🎯 검정
                   </button>
                   ` : ''}
-                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem;" onclick="window.equipmentManager.openStatusModal('${d.equipment_id}', '${d.status}', '${safeLoc}', ${d.station_id || 'null'})" title="상태 및 보관처 빠른 변경">
+                  <button type="button" class="btn btn-outline btn-sm" style="padding:2px 7px; font-size:0.73rem; color:#475569; border-color:#cbd5e1; background:#ffffff; font-weight:600;" onclick="window.equipmentManager.openStatusModal('${d.equipment_id}', '${d.status}', '${safeLoc}', ${d.station_id || 'null'})" title="상태 및 보관처 빠른 변경">
                     🔄 상태
-                  </button>
-                  <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem;" onclick="window.equipmentManager.openRepairModal('${d.equipment_id}')" title="수리 접수 또는 단계 변경">
-                    🚨 수리
                   </button>
                 </div>
               </td>
@@ -1511,7 +1554,7 @@ class EquipmentManager {
       }
     } catch (e) {
       console.error(e);
-      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:3rem; color:#dc2626;">조회 중 오류가 발생했습니다.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:3rem; color:#dc2626;">조회 중 오류가 발생했습니다.</td></tr>`;
     }
   }
 
@@ -1564,6 +1607,7 @@ class EquipmentManager {
           "검정만료일": d.calib_expire_date || "-",
           "검정상태": d.calib_status === "overdue" ? "검정만료" : (d.calib_status === "due_soon" ? "금년만료(검정필요)" : (d.calib_status === "valid" ? "유효" : "-")),
           "검정구분/성적서": d.calib_cert_no || "-",
+          "지점코드": d.station_code || "-",
           "관측소명": d.station_name || "미배정(본원/보관)",
           "권역": d.region || "-",
           "운영상태": d.status_label || d.status,
@@ -3602,6 +3646,7 @@ class EquipmentManager {
       const rows = res.devices.map(d => ({
         "장비ID(수정불가)": d.equipment_id,
         "데이터버전(수정불가)": d.version || 1,
+        "지점코드(수정불가)": d.station_code || "-",
         "지점명(수정불가)": d.station_name,
         "장비구분(수정불가)": d.category_name,
         "모델명": d.model_name,
