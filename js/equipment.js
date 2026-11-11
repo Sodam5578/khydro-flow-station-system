@@ -501,11 +501,11 @@ class EquipmentManager {
             const sharePct = waterTotal > 0 ? ((m.total / waterTotal) * 100).toFixed(1) : "0.0";
             const barColor = isRadar ? "#06b6d4" : "#2563eb";
 
+            const searchKey = m.clean_model === "기타/미지정" ? "" : m.clean_model;
             const spareHtml = m.spare > 0 ? `<span class="badge badge-amber" style="font-weight:700;">${m.spare}대</span>` : `<span style="color:#94a3b8;">-</span>`;
             const repairHtml = m.repairing > 0 ? `<span class="badge badge-red" style="font-weight:700;">${m.repairing}대</span>` : `<span style="color:#94a3b8;">-</span>`;
             const disposalHtml = m.disposal > 0 ? `<span class="badge badge-gray" style="font-weight:700;">${m.disposal}대</span>` : `<span style="color:#94a3b8;">-</span>`;
             const returnedHtml = m.returned > 0 ? `<span class="badge" style="background:#f3e8ff; color:#7e22ce; font-weight:700; border:1px solid #d8b4fe; cursor:pointer;" onclick="event.stopPropagation(); window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL', search: '${searchKey}', status: 'RETURNED' })">📦 ${m.returned}대</span>` : `<span style="color:#94a3b8;">-</span>`;
-            const searchKey = m.clean_model === "기타/미지정" ? "" : m.clean_model;
             let calibParts = [];
             if (m.calib_need > 0) {
               calibParts.push(`<span class="badge badge-amber" style="font-weight:800; color:#b45309; background:#fef3c7;" onclick="event.stopPropagation(); window.equipmentManager.goToDevicesWithFilter({ category: 'WATER_LEVEL', search: '${searchKey}', calibFilter: 'NEED_ALL' })">🎯 필요 ${m.calib_need}</span>`);
@@ -1446,7 +1446,7 @@ class EquipmentManager {
         const pageLimit = isAll ? (res.total || 1) : (parseInt(this.deviceLimit, 10) || 50);
         const startOffset = (this.devicePage - 1) * pageLimit;
 
-        tbody.innerHTML = res.devices.map((d, idx) => {
+        const renderRowHtml = (d, idx) => {
           const rowNo = startOffset + idx + 1;
           let stBadge = `<span class="badge badge-green" style="font-size:0.75rem; font-weight:700;">● 운영중</span>`;
           if (d.status === "SPARE") stBadge = `<span class="badge badge-amber" style="font-size:0.75rem; font-weight:700;">📦 예비품</span>`;
@@ -1544,7 +1544,28 @@ class EquipmentManager {
               </td>
             </tr>
           `;
-        }).join("");
+        };
+
+        const totalDevs = res.devices.length;
+        if (totalDevs <= 60) {
+          tbody.innerHTML = res.devices.map(renderRowHtml).join("");
+        } else {
+          // Chunked progressive rendering to prevent browser freezing on large lists
+          const CHUNK = 50;
+          tbody.innerHTML = res.devices.slice(0, CHUNK).map(renderRowHtml).join("");
+          let curr = CHUNK;
+          const appendMore = () => {
+            if (curr >= totalDevs) return;
+            const nextEnd = Math.min(curr + CHUNK, totalDevs);
+            const chunkHtml = res.devices.slice(curr, nextEnd).map((d, i) => renderRowHtml(d, curr + i)).join("");
+            tbody.insertAdjacentHTML("beforeend", chunkHtml);
+            curr = nextEnd;
+            if (curr < totalDevs) {
+              requestAnimationFrame(appendMore);
+            }
+          };
+          requestAnimationFrame(appendMore);
+        }
 
         this.renderDevicePagination(res);
 
@@ -1680,6 +1701,9 @@ class EquipmentManager {
 
   renderDevicePagination(res) {
     const pageInfo = document.getElementById("eq-dev-page-info");
+    const topPageInfo = document.getElementById("eq-dev-top-page-info");
+    const topBtnPrev = document.getElementById("btn-eq-dev-top-prev");
+    const topBtnNext = document.getElementById("btn-eq-dev-top-next");
     const pageNumbers = document.getElementById("eq-dev-page-numbers");
     const btnFirst = document.getElementById("btn-eq-dev-first");
     const btnPrev = document.getElementById("btn-eq-dev-prev");
@@ -1703,6 +1727,19 @@ class EquipmentManager {
         pageInfo.textContent = `${startNo.toLocaleString()}-${endNo.toLocaleString()} / 총 ${total.toLocaleString()}개 장비 (페이지 ${page}/${totalPages})`;
       }
     }
+
+    if (topPageInfo) {
+      if (total === 0) {
+        topPageInfo.textContent = "0건";
+      } else if (isAll) {
+        topPageInfo.textContent = `전체 (${total.toLocaleString()}대)`;
+      } else {
+        topPageInfo.textContent = `${page} / ${totalPages} 페이지 (${total.toLocaleString()}대)`;
+      }
+    }
+
+    if (topBtnPrev) topBtnPrev.disabled = page <= 1 || isAll;
+    if (topBtnNext) topBtnNext.disabled = page >= totalPages || isAll;
 
     if (btnFirst) btnFirst.disabled = page <= 1 || isAll;
     if (btnPrev) btnPrev.disabled = page <= 1 || isAll;

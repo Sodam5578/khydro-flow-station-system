@@ -603,6 +603,7 @@ body {
 
 .table-responsive {
   overflow-x: auto;
+  overflow-y: auto;
   max-height: calc(100vh - 280px);
 }
 

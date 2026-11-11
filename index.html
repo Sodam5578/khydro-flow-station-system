@@ -21,7 +21,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="css/main.css?v=4.4">
+  <link rel="stylesheet" href="css/main.css?v=4.5">
   <link rel="stylesheet" href="css/leaflet-custom.css?v=4.1">
 </head>
 <body>
@@ -1104,9 +1104,12 @@
                     <input type="text" id="eq-dev-search" class="search-input" placeholder="관측소명, 지점코드, 모델명, S/N, 자산번호 검색..." oninput="window.equipmentManager.deviceSearch = this.value; window.equipmentManager.devicePage = 1; window.equipmentManager.loadDevices();" style="width: 100%;">
                   </div>
 
-                  <span class="badge" style="font-size:0.75rem; font-weight:700; background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; padding:6px 10px; white-space:nowrap;" title="전체 장비가 관측소 코드(1001529 ➔ 1002550...) 순서로 정렬되어 표시됩니다.">
-                    🔢 관측소코드 오름차순
-                  </span>
+                  <!-- Quick Page Navigation Controls at Top -->
+                  <div style="display: flex; align-items: center; gap: 6px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 10px;">
+                    <span id="eq-dev-top-page-info" style="font-size: 0.8rem; font-weight: 700; color: #1e40af; white-space: nowrap;">1 / 37 페이지</span>
+                    <button type="button" class="btn btn-outline btn-sm" id="btn-eq-dev-top-prev" onclick="window.equipmentManager.prevDevicePage()" style="padding: 1px 7px; font-size: 0.72rem; min-width: 26px;" title="이전 페이지">‹</button>
+                    <button type="button" class="btn btn-outline btn-sm" id="btn-eq-dev-top-next" onclick="window.equipmentManager.nextDevicePage()" style="padding: 1px 7px; font-size: 0.72rem; min-width: 26px;" title="다음 페이지">›</button>
+                  </div>
 
                   <select id="eq-dev-calib-filter" class="filter-select" onchange="window.equipmentManager.deviceCalibFilter = this.value; window.equipmentManager.devicePage = 1; window.equipmentManager.loadDevices();" style="font-weight:700; color:#1e40af; border-color:#93c5fd;">
                     <option value="ALL">전체 검정상태 (유속계 2년·수위계 3년)</option>
@@ -1140,13 +1143,13 @@
                     <option value="100">100개씩 보기</option>
                     <option value="200">200개씩 보기</option>
                     <option value="500">500개씩 보기</option>
-                    <option value="all">전체 보기</option>
+                    <option value="all">전체 보기 (1,845대)</option>
                   </select>
                 </div>
               </div>
 
-              <div class="card-body" style="padding: 0;">
-                <div class="table-responsive" style="max-height: 650px;">
+              <div class="card-body" style="padding: 0; position: relative;">
+                <div class="table-responsive" style="max-height: calc(100vh - 340px); min-height: 480px; overflow-y: auto; overflow-x: auto;">
                   <table class="custom-table" style="width: 100%;">
                     <thead>
                       <tr>
@@ -1167,8 +1170,8 @@
                 </div>
 
                 <!-- Pagination Controls -->
-                <div class="pagination-wrapper" id="eq-dev-pagination-bar" style="padding: 0.75rem 1.25rem; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #ffffff; flex-wrap: wrap; gap: 0.5rem;">
-                  <div id="eq-dev-page-info" style="font-size: 0.85rem; color: #64748b; font-weight: 600;">1-50 / 총 2,113개 장비</div>
+                <div class="pagination-wrapper" id="eq-dev-pagination-bar" style="padding: 0.75rem 1.25rem; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #ffffff; flex-wrap: wrap; gap: 0.5rem; position: sticky; bottom: 0; z-index: 15; box-shadow: 0 -2px 8px rgba(0,0,0,0.04);">
+                  <div id="eq-dev-page-info" style="font-size: 0.85rem; color: #64748b; font-weight: 600;">1-50 / 총 1,845개 장비</div>
                   <div class="pagination-buttons" style="display: flex; gap: 0.35rem; align-items: center;">
                     <button class="page-btn" id="btn-eq-dev-first" onclick="window.equipmentManager.changeDevicePage(1)" title="첫 페이지">« 처음</button>
                     <button class="page-btn" id="btn-eq-dev-prev" onclick="window.equipmentManager.prevDevicePage()" title="이전 페이지">‹ 이전</button>
@@ -3846,7 +3849,7 @@
   <script src="js/maintenance.js?v=3.7"></script>
   <script src="js/history.js?v=3.7"></script>
   <script src="js/calibration.js?v=3.7"></script>
-  <script src="js/equipment.js?v=1.7"></script>
+  <script src="js/equipment.js?v=1.8"></script>
   <script src="js/schedule.js?v=3.7"></script>
   <script src="js/monitor.js?v=3.8"></script>
   <script src="js/waterlevel.js?v=3.7"></script>
