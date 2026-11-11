@@ -593,7 +593,9 @@ class MonitorManager {
                 ${dateDisplay}
                 ${typeBadge}
                 ${item.category ? `<span class="badge badge-gray" style="font-size:0.72rem;">🏷️ ${this.escapeHtml(item.category)}</span>` : ""}
+                ${item.cause_category ? `<span class="badge" style="font-size:0.72rem; background:#fee2e2; color:#991b1b; font-weight:700;">원인: ${this.escapeHtml(item.cause_category)}</span>` : ""}
                 ${item.target_equipment ? `<span class="badge badge-gray" style="font-size:0.72rem; font-weight:700; color:#1e3a8a; background:#dbeafe;">⚙️ ${this.escapeHtml(item.target_equipment)}</span>` : ""}
+                ${item.action_method ? `<span class="badge" style="font-size:0.72rem; background:#e0f2fe; color:#0369a1; font-weight:700;">조치: ${this.escapeHtml(item.action_method)}</span>` : ""}
               </div>
               <div style="display:flex; align-items:center; gap:6px;">
                 ${actorBadge}
@@ -644,22 +646,28 @@ class MonitorManager {
 
     let actionType = "긴급보수";
     let category = "센서·계측";
-    let targetEquipment = "유속계 센서";
+    let causeCategory = "센서 수광부 오염 / 유송잡물 걸림";
+    let targetEquipment = "유속계 센서 (ADVM/EWSV)";
+    let actionMethod = "센서 수광부 세척 및 유송잡물 제거";
 
     if (isMissing) {
       actionType = "통신/전원조치";
       category = "통신·데이터";
-      targetEquipment = "통신 모뎀(RTU) 및 수신 모듈";
+      causeCategory = "통신망 불안정 / 일시적 지연";
+      targetEquipment = "통신 모뎀 (LTE/CDMA Router)";
+      actionMethod = "단말기/RTU 원격 명령 재부팅";
     } else if (isBattery) {
       actionType = "부품교체";
       category = "전원·안전";
-      targetEquipment = "배터리 및 충전 제어기(전원부)";
+      causeCategory = "배터리 저전압 / 방전";
+      targetEquipment = "주 전원 배터리 (DC 12V/24V)";
+      actionMethod = "신품 배터리 교체";
     }
 
     const finalName = station ? station.name : (stationName || "관측시설");
     const today = new Date().toISOString().slice(0, 10);
     const issueSummary = ruleId ? `[실시간 이상 조치] [${ruleId}] ${problem || "관측 이상"}` : `[실시간 이상 조치] ${problem || "관측 이상"}`;
-    const prefillDesc = `${issueSummary}\n- 현상 상세: ${detail || "자료 수신 중단 또는 이상"}${count ? ` (연속 ${count}회 발생)` : ""}\n- 원인 분석:\n- 현장 조치 내용:\n- 조치 후 결과: 정상 수신 복구 확인`;
+    const prefillDesc = `[원인] ${causeCategory} (${issueSummary}, 연속 ${count || 1}회) ➔ [조치] ${actionMethod} (${targetEquipment}) 완료 후 관측 데이터 정상 송수신 상태를 최종 복구·확인하였습니다.`;
 
     const prefill = {
       stationName: finalName,
@@ -669,7 +677,9 @@ class MonitorManager {
       actionDate: today,
       actionType,
       category,
+      causeCategory,
       targetEquipment,
+      actionMethod,
       actorType: "기술원(자체)",
       workerName: window.apiClient?.user?.name || "",
       resultStatus: "완료",

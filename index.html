@@ -2739,18 +2739,34 @@
 
   <!-- 4.1 Maintenance History Action Form Modal (Create / Edit) -->
   <div class="modal-backdrop" id="maint-history-form-modal" style="z-index: 10005;">
-    <div class="modal-dialog" style="max-width: 680px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
-      <div class="modal-header">
+    <div class="modal-dialog" style="max-width: 760px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 1rem 1.25rem;">
         <div>
-          <div class="modal-title" id="maint-hist-form-modal-title" style="font-size: 1.15rem;">🛠️ 유지관리 조치 이력 등록</div>
+          <div class="modal-title" id="maint-hist-form-modal-title" style="font-size: 1.15rem; font-weight: 800; color: #1e3a8a;">🛠️ 유지관리 조치 이력 등록</div>
           <div style="font-size: 0.82rem; color: #64748b; margin-top: 2px;">
-            관측시설의 점검, 보수, 부품교체, 정비 등 현장 조치 내역을 상세 기록합니다.
+            원클릭 템플릿과 표준 선택 항목을 활용하여 텍스트 직접 입력 없이 규격화된 DB 이력을 신속히 등록합니다.
           </div>
         </div>
         <button class="modal-close-btn" onclick="window.maintenanceHistoryManager.closeFormModal()">&times;</button>
       </div>
 
       <div class="modal-body" style="padding: 1.25rem; overflow-y: auto; flex: 1;">
+        <!-- Quick Action Preset Template Chips -->
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem;">
+          <div style="font-size: 0.8rem; font-weight: 800; color: #1e40af; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
+            <span>⚡ 자주 쓰는 표준 조치 템플릿 (원클릭 자동 완성)</span>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <button type="button" class="btn btn-outline btn-sm" style="background: #ffffff; font-size: 0.74rem; font-weight: 600; padding: 3px 8px; border-color: #93c5fd; color: #1d4ed8;" onclick="window.maintenanceHistoryManager.applyPreset('rtu_reboot')">⚡ RTU 원격 재부팅 & 통신 복구</button>
+            <button type="button" class="btn btn-outline btn-sm" style="background: #ffffff; font-size: 0.74rem; font-weight: 600; padding: 3px 8px; border-color: #93c5fd; color: #1d4ed8;" onclick="window.maintenanceHistoryManager.applyPreset('battery_replace')">🔋 배터리 교체 & 전원 정상화</button>
+            <button type="button" class="btn btn-outline btn-sm" style="background: #ffffff; font-size: 0.74rem; font-weight: 600; padding: 3px 8px; border-color: #93c5fd; color: #1d4ed8;" onclick="window.maintenanceHistoryManager.applyPreset('modem_reset')">📡 통신 모뎀 리셋 & 안테나 점검</button>
+            <button type="button" class="btn btn-outline btn-sm" style="background: #ffffff; font-size: 0.74rem; font-weight: 600; padding: 3px 8px; border-color: #93c5fd; color: #1d4ed8;" onclick="window.maintenanceHistoryManager.applyPreset('sensor_clean')">🌊 센서 이물질 제거 & 세척</button>
+            <button type="button" class="btn btn-outline btn-sm" style="background: #ffffff; font-size: 0.74rem; font-weight: 600; padding: 3px 8px; border-color: #93c5fd; color: #1d4ed8;" onclick="window.maintenanceHistoryManager.applyPreset('breaker_reset')">🔌 차단기 복구 & 전원선 정비</button>
+            <button type="button" class="btn btn-outline btn-sm" style="background: #ffffff; font-size: 0.74rem; font-weight: 600; padding: 3px 8px; border-color: #93c5fd; color: #1d4ed8;" onclick="window.maintenanceHistoryManager.applyPreset('sensor_calib')">📏 수위계/유속계 영점 보정</button>
+            <button type="button" class="btn btn-outline btn-sm" style="background: #ffffff; font-size: 0.74rem; font-weight: 600; padding: 3px 8px; border-color: #93c5fd; color: #1d4ed8;" onclick="window.maintenanceHistoryManager.applyPreset('routine_ok')">🔍 현장 정기 순회 점검 (이상무)</button>
+          </div>
+        </div>
+
         <form id="maint-history-form" onsubmit="event.preventDefault(); window.maintenanceHistoryManager.saveForm();">
           <div class="form-grid" style="grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
             <div class="form-group" style="grid-column: span 2;">
@@ -2773,7 +2789,7 @@
 
             <div class="form-group">
               <label class="form-label" style="font-weight: 700;">조치 구분 <span style="color:#dc2626;">*</span></label>
-              <select id="hist-form-type" class="form-select" required>
+              <select id="hist-form-type" class="form-select" required onchange="window.maintenanceHistoryManager.autoComposeDescription()">
                 <option value="정기점검">🔍 정기점검</option>
                 <option value="긴급보수">🚨 긴급보수</option>
                 <option value="부품교체">🔧 부품교체</option>
@@ -2785,8 +2801,8 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label">과업 분류</label>
-              <select id="hist-form-category" class="form-select">
+              <label class="form-label" style="font-weight: 700;">과업 분류 <span style="color:#dc2626;">*</span></label>
+              <select id="hist-form-category" class="form-select" onchange="window.maintenanceHistoryManager.autoComposeDescription()">
                 <option value="전원·안전">⚡ 전원·안전</option>
                 <option value="통신·데이터">📡 통신·데이터</option>
                 <option value="센서·계측">🌊 센서·계측 (유속계/수위계)</option>
@@ -2797,8 +2813,60 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label">대상 장비 및 부품</label>
-              <input type="text" id="hist-form-equipment" class="form-input" placeholder="예: 유속계(EWSV), 누전차단기, DP컨버터, 배터리 등">
+              <label class="form-label" style="font-weight: 700;">원인 분류 (표준 선택) <span style="color:#dc2626;">*</span></label>
+              <select id="hist-form-cause" class="form-select" required onchange="window.maintenanceHistoryManager.onCauseChange(this.value)">
+                <option value="통신망 불안정 / 일시적 지연">📡 통신망 불안정 / 일시적 지연</option>
+                <option value="배터리 저전압 / 방전">🔋 배터리 저전압 / 방전</option>
+                <option value="차단기 트립 / 상시전원 단전">⚡ 차단기 트립 / 상시전원 단전</option>
+                <option value="센서 수광부 오염 / 유송잡물 걸림">🌊 센서 수광부 오염 / 유송잡물 걸림</option>
+                <option value="센서 영점/옵셋 드리프트">📏 센서 영점/옵셋 드리프트</option>
+                <option value="RTU/관측제어기 오동작 (락업)">💻 RTU/관측제어기 오동작 (락업)</option>
+                <option value="케이블 결선 불량 / 단자 부식">🔌 케이블 결선 불량 / 단자 부식</option>
+                <option value="태양광 패널 오염 / 발전 저하">☀️ 태양광 패널 오염 / 발전 저하</option>
+                <option value="낙뢰 / 서지 유입">⚡ 낙뢰 / 서지 유입</option>
+                <option value="정기 순회 점검 (이상무)">🔍 정기 순회 점검 (이상무)</option>
+                <option value="custom">✍️ 직접 입력...</option>
+              </select>
+              <input type="text" id="hist-form-cause-custom" class="form-input" placeholder="원인 분류 직접 입력" style="display:none; margin-top:5px;" oninput="window.maintenanceHistoryManager.autoComposeDescription()">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="font-weight: 700;">대상 장비 및 부품 (표준 선택) <span style="color:#dc2626;">*</span></label>
+              <select id="hist-form-equipment-select" class="form-select" required onchange="window.maintenanceHistoryManager.onEquipmentSelectChange(this.value)">
+                <option value="통신 모뎀 (LTE/CDMA Router)">📡 통신 모뎀 (LTE/CDMA Router)</option>
+                <option value="관측제어기 (RTU / Data Logger)">💻 관측제어기 (RTU / Data Logger)</option>
+                <option value="유속계 센서 (ADVM/EWSV)">🌊 유속계 센서 (ADVM/EWSV)</option>
+                <option value="주 전원 배터리 (DC 12V/24V)">🔋 주 전원 배터리 (DC 12V/24V)</option>
+                <option value="충전 컨트롤러 (Solar Controller)">☀️ 충전 컨트롤러 (Solar Controller)</option>
+                <option value="태양광 모듈 (Solar Panel)">☀️ 태양광 모듈 (Solar Panel)</option>
+                <option value="누전차단기 / 분전반 (MCCB/ELB)">⚡ 누전차단기 / 분전반 (MCCB/ELB)</option>
+                <option value="낙뢰 방지기 (SPD / 피뢰설비)">🛡️ 낙뢰 방지기 (SPD / 피뢰설비)</option>
+                <option value="수위계 센서 (압력/초음파/레이더)">📏 수위계 센서 (압력/초음파/레이더)</option>
+                <option value="풍향풍속계 (기상센서)">🌪️ 풍향풍속계 (기상센서)</option>
+                <option value="CCTV / 영상감시 장치">📹 CCTV / 영상감시 장치</option>
+                <option value="관측소 시설함체 (옥외함/폴대)">🏢 관측소 시설함체 (옥외함/폴대)</option>
+                <option value="custom">✍️ 직접 입력...</option>
+              </select>
+              <input type="text" id="hist-form-equipment-custom" class="form-input" placeholder="장비 및 부품명 직접 입력" style="display:none; margin-top:5px;" oninput="window.maintenanceHistoryManager.autoComposeDescription()">
+            </div>
+
+            <div class="form-group" style="grid-column: span 2;">
+              <label class="form-label" style="font-weight: 700;">세부 조치 방식 (표준 선택) <span style="color:#dc2626;">*</span></label>
+              <select id="hist-form-action-method" class="form-select" required onchange="window.maintenanceHistoryManager.onActionMethodChange(this.value)">
+                <option value="단말기/RTU 원격 명령 재부팅">🔄 단말기/RTU 원격 명령 재부팅</option>
+                <option value="현장 전원 리셋 및 차단기 복구">⚡ 현장 전원 리셋 및 차단기 복구</option>
+                <option value="신품 배터리 교체">🔋 신품 배터리 교체</option>
+                <option value="통신 모뎀 점검 및 재접속 확인">📡 통신 모뎀 점검 및 재접속 확인</option>
+                <option value="센서 수광부 세척 및 유송잡물 제거">🌊 센서 수광부 세척 및 유송잡물 제거</option>
+                <option value="케이블 재결선 및 단자대 압착 정비">🔌 케이블 재결선 및 단자대 압착 정비</option>
+                <option value="센서 영점 교정 및 파라미터 보정">📏 센서 영점 교정 및 파라미터 보정</option>
+                <option value="충전 컨트롤러 점검 및 정상화">☀️ 충전 컨트롤러 점검 및 정상화</option>
+                <option value="주변 환경 정비 및 제초/수목 전지">🌿 주변 환경 정비 및 제초/수목 전지</option>
+                <option value="노후 부품 교체">🔧 노후 부품 교체</option>
+                <option value="현장 정밀점검 (특이사항 없음)">🔍 현장 정밀점검 (특이사항 없음)</option>
+                <option value="custom">✍️ 직접 입력...</option>
+              </select>
+              <input type="text" id="hist-form-action-method-custom" class="form-input" placeholder="조치 방식 직접 입력" style="display:none; margin-top:5px;" oninput="window.maintenanceHistoryManager.autoComposeDescription()">
             </div>
 
             <div class="form-group">
@@ -2818,7 +2886,7 @@
 
             <div class="form-group">
               <label class="form-label">조치 결과 상태</label>
-              <select id="hist-form-status" class="form-select">
+              <select id="hist-form-status" class="form-select" onchange="window.maintenanceHistoryManager.autoComposeDescription()">
                 <option value="완료">✅ 조치완료</option>
                 <option value="진행중">🔄 진행중</option>
                 <option value="추가조치필요">⚠️ 추가조치 필요</option>
@@ -2832,13 +2900,18 @@
             </div>
 
             <div class="form-group" style="grid-column: span 2;">
-              <label class="form-label" style="font-weight: 700;">작업 상세 내용 및 조치 결과 <span style="color:#dc2626;">*</span></label>
-              <textarea id="hist-form-desc" class="form-textarea" rows="4" required placeholder="현장 조치 내용, 점검 결과, 교체 부품 시리얼 및 조치 전후 상태 등을 상세히 입력하세요."></textarea>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <label class="form-label" style="font-weight: 700; margin-bottom:0;">
+                  작업 상세 내용 및 조치 결과 <span style="color:#dc2626;">*</span>
+                </label>
+                <span style="font-size:0.75rem; color:#2563eb; font-weight:600;">✨ 위 표준 선택에 따라 자동 조합됨 (수정 가능)</span>
+              </div>
+              <textarea id="hist-form-desc" class="form-textarea" rows="3" required placeholder="선택 항목에 따라 표준 문장이 자동 입력됩니다. 필요 시 세부 내역을 추가/수정하세요."></textarea>
             </div>
 
             <div class="form-group" style="grid-column: span 2;">
-              <label class="form-label">특이사항 및 비고</label>
-              <input type="text" id="hist-form-memo" class="form-input" placeholder="후속 조치 필요사항, 기타 전달사항 등">
+              <label class="form-label">특이사항 및 비고 (선택사항)</label>
+              <input type="text" id="hist-form-memo" class="form-input" placeholder="후속 조치 필요사항, 점검 비고 등 자유 입력">
             </div>
           </div>
         </form>
@@ -2846,7 +2919,7 @@
 
       <div class="modal-footer" style="justify-content: space-between; background: #ffffff; border-top: 1px solid #e2e8f0;">
         <div style="font-size: 0.8rem; color: #64748b;">
-          * 등록된 이력은 DB에 영구 보존되며 감사 로그에 기록됩니다.
+          * 표준 코드로 저장되어 엑셀 다운로드 및 DB 통계/분석이 즉시 지원됩니다.
         </div>
         <div style="display: flex; gap: 0.5rem;">
           <button type="button" class="btn btn-outline btn-sm" onclick="window.maintenanceHistoryManager.closeFormModal()">취소</button>
@@ -2858,7 +2931,7 @@
 
   <!-- 4.2 Station-Specific Action History & Anomaly Action Modal -->
   <div class="modal-backdrop" id="station-action-history-modal" style="z-index: 9998;">
-    <div class="modal-dialog" style="max-width: 820px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
+    <div class="modal-dialog" style="max-width: 860px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
       <div class="modal-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 1rem 1.25rem;">
         <div>
           <div class="modal-title" id="st-hist-modal-title" style="font-size: 1.18rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -2884,10 +2957,30 @@
             <span>📜</span> <span>지점별 누적 조치 이력</span>
             <span class="badge badge-blue" id="st-hist-modal-count" style="font-size: 0.78rem;">0건</span>
           </div>
-          <button type="button" class="btn btn-primary btn-sm" id="st-hist-modal-add-btn" style="font-size: 0.8rem; padding: 5px 12px; display: inline-flex; align-items: center; gap: 4px;">
-            ➕ 새 조치 내역 등록
-          </button>
+          <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="btn btn-outline btn-sm" id="st-hist-modal-excel-btn" style="font-size: 0.8rem; padding: 5px 12px; color: #047857; border-color: #6ee7b7; background: #ecfdf5; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" onclick="window.excelManager.exportStationMaintenanceHistory(window.monitorManager.currentStationActionId)">
+              📥 엑셀 다운로드 (.xlsx)
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" id="st-hist-modal-add-btn" style="font-size: 0.8rem; padding: 5px 12px; display: inline-flex; align-items: center; gap: 4px;">
+              ➕ 새 조치 내역 등록
+            </button>
+          </div>
         </div>
+
+        <!-- History Items List Container -->
+        <div id="st-hist-modal-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <!-- Dynamically populated with history cards -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="justify-content: space-between; background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 0.75rem 1.25rem;">
+        <div style="font-size: 0.78rem; color: #64748b;">
+          💡 실시간 관측 이상에 대한 현장/원격 조치 내역을 기록하면 DB에 영구 보존되며 종합현황에 실시간 반영됩니다.
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="window.monitorManager.closeStationActionHistoryModal()">닫기</button>
+      </div>
+    </div>
+  </div>
 
         <!-- History Items List Container -->
         <div id="st-hist-modal-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
@@ -3898,17 +3991,17 @@
   <script src="js/table.js?v=3.7"></script>
   <script src="js/stats.js?v=4.1"></script>
   <script src="js/maintenance.js?v=3.7"></script>
-  <script src="js/history.js?v=3.8"></script>
+  <script src="js/history.js?v=3.9"></script>
   <script src="js/calibration.js?v=3.7"></script>
   <script src="js/equipment.js?v=1.8"></script>
   <script src="js/schedule.js?v=3.7"></script>
-  <script src="js/monitor.js?v=3.9"></script>
+  <script src="js/monitor.js?v=4.0"></script>
   <script src="js/waterlevel.js?v=3.7"></script>
   <script src="js/logs.js?v=3.7"></script>
   <script src="js/timeseriesChart.js?v=4.6"></script>
   <script src="js/timeseriesMenu.js?v=4.6"></script>
   <script src="js/modal.js?v=4.5"></script>
-  <script src="js/excel.js?v=4.3"></script>
+  <script src="js/excel.js?v=4.4"></script>
   <script src="js/app.js?v=3.7"></script>
 </body>
 </html>

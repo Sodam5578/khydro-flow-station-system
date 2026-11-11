@@ -869,14 +869,14 @@ router.get("/stations/:id/maintenance-history", verifyToken, async (req, res) =>
 
 router.post("/maintenance-history", verifyToken, async (req, res) => {
   try {
-    const { station_id, station_name, issue_date, action_date, action_type, category, target_equipment, description, actor_type, worker_name, result_status, cost, memo } = req.body;
+    const { station_id, station_name, issue_date, action_date, action_type, category, cause_category, target_equipment, action_method, description, actor_type, worker_name, result_status, cost, memo } = req.body;
     if (!station_id || !action_date || !description) {
       return res.status(400).json({ success: false, message: "필수 항목(관측시설, 조치일자, 작업내용)을 입력해주세요." });
     }
 
     const createdBy = `${req.user.name} (${req.user.username})`;
     const record = await dbService.createMaintenanceHistory({
-      station_id, station_name, issue_date, action_date, action_type, category, target_equipment, description, actor_type, worker_name, result_status, cost, memo, created_by: createdBy
+      station_id, station_name, issue_date, action_date, action_type, category, cause_category, target_equipment, action_method, description, actor_type, worker_name, result_status, cost, memo, created_by: createdBy
     });
 
     logActivity(req.user, "유지관리이력등록", station_name, `[${action_type || "유지관리"}] ${description} (작업자: ${worker_name || actor_type || "미지정"})`, req.ip);
@@ -891,10 +891,10 @@ router.post("/maintenance-history", verifyToken, async (req, res) => {
 router.put("/maintenance-history/:id", verifyToken, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
-    const { station_id, station_name, issue_date, action_date, action_type, category, target_equipment, description, actor_type, worker_name, result_status, cost, memo } = req.body;
+    const { station_id, station_name, issue_date, action_date, action_type, category, cause_category, target_equipment, action_method, description, actor_type, worker_name, result_status, cost, memo } = req.body;
 
     const record = await dbService.updateMaintenanceHistory(id, {
-      station_id, station_name, issue_date, action_date, action_type, category, target_equipment, description, actor_type, worker_name, result_status, cost, memo
+      station_id, station_name, issue_date, action_date, action_type, category, cause_category, target_equipment, action_method, description, actor_type, worker_name, result_status, cost, memo
     });
 
     logActivity(req.user, "유지관리이력수정", station_name, `[${action_type || "유지관리"}] 이력 수정 (${action_date})`, req.ip);

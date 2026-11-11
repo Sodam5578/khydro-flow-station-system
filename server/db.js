@@ -165,8 +165,10 @@ async function initDb() {
       )
     `);
 
-    // Ensure issue_date column exists if table was previously created
+    // Ensure issue_date, cause_category, and action_method columns exist if table was previously created
     sqliteDb.run(`ALTER TABLE maintenance_history ADD COLUMN issue_date TEXT`, () => {});
+    sqliteDb.run(`ALTER TABLE maintenance_history ADD COLUMN cause_category TEXT`, () => {});
+    sqliteDb.run(`ALTER TABLE maintenance_history ADD COLUMN action_method TEXT`, () => {});
 
     // Quality Monitoring Hourly Snapshots Table (Diff alert & 30-day retention)
     sqliteDb.run(`
@@ -934,7 +936,9 @@ const dbService = {
       action_date: log.action_date || new Date().toISOString().slice(0, 10),
       action_type: log.action_type || "정기점검",
       category: log.category || "전원·안전",
+      cause_category: log.cause_category || "기타/일반",
       target_equipment: log.target_equipment || "",
+      action_method: log.action_method || "",
       description: log.description || "",
       actor_type: log.actor_type || "기술원(자체)",
       worker_name: log.worker_name || "",
@@ -953,11 +957,11 @@ const dbService = {
     const localData = await new Promise((resolve, reject) => {
       const explicitId = cloudData && cloudData.id ? cloudData.id : null;
       const sql = explicitId
-        ? `INSERT OR REPLACE INTO maintenance_history (id, station_id, station_name, issue_date, action_date, action_type, category, target_equipment, description, actor_type, worker_name, result_status, cost, memo, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        : `INSERT INTO maintenance_history (station_id, station_name, issue_date, action_date, action_type, category, target_equipment, description, actor_type, worker_name, result_status, cost, memo, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        ? `INSERT OR REPLACE INTO maintenance_history (id, station_id, station_name, issue_date, action_date, action_type, category, cause_category, target_equipment, action_method, description, actor_type, worker_name, result_status, cost, memo, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        : `INSERT INTO maintenance_history (station_id, station_name, issue_date, action_date, action_type, category, cause_category, target_equipment, action_method, description, actor_type, worker_name, result_status, cost, memo, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
       const params = explicitId
-        ? [explicitId, record.station_id, record.station_name, record.issue_date, record.action_date, record.action_type, record.category, record.target_equipment, record.description, record.actor_type, record.worker_name, record.result_status, record.cost, record.memo, record.created_by]
-        : [record.station_id, record.station_name, record.issue_date, record.action_date, record.action_type, record.category, record.target_equipment, record.description, record.actor_type, record.worker_name, record.result_status, record.cost, record.memo, record.created_by];
+        ? [explicitId, record.station_id, record.station_name, record.issue_date, record.action_date, record.action_type, record.category, record.cause_category, record.target_equipment, record.action_method, record.description, record.actor_type, record.worker_name, record.result_status, record.cost, record.memo, record.created_by]
+        : [record.station_id, record.station_name, record.issue_date, record.action_date, record.action_type, record.category, record.cause_category, record.target_equipment, record.action_method, record.description, record.actor_type, record.worker_name, record.result_status, record.cost, record.memo, record.created_by];
       sqliteDb.run(sql, params, function(err) {
         if (err) return reject(err);
         resolve({ id: explicitId || this.lastID, ...record });
@@ -974,7 +978,9 @@ const dbService = {
       action_date: log.action_date,
       action_type: log.action_type,
       category: log.category,
+      cause_category: log.cause_category || "기타/일반",
       target_equipment: log.target_equipment,
+      action_method: log.action_method || "",
       description: log.description,
       actor_type: log.actor_type,
       worker_name: log.worker_name,
@@ -993,9 +999,9 @@ const dbService = {
     const localData = await new Promise((resolve, reject) => {
       sqliteDb.run(`
         UPDATE maintenance_history 
-        SET station_id = ?, station_name = ?, issue_date = ?, action_date = ?, action_type = ?, category = ?, target_equipment = ?, description = ?, actor_type = ?, worker_name = ?, result_status = ?, cost = ?, memo = ?, updated_at = CURRENT_TIMESTAMP
+        SET station_id = ?, station_name = ?, issue_date = ?, action_date = ?, action_type = ?, category = ?, cause_category = ?, target_equipment = ?, action_method = ?, description = ?, actor_type = ?, worker_name = ?, result_status = ?, cost = ?, memo = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `, [record.station_id, record.station_name, record.issue_date, record.action_date, record.action_type, record.category, record.target_equipment, record.description, record.actor_type, record.worker_name, record.result_status, record.cost, record.memo, id], function(err) {
+      `, [record.station_id, record.station_name, record.issue_date, record.action_date, record.action_type, record.category, record.cause_category, record.target_equipment, record.action_method, record.description, record.actor_type, record.worker_name, record.result_status, record.cost, record.memo, id], function(err) {
         if (err) return reject(err);
         resolve({ id, ...record });
       });

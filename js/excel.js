@@ -830,7 +830,7 @@ class ExcelManager {
 
     const headers = [
       "순번", "문제발생(인지)일", "조치완료(작업)일", "관측소명", "조치구분",
-      "과업분류", "대상장비 및 부품", "조치 내용 및 결과", "수행주체", "작업자/담당자",
+      "과업분류", "원인분류", "대상장비 및 부품", "세부조치방식", "조치 내용 및 결과", "수행주체", "작업자/담당자",
       "조치상태", "소요비용(원)", "특이사항 및 비고", "등록자"
     ];
 
@@ -841,7 +841,9 @@ class ExcelManager {
       h.station_name || "-",
       h.action_type || "-",
       h.category || "-",
+      h.cause_category || "-",
       h.target_equipment || "-",
+      h.action_method || "-",
       h.description || "-",
       h.actor_type || "-",
       h.worker_name || "-",
@@ -853,12 +855,12 @@ class ExcelManager {
 
     const aligns = [
       "center", "center", "center", "left", "center",
-      "center", "left", "left", "center", "center",
+      "center", "center", "left", "left", "left", "center", "center",
       "center", "right", "left", "left"
     ];
     const numFmts = [];
-    numFmts[11] = "₩#,##0";
-    const statusCols = [4, 8, 10];
+    numFmts[13] = "₩#,##0";
+    const statusCols = [4, 10, 12];
 
     const wb = XLSX.utils.book_new();
     const ws = this.buildStyledSheet(
@@ -873,6 +875,93 @@ class ExcelManager {
     const fileName = `유지관리_누적조치이력대장_${todayFormatted}.xlsx`;
     XLSX.writeFile(wb, fileName);
     window.app.showToast(`[${fileName}] 엑셀 파일이 다운로드되었습니다.`, "success");
+  }
+
+  // C-2. 지점별 실시간 이상 조치 및 유지관리 이력 대장 엑셀 (.xlsx)
+  async exportStationMaintenanceHistory(stationId, stationName) {
+    if (!stationId) {
+      alert("다운로드할 관측시설을 선택해주세요.");
+      return;
+    }
+
+    const stId = parseInt(stationId, 10);
+    const stations = window.dataManager ? window.dataManager.getAll() : [];
+    const station = stations.find(s => s.id === stId) || {};
+    const finalName = station.name || stationName || "관측시설";
+    const finalCode = station.code || "-";
+    const finalRiver = station.river || station.region || "-";
+    const finalBasin = station.basin || "-";
+    const finalGauge = station.gaugeType || "-";
+
+    let list = [];
+    try {
+      const res = await window.apiClient.getStationMaintenanceHistory(stId);
+      if (res.success && res.data) list = res.data;
+    } catch (e) {
+      console.error("fetch station maintenance history error:", e);
+    }
+
+    if (!list || list.length === 0) {
+      alert(`[${finalName}] 관측소에 등록된 조치 이력 데이터가 없습니다.`);
+      return;
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const todayFormatted = today.replace(/-/g, "");
+
+    const headers = [
+      "순번", "문제발생(인지)일", "조치완료(작업)일", "관측소명", "관측소코드", "수계/하천", "유속계형식",
+      "조치구분", "과업분류", "원인분류", "대상장비 및 부품", "세부조치방식",
+      "작업 상세 내용 및 조치 결과", "수행주체", "작업자/담당자", "조치상태", "소요비용(원)", "특이사항 및 비고", "등록자"
+    ];
+
+    const rows = list.map((h, idx) => [
+      idx + 1,
+      h.issue_date || h.action_date || "-",
+      h.action_date || "-",
+      h.station_name || finalName,
+      finalCode,
+      `${finalBasin} / ${finalRiver}`,
+      finalGauge,
+      h.action_type || "-",
+      h.category || "-",
+      h.cause_category || "-",
+      h.target_equipment || "-",
+      h.action_method || "-",
+      h.description || "-",
+      h.actor_type || "-",
+      h.worker_name || "-",
+      h.result_status || "-",
+      h.cost || 0,
+      h.memo || "-",
+      h.created_by || "-"
+    ]);
+
+    const aligns = [
+      "center", "center", "center", "left", "center", "center", "center",
+      "center", "center", "center", "left", "left",
+      "left", "center", "center", "center", "right", "left", "left"
+    ];
+    const numFmts = [];
+    numFmts[16] = "₩#,##0";
+    const statusCols = [7, 13, 15];
+
+    const wb = XLSX.utils.book_new();
+    const ws = this.buildStyledSheet(
+      `📍 [${finalName}] 자동유량관측시설 유지관리 및 조치 이력 대장`,
+      `관측소 코드: ${finalCode} | 수계/하천: ${finalBasin} / ${finalRiver} | 유속계: ${finalGauge} | 총 누적 조치: ${list.length}건 | 기준일: ${today}`,
+      headers,
+      rows,
+      { headerBg: "1E3A8A", aligns, numFmts, statusCols }
+    );
+
+    const safeSheetName = `${finalName.slice(0, 18)}_조치이력`;
+    XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+    const fileName = `${finalName}_유지관리조치이력_${todayFormatted}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    if (window.app) {
+      window.app.showToast(`[${fileName}] 엑셀 파일이 성공적으로 다운로드되었습니다.`, "success");
+    }
   }
 
   // D. 2026년 유속계 정도검정 현황 엑셀 (.xlsx)

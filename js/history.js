@@ -120,6 +120,189 @@ class MaintenanceHistoryManager {
     }
   }
 
+  onCauseChange(val) {
+    const customInput = document.getElementById("hist-form-cause-custom");
+    if (customInput) {
+      if (val === "custom") {
+        customInput.style.display = "block";
+        customInput.required = true;
+        customInput.focus();
+      } else {
+        customInput.style.display = "none";
+        customInput.required = false;
+        customInput.value = "";
+      }
+    }
+    this.autoComposeDescription();
+  }
+
+  onEquipmentSelectChange(val) {
+    const customInput = document.getElementById("hist-form-equipment-custom");
+    if (customInput) {
+      if (val === "custom") {
+        customInput.style.display = "block";
+        customInput.required = true;
+        customInput.focus();
+      } else {
+        customInput.style.display = "none";
+        customInput.required = false;
+        customInput.value = "";
+      }
+    }
+    this.autoComposeDescription();
+  }
+
+  onActionMethodChange(val) {
+    const customInput = document.getElementById("hist-form-action-method-custom");
+    if (customInput) {
+      if (val === "custom") {
+        customInput.style.display = "block";
+        customInput.required = true;
+        customInput.focus();
+      } else {
+        customInput.style.display = "none";
+        customInput.required = false;
+        customInput.value = "";
+      }
+    }
+    this.autoComposeDescription();
+  }
+
+  applyPreset(presetKey) {
+    const presets = {
+      rtu_reboot: {
+        type: "통신/전원조치",
+        category: "통신·데이터",
+        cause: "RTU/관측제어기 오동작 (락업)",
+        equipment: "관측제어기 (RTU / Data Logger)",
+        method: "단말기/RTU 원격 명령 재부팅",
+        status: "완료",
+        memo: "원격 통신 명령으로 RTU 재부팅 및 핑 응답 정상 확인"
+      },
+      battery_replace: {
+        type: "부품교체",
+        category: "전원·안전",
+        cause: "배터리 저전압 / 방전",
+        equipment: "주 전원 배터리 (DC 12V/24V)",
+        method: "신품 배터리 교체",
+        status: "완료",
+        memo: "신품 산업용 배터리 교체 후 부동충전 전압 정상 복구 확인"
+      },
+      modem_reset: {
+        type: "통신/전원조치",
+        category: "통신·데이터",
+        cause: "통신망 불안정 / 일시적 지연",
+        equipment: "통신 모뎀 (LTE/CDMA Router)",
+        method: "통신 모뎀 점검 및 재접속 확인",
+        status: "완료",
+        memo: "LTE 라우터 전원 리셋 및 IP 재할당, 무선 안테나 체결 상태 정비"
+      },
+      sensor_clean: {
+        type: "긴급보수",
+        category: "센서·계측",
+        cause: "센서 수광부 오염 / 유송잡물 걸림",
+        equipment: "유속계 센서 (ADVM/EWSV)",
+        method: "센서 수광부 세척 및 유송잡물 제거",
+        status: "완료",
+        memo: "센서 헤드 유송잡물 및 침전물 세척 제거 후 반사강도 정상 회복"
+      },
+      breaker_reset: {
+        type: "통신/전원조치",
+        category: "전원·안전",
+        cause: "차단기 트립 / 상시전원 단전",
+        equipment: "누전차단기 / 분전반 (MCCB/ELB)",
+        method: "현장 전원 리셋 및 차단기 복구",
+        status: "완료",
+        memo: "옥외 분전반 누전차단기 트립 원인 점검 및 재투입 정상 통전 확인"
+      },
+      sensor_calib: {
+        type: "수위계정비",
+        category: "센서·계측",
+        cause: "센서 영점/옵셋 드리프트",
+        equipment: "유속계 센서 (ADVM/EWSV)",
+        method: "센서 영점 교정 및 파라미터 보정",
+        status: "완료",
+        memo: "현장 기준 수위/유속 측정값 대조 후 영점 파라미터 보정 입력"
+      },
+      routine_ok: {
+        type: "정기점검",
+        category: "시설일반",
+        cause: "정기 순회 점검 (이상무)",
+        equipment: "관측소 시설함체 (옥외함/폴대)",
+        method: "현장 정밀점검 (특이사항 없음)",
+        status: "완료",
+        memo: "시설 외관, 전원 전압, 통신 상태, 센서 부착 상태 전반 양호"
+      }
+    };
+
+    const p = presets[presetKey];
+    if (!p) return;
+
+    const typeEl = document.getElementById("hist-form-type");
+    if (typeEl) typeEl.value = p.type;
+
+    const catEl = document.getElementById("hist-form-category");
+    if (catEl) catEl.value = p.category;
+
+    const causeEl = document.getElementById("hist-form-cause");
+    if (causeEl) {
+      causeEl.value = p.cause;
+      this.onCauseChange(p.cause);
+    }
+
+    const eqEl = document.getElementById("hist-form-equipment-select");
+    if (eqEl) {
+      eqEl.value = p.equipment;
+      this.onEquipmentSelectChange(p.equipment);
+    }
+
+    const methodEl = document.getElementById("hist-form-action-method");
+    if (methodEl) {
+      methodEl.value = p.method;
+      this.onActionMethodChange(p.method);
+    }
+
+    const statusEl = document.getElementById("hist-form-status");
+    if (statusEl) statusEl.value = p.status;
+
+    const memoEl = document.getElementById("hist-form-memo");
+    if (memoEl && p.memo) memoEl.value = p.memo;
+
+    this.autoComposeDescription();
+
+    if (window.app) {
+      window.app.showToast("표준 조치 템플릿이 양식에 자동 적용되었습니다.", "info");
+    }
+  }
+
+  autoComposeDescription() {
+    const descEl = document.getElementById("hist-form-desc");
+    if (!descEl) return;
+
+    const causeSelect = document.getElementById("hist-form-cause");
+    let cause = causeSelect ? causeSelect.value : "";
+    if (cause === "custom") {
+      cause = (document.getElementById("hist-form-cause-custom")?.value || "").trim() || "현장 특이 원인";
+    }
+
+    const eqSelect = document.getElementById("hist-form-equipment-select");
+    let equipment = eqSelect ? eqSelect.value : "";
+    if (equipment === "custom") {
+      equipment = (document.getElementById("hist-form-equipment-custom")?.value || "").trim() || "현장 장비";
+    }
+
+    const methodSelect = document.getElementById("hist-form-action-method");
+    let method = methodSelect ? methodSelect.value : "";
+    if (method === "custom") {
+      method = (document.getElementById("hist-form-action-method-custom")?.value || "").trim() || "현장 정비";
+    }
+
+    const status = document.getElementById("hist-form-status")?.value || "완료";
+
+    const composed = `[원인] ${cause} ➔ [조치] ${method} (${equipment}) 조치를 완료하였으며, 계측값 및 실시간 관측 데이터 정상 송수신 상태를 최종 복구·확인하였습니다. (판정: ${status})`;
+    descEl.value = composed;
+  }
+
   // ==========================================
   // 1. GLOBAL MAINTENANCE HISTORY LOGS
   // ==========================================
@@ -353,7 +536,51 @@ class MaintenanceHistoryManager {
     document.getElementById("hist-form-date").value = prefill.actionDate || today;
     document.getElementById("hist-form-type").value = prefill.actionType || "정기점검";
     document.getElementById("hist-form-category").value = prefill.category || "전원·안전";
-    document.getElementById("hist-form-equipment").value = prefill.targetEquipment || "";
+
+    // Cause
+    const causeSelect = document.getElementById("hist-form-cause");
+    const causeCustom = document.getElementById("hist-form-cause-custom");
+    const defaultCause = prefill.causeCategory || "통신망 불안정 / 일시적 지연";
+    if (causeSelect) {
+      const hasOpt = Array.from(causeSelect.options).some(o => o.value === defaultCause);
+      if (hasOpt) {
+        causeSelect.value = defaultCause;
+        if (causeCustom) { causeCustom.style.display = "none"; causeCustom.value = ""; }
+      } else {
+        causeSelect.value = "custom";
+        if (causeCustom) { causeCustom.style.display = "block"; causeCustom.value = defaultCause; }
+      }
+    }
+
+    // Equipment
+    const eqSelect = document.getElementById("hist-form-equipment-select");
+    const eqCustom = document.getElementById("hist-form-equipment-custom");
+    const defaultEq = prefill.targetEquipment || "통신 모뎀 (LTE/CDMA Router)";
+    if (eqSelect) {
+      const hasOpt = Array.from(eqSelect.options).some(o => o.value === defaultEq);
+      if (hasOpt) {
+        eqSelect.value = defaultEq;
+        if (eqCustom) { eqCustom.style.display = "none"; eqCustom.value = ""; }
+      } else {
+        eqSelect.value = "custom";
+        if (eqCustom) { eqCustom.style.display = "block"; eqCustom.value = defaultEq; }
+      }
+    }
+
+    // Action Method
+    const methodSelect = document.getElementById("hist-form-action-method");
+    const methodCustom = document.getElementById("hist-form-action-method-custom");
+    const defaultMethod = prefill.actionMethod || "단말기/RTU 원격 명령 재부팅";
+    if (methodSelect) {
+      const hasOpt = Array.from(methodSelect.options).some(o => o.value === defaultMethod);
+      if (hasOpt) {
+        methodSelect.value = defaultMethod;
+        if (methodCustom) { methodCustom.style.display = "none"; methodCustom.value = ""; }
+      } else {
+        methodSelect.value = "custom";
+        if (methodCustom) { methodCustom.style.display = "block"; methodCustom.value = defaultMethod; }
+      }
+    }
 
     const actor = prefill.actorType || "기술원(자체)";
     const actorSelect = document.getElementById("hist-form-actor-type");
@@ -375,7 +602,16 @@ class MaintenanceHistoryManager {
     document.getElementById("hist-form-worker").value = prefill.workerName || window.apiClient?.user?.name || "";
     document.getElementById("hist-form-status").value = prefill.resultStatus || "완료";
     document.getElementById("hist-form-cost").value = prefill.cost || "";
-    document.getElementById("hist-form-desc").value = prefill.description || "";
+
+    const descEl = document.getElementById("hist-form-desc");
+    if (descEl) {
+      if (prefill.description) {
+        descEl.value = prefill.description;
+      } else {
+        this.autoComposeDescription();
+      }
+    }
+
     document.getElementById("hist-form-memo").value = prefill.memo || "";
 
     const modal = document.getElementById("maint-history-form-modal");
@@ -418,7 +654,51 @@ class MaintenanceHistoryManager {
     document.getElementById("hist-form-date").value = item.action_date || "";
     document.getElementById("hist-form-type").value = item.action_type || "정기점검";
     document.getElementById("hist-form-category").value = item.category || "전원·안전";
-    document.getElementById("hist-form-equipment").value = item.target_equipment || "";
+
+    // Cause
+    const causeSelect = document.getElementById("hist-form-cause");
+    const causeCustom = document.getElementById("hist-form-cause-custom");
+    const itemCause = item.cause_category || "통신망 불안정 / 일시적 지연";
+    if (causeSelect) {
+      const hasOpt = Array.from(causeSelect.options).some(o => o.value === itemCause);
+      if (hasOpt) {
+        causeSelect.value = itemCause;
+        if (causeCustom) { causeCustom.style.display = "none"; causeCustom.value = ""; }
+      } else {
+        causeSelect.value = "custom";
+        if (causeCustom) { causeCustom.style.display = "block"; causeCustom.value = itemCause; }
+      }
+    }
+
+    // Equipment
+    const eqSelect = document.getElementById("hist-form-equipment-select");
+    const eqCustom = document.getElementById("hist-form-equipment-custom");
+    const itemEq = item.target_equipment || "통신 모뎀 (LTE/CDMA Router)";
+    if (eqSelect) {
+      const hasOpt = Array.from(eqSelect.options).some(o => o.value === itemEq);
+      if (hasOpt) {
+        eqSelect.value = itemEq;
+        if (eqCustom) { eqCustom.style.display = "none"; eqCustom.value = ""; }
+      } else {
+        eqSelect.value = "custom";
+        if (eqCustom) { eqCustom.style.display = "block"; eqCustom.value = itemEq; }
+      }
+    }
+
+    // Action Method
+    const methodSelect = document.getElementById("hist-form-action-method");
+    const methodCustom = document.getElementById("hist-form-action-method-custom");
+    const itemMethod = item.action_method || "단말기/RTU 원격 명령 재부팅";
+    if (methodSelect) {
+      const hasOpt = Array.from(methodSelect.options).some(o => o.value === itemMethod);
+      if (hasOpt) {
+        methodSelect.value = itemMethod;
+        if (methodCustom) { methodCustom.style.display = "none"; methodCustom.value = ""; }
+      } else {
+        methodSelect.value = "custom";
+        if (methodCustom) { methodCustom.style.display = "block"; methodCustom.value = itemMethod; }
+      }
+    }
 
     const actorSelect = document.getElementById("hist-form-actor-type");
     const customInput = document.getElementById("hist-form-actor-custom");
@@ -463,7 +743,24 @@ class MaintenanceHistoryManager {
 
     const actionType = document.getElementById("hist-form-type").value;
     const category = document.getElementById("hist-form-category").value;
-    const targetEquipment = document.getElementById("hist-form-equipment").value.trim();
+
+    const causeSelect = document.getElementById("hist-form-cause");
+    let causeCategory = causeSelect ? causeSelect.value : "";
+    if (causeCategory === "custom") {
+      causeCategory = (document.getElementById("hist-form-cause-custom")?.value || "").trim() || "기타/일반";
+    }
+
+    const eqSelect = document.getElementById("hist-form-equipment-select");
+    let targetEquipment = eqSelect ? eqSelect.value : "";
+    if (targetEquipment === "custom") {
+      targetEquipment = (document.getElementById("hist-form-equipment-custom")?.value || "").trim() || "기타 장비";
+    }
+
+    const methodSelect = document.getElementById("hist-form-action-method");
+    let actionMethod = methodSelect ? methodSelect.value : "";
+    if (actionMethod === "custom") {
+      actionMethod = (document.getElementById("hist-form-action-method-custom")?.value || "").trim() || "기타 조치";
+    }
 
     const actorSelectVal = document.getElementById("hist-form-actor-type").value;
     let actorType = actorSelectVal;
@@ -489,7 +786,9 @@ class MaintenanceHistoryManager {
       action_date: actionDate,
       action_type: actionType,
       category,
+      cause_category: causeCategory,
       target_equipment: targetEquipment,
+      action_method: actionMethod,
       actor_type: actorType,
       worker_name: workerName,
       result_status: resultStatus,
