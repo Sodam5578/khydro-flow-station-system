@@ -131,9 +131,9 @@ class MonitorManager {
         this.updateCategoryPills();
         this.applyFilters();
 
-        // Refresh GIS markers if map is initialized
+        // Refresh GIS markers if map is initialized (force count label rebuild with new issue stats)
         if (window.gisManager && window.gisManager.map) {
-          window.gisManager.renderMarkers();
+          window.gisManager.renderMarkers(true);
         }
 
         const timeEl = document.getElementById("monitor-target-time");

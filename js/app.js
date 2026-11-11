@@ -305,8 +305,23 @@ class App {
 
     const gisSearch = document.getElementById("gis-search-input");
     if (gisSearch) {
+      let searchDebounceTimer = null;
       gisSearch.addEventListener("input", (e) => {
-        window.gisManager.setFilters({ searchKeyword: e.target.value });
+        const val = e.target.value;
+        clearTimeout(searchDebounceTimer);
+        if (!val) {
+          window.gisManager.setFilters({ searchKeyword: "" });
+        } else {
+          searchDebounceTimer = setTimeout(() => {
+            window.gisManager.setFilters({ searchKeyword: val });
+          }, 150);
+        }
+      });
+      gisSearch.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          clearTimeout(searchDebounceTimer);
+          window.gisManager.setFilters({ searchKeyword: e.target.value });
+        }
       });
     }
   }

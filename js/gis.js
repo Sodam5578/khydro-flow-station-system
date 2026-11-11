@@ -30,36 +30,41 @@ class GISManager {
   init(containerId = "map") {
     if (this.map) return;
 
-    // Center on South Korea
+    // Center on South Korea with Canvas hardware acceleration
     this.map = L.map(containerId, {
       center: [36.3, 127.8],
       zoom: 7.5,
-      zoomControl: true
+      zoomControl: true,
+      preferCanvas: true
     });
 
     // 1. Create Dedicated Basins Pane
     this.map.createPane("basinsPane");
     this.map.getPane("basinsPane").style.zIndex = 350;
 
-    // 2. Base Tile Layers
+    // 2. Base Tile Layers with tile caching buffer
     const esriGrayBase = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
       attribution: "Tiles &copy; Esri",
-      maxZoom: 16
+      maxZoom: 16,
+      keepBuffer: 6
     });
 
     const esriGrayLabels = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}", {
       attribution: "",
-      maxZoom: 16
+      maxZoom: 16,
+      keepBuffer: 6
     });
 
     const esriTopo = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}", {
       attribution: "Tiles &copy; Esri",
-      maxZoom: 18
+      maxZoom: 18,
+      keepBuffer: 6
     });
 
     const osmLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
-      attribution: "&copy; OpenStreetMap contributors"
+      attribution: "&copy; OpenStreetMap contributors",
+      keepBuffer: 6
     });
 
     const cleanLightGroup = L.layerGroup([esriGrayBase, esriGrayLabels]);
@@ -133,8 +138,12 @@ class GISManager {
       this.map.removeLayer(this.basinsLayer);
     }
 
+    // High-performance HTML5 Canvas renderer for 117 middle basins (32,871 coordinates)
+    const basinsRenderer = L.canvas({ pane: "basinsPane", tolerance: 6 });
+
     this.basinsLayer = L.geoJSON(geojsonData, {
       pane: "basinsPane",
+      renderer: basinsRenderer,
       style: (feature) => {
         const c = this.getBasinColor(feature.properties || {});
         return {
@@ -203,141 +212,158 @@ class GISManager {
 
   setStations(stations) {
     this.currentStations = stations || [];
-    this.renderMarkers();
+    this.renderMarkers(true);
   }
 
-  updateFilterLabelsWithCounts() {
+  updateFilterLabelsWithCounts(forceRebuild = false) {
     const allStations = window.dataManager ? window.dataManager.getAll() : [];
     if (!allStations || allStations.length === 0) return;
     const liveIssuesMap = window.liveIssuesMap || {};
     const totalCount = allStations.length;
 
     // 1. Region Counts
-    let hanCount = 0, nakdongCount = 0, geumCount = 0, yeongsanCount = 0;
-    allStations.forEach(st => {
-      const reg = st.region || "";
-      if (reg.includes("한강")) hanCount++;
-      else if (reg.includes("낙동강")) nakdongCount++;
-      else if (reg.includes("금강")) geumCount++;
-      else if (reg.includes("영산강") || reg.includes("섬진강")) yeongsanCount++;
-    });
-
     const regionSelect = document.getElementById("gis-filter-region");
     if (regionSelect) {
-      const cur = this.filters.region;
-      regionSelect.innerHTML = `
-        <option value="all" ${cur === "all" ? "selected" : ""}>전체 권역 보기 (${totalCount}개소)</option>
-        <option value="한강" ${cur === "한강" ? "selected" : ""}>한강 권역 (${hanCount}개소)</option>
-        <option value="낙동강" ${cur === "낙동강" ? "selected" : ""}>낙동강 권역 (${nakdongCount}개소)</option>
-        <option value="금강" ${cur === "금강" ? "selected" : ""}>금강 권역 (${geumCount}개소)</option>
-        <option value="영산강" ${cur === "영산강" ? "selected" : ""}>영산강·섬진강 권역 (${yeongsanCount}개소)</option>
-      `;
+      if (forceRebuild || regionSelect.options.length <= 1) {
+        let hanCount = 0, nakdongCount = 0, geumCount = 0, yeongsanCount = 0;
+        allStations.forEach(st => {
+          const reg = st.region || "";
+          if (reg.includes("한강")) hanCount++;
+          else if (reg.includes("낙동강")) nakdongCount++;
+          else if (reg.includes("금강")) geumCount++;
+          else if (reg.includes("영산강") || reg.includes("섬진강")) yeongsanCount++;
+        });
+        const cur = this.filters.region;
+        regionSelect.innerHTML = `
+          <option value="all" ${cur === "all" ? "selected" : ""}>전체 권역 보기 (${totalCount}개소)</option>
+          <option value="한강" ${cur === "한강" ? "selected" : ""}>한강 권역 (${hanCount}개소)</option>
+          <option value="낙동강" ${cur === "낙동강" ? "selected" : ""}>낙동강 권역 (${nakdongCount}개소)</option>
+          <option value="금강" ${cur === "금강" ? "selected" : ""}>금강 권역 (${geumCount}개소)</option>
+          <option value="영산강" ${cur === "영산강" ? "selected" : ""}>영산강·섬진강 권역 (${yeongsanCount}개소)</option>
+        `;
+      }
+      regionSelect.value = this.filters.region;
     }
 
     // 2. Gauge Type Counts
-    let dualCount = 0, ewsvCount = 0, advmCount = 0;
-    allStations.forEach(st => {
-      const isDual = !!st.isDualGauge || st.gaugeCategory === "DUAL" || (st.gaugeType && st.gaugeType.includes("EWSV") && st.gaugeType.includes("ADVM"));
-      if (isDual) dualCount++;
-      else if (st.gaugeType && st.gaugeType.includes("EWSV")) ewsvCount++;
-      else if (st.gaugeType && st.gaugeType.includes("ADVM")) advmCount++;
-    });
-
     const gaugeSelect = document.getElementById("gis-filter-gauge");
     if (gaugeSelect) {
-      const cur = this.filters.gaugeType;
-      gaugeSelect.innerHTML = `
-        <option value="all" ${cur === "all" ? "selected" : ""}>전체 형식 보기 (${totalCount}개소)</option>
-        <option value="DUAL" ${cur === "DUAL" ? "selected" : ""}>⚡ EWSV + ADVM (이중화 ${dualCount}개소)</option>
-        <option value="EWSV" ${cur === "EWSV" ? "selected" : ""}>EWSV (전자파 단독 ${ewsvCount}개소)</option>
-        <option value="ADVM" ${cur === "ADVM" ? "selected" : ""}>ADVM (초음파 단독 ${advmCount}개소)</option>
-      `;
+      if (forceRebuild || gaugeSelect.options.length <= 1) {
+        let dualCount = 0, ewsvCount = 0, advmCount = 0;
+        allStations.forEach(st => {
+          const isDual = !!st.isDualGauge || st.gaugeCategory === "DUAL" || (st.gaugeType && st.gaugeType.includes("EWSV") && st.gaugeType.includes("ADVM"));
+          if (isDual) dualCount++;
+          else if (st.gaugeType && st.gaugeType.includes("EWSV")) ewsvCount++;
+          else if (st.gaugeType && st.gaugeType.includes("ADVM")) advmCount++;
+        });
+        const cur = this.filters.gaugeType;
+        gaugeSelect.innerHTML = `
+          <option value="all" ${cur === "all" ? "selected" : ""}>전체 형식 보기 (${totalCount}개소)</option>
+          <option value="DUAL" ${cur === "DUAL" ? "selected" : ""}>⚡ EWSV + ADVM (이중화 ${dualCount}개소)</option>
+          <option value="EWSV" ${cur === "EWSV" ? "selected" : ""}>EWSV (전자파 단독 ${ewsvCount}개소)</option>
+          <option value="ADVM" ${cur === "ADVM" ? "selected" : ""}>ADVM (초음파 단독 ${advmCount}개소)</option>
+        `;
+      }
+      gaugeSelect.value = this.filters.gaugeType;
     }
 
     // 3. Monitor Status Counts
-    let criticalCount = 0, cautionCount = 0, abnormalCount = 0;
-    allStations.forEach(st => {
-      const stCodeStr = String(st.code || "").trim();
-      const stNameStr = String(st.name || "").trim();
-      const cleanName = stNameStr.replace(/[\(\)\s]/g, "");
-      const issues = (stCodeStr && liveIssuesMap[stCodeStr]) || (stNameStr && liveIssuesMap[stNameStr]) || (cleanName && liveIssuesMap[cleanName]) || [];
-      const statusType = this.classifyStationIssues(issues);
-      if (statusType === "critical") {
-        criticalCount++;
-        abnormalCount++;
-      } else if (statusType === "caution") {
-        cautionCount++;
-        abnormalCount++;
-      }
-    });
-    const normalCount = Math.max(0, totalCount - abnormalCount);
-
     const monitorSelect = document.getElementById("gis-filter-monitor");
     if (monitorSelect) {
-      const cur = this.filters.monitorStatus;
-      monitorSelect.innerHTML = `
-        <option value="all" ${cur === "all" ? "selected" : ""}>전체 관측상태 보기 (${totalCount}개소)</option>
-        <option value="critical" ${cur === "critical" ? "selected" : ""} style="color:#b91c1c; font-weight:700;">🔴 미수신·배터리 이상 (${criticalCount}개소)</option>
-        <option value="caution" ${cur === "caution" ? "selected" : ""} style="color:#a16207; font-weight:700;">🟡 기타 이상 주의 (${cautionCount}개소)</option>
-        <option value="abnormal" ${cur === "abnormal" ? "selected" : ""}>🚨 전체 이상 발생 (${abnormalCount}개소)</option>
-        <option value="normal" ${cur === "normal" ? "selected" : ""} style="color:#15803d; font-weight:700;">🟢 정상 수신 지점 (${normalCount}개소)</option>
-      `;
+      if (forceRebuild || monitorSelect.options.length <= 1) {
+        let criticalCount = 0, cautionCount = 0, abnormalCount = 0;
+        allStations.forEach(st => {
+          const stCodeStr = String(st.code || "").trim();
+          const stNameStr = String(st.name || "").trim();
+          const cleanName = stNameStr.replace(/[\(\)\s]/g, "");
+          const issues = (stCodeStr && liveIssuesMap[stCodeStr]) || (stNameStr && liveIssuesMap[stNameStr]) || (cleanName && liveIssuesMap[cleanName]) || [];
+          const statusType = this.classifyStationIssues(issues);
+          if (statusType === "critical") {
+            criticalCount++;
+            abnormalCount++;
+          } else if (statusType === "caution") {
+            cautionCount++;
+            abnormalCount++;
+          }
+        });
+        const normalCount = Math.max(0, totalCount - abnormalCount);
+        const cur = this.filters.monitorStatus;
+        monitorSelect.innerHTML = `
+          <option value="all" ${cur === "all" ? "selected" : ""}>전체 관측상태 보기 (${totalCount}개소)</option>
+          <option value="critical" ${cur === "critical" ? "selected" : ""} style="color:#b91c1c; font-weight:700;">🔴 미수신·배터리 이상 (${criticalCount}개소)</option>
+          <option value="caution" ${cur === "caution" ? "selected" : ""} style="color:#a16207; font-weight:700;">🟡 기타 이상 주의 (${cautionCount}개소)</option>
+          <option value="abnormal" ${cur === "abnormal" ? "selected" : ""}>🚨 전체 이상 발생 (${abnormalCount}개소)</option>
+          <option value="normal" ${cur === "normal" ? "selected" : ""} style="color:#15803d; font-weight:700;">🟢 정상 수신 지점 (${normalCount}개소)</option>
+        `;
+      }
+      monitorSelect.value = this.filters.monitorStatus;
     }
 
     // 4. Designated Checkboxes Counts
-    let operatingCount = 0, floodCount = 0, droughtCount = 0, calibCount = 0, solarCount = 0, wirelessCount = 0;
-    allStations.forEach(st => {
-      if (st.isOperating2026) operatingCount++;
-      if (st.floodAlert) floodCount++;
-      if (st.droughtAlert) droughtCount++;
-      if (st.calib2026) calibCount++;
-      if (st.solarInstall) solarCount++;
-      if (st.ewsvWireless || st.maintenance?.ewsvWireless) wirelessCount++;
-    });
+    if (forceRebuild || !this._checkboxLabelsSet) {
+      let dualCount = 0;
+      allStations.forEach(st => {
+        const isDual = !!st.isDualGauge || st.gaugeCategory === "DUAL" || (st.gaugeType && st.gaugeType.includes("EWSV") && st.gaugeType.includes("ADVM"));
+        if (isDual) dualCount++;
+      });
+      let operatingCount = 0, floodCount = 0, droughtCount = 0, calibCount = 0, solarCount = 0, wirelessCount = 0;
+      allStations.forEach(st => {
+        if (st.isOperating2026) operatingCount++;
+        if (st.floodAlert) floodCount++;
+        if (st.droughtAlert) droughtCount++;
+        if (st.calib2026) calibCount++;
+        if (st.solarInstall) solarCount++;
+        if (st.ewsvWireless || st.maintenance?.ewsvWireless) wirelessCount++;
+      });
 
-    const setCheckLabel = (checkId, labelText) => {
-      const input = document.getElementById(checkId);
-      if (input && input.parentElement) {
-        const span = input.parentElement.querySelector("span");
-        if (span) span.textContent = labelText;
-      }
-    };
+      const setCheckLabel = (checkId, labelText) => {
+        const input = document.getElementById(checkId);
+        if (input && input.parentElement) {
+          const span = input.parentElement.querySelector("span");
+          if (span) span.textContent = labelText;
+        }
+      };
 
-    setCheckLabel("gis-check-dual", `⚡ 이중화 지점 (${dualCount}개소)`);
-    setCheckLabel("gis-check-wireless", `📶 EWSV 무선지점 (${wirelessCount}개소)`);
-    setCheckLabel("gis-check-operating", `2026년 정상 운영 지점 (${operatingCount}개소)`);
-    setCheckLabel("gis-check-flood", `홍수특보 지정 지점 (${floodCount}개소)`);
-    setCheckLabel("gis-check-drought", `갈수예보 지정 지점 (${droughtCount}개소)`);
-    setCheckLabel("gis-check-calib", `26년 검정대상 지점 (${calibCount}개소)`);
-    setCheckLabel("gis-check-solar", `태양광 설치 지점 (${solarCount}개소)`);
+      setCheckLabel("gis-check-dual", `⚡ 이중화 지점 (${dualCount}개소)`);
+      setCheckLabel("gis-check-wireless", `📶 EWSV 무선지점 (${wirelessCount}개소)`);
+      setCheckLabel("gis-check-operating", `2026년 정상 운영 지점 (${operatingCount}개소)`);
+      setCheckLabel("gis-check-flood", `홍수특보 지정 지점 (${floodCount}개소)`);
+      setCheckLabel("gis-check-drought", `갈수예보 지정 지점 (${droughtCount}개소)`);
+      setCheckLabel("gis-check-calib", `26년 검정대상 지점 (${calibCount}개소)`);
+      setCheckLabel("gis-check-solar", `태양광 설치 지점 (${solarCount}개소)`);
+      this._checkboxLabelsSet = true;
+    }
 
     // 5. Install Year Counts
     const yearSelect = document.getElementById("gis-filter-year");
     if (yearSelect) {
-      const yearsMap = {};
-      allStations.forEach(st => {
-        if (st.installYear) {
-          const y = String(st.installYear).trim();
-          yearsMap[y] = (yearsMap[y] || 0) + 1;
-        }
-      });
-      const sortedYears = Object.keys(yearsMap).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
-      const currentVal = this.filters.installYear;
+      if (forceRebuild || yearSelect.options.length <= 1) {
+        const yearsMap = {};
+        allStations.forEach(st => {
+          if (st.installYear) {
+            const y = String(st.installYear).trim();
+            yearsMap[y] = (yearsMap[y] || 0) + 1;
+          }
+        });
+        const sortedYears = Object.keys(yearsMap).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+        const currentVal = this.filters.installYear;
 
-      let optionsHtml = `<option value="all" ${currentVal === "all" ? "selected" : ""}>전체 설치년도 보기 (${totalCount}개소)</option>`;
-      sortedYears.forEach(y => {
-        optionsHtml += `<option value="${y}" ${currentVal === y ? "selected" : ""}>${y}년 설치 (${yearsMap[y]}개소)</option>`;
-      });
-      yearSelect.innerHTML = optionsHtml;
+        let optionsHtml = `<option value="all" ${currentVal === "all" ? "selected" : ""}>전체 설치년도 보기 (${totalCount}개소)</option>`;
+        sortedYears.forEach(y => {
+          optionsHtml += `<option value="${y}" ${currentVal === y ? "selected" : ""}>${y}년 설치 (${yearsMap[y]}개소)</option>`;
+        });
+        yearSelect.innerHTML = optionsHtml;
+      }
+      yearSelect.value = this.filters.installYear;
     }
   }
 
   setFilters(newFilters) {
     this.filters = { ...this.filters, ...newFilters };
-    this.renderMarkers();
+    this.renderMarkers(false);
   }
 
-  renderMarkers() {
+  renderMarkers(forceRebuild = false) {
     if (!this.map || !this.markersLayer) return;
 
     // Ensure dedicated hierarchy panes exist
@@ -354,18 +380,18 @@ class GISManager {
       this.map.getPane("criticalStationPane").style.zIndex = "660";
     }
 
-    this.updateFilterLabelsWithCounts();
+    this.updateFilterLabelsWithCounts(forceRebuild);
     this.markersLayer.clearLayers();
     this.allMarkers = [];
 
-    const stations = this.currentStations.length > 0 ? this.currentStations : window.dataManager.getAll();
+    const stations = this.currentStations.length > 0 ? this.currentStations : (window.dataManager ? window.dataManager.getAll() : []);
     const liveIssuesMap = window.liveIssuesMap || {};
 
     let visibleCount = 0;
 
-    // Layer Hierarchy Ordering:
-    // 1. Normal (Green / Dual) on bottom -> 2. Caution (Yellow) in middle -> 3. Critical (Red Warning) on top
-    const getLayerPriority = (st) => {
+    // Precompute station priorities & issues to avoid redundant string parsing and regex
+    const stationInfoMap = new Map();
+    stations.forEach(st => {
       let issues = [];
       const stCodeStr = String(st.code || "").trim();
       const stNameStr = String(st.name || "").trim();
@@ -376,12 +402,17 @@ class GISManager {
       else if (cleanName && liveIssuesMap[cleanName]) issues = liveIssuesMap[cleanName];
 
       const statusType = this.classifyStationIssues(issues);
-      if (statusType === "critical") return 3; // Top (Red)
-      if (statusType === "caution") return 2;  // Middle (Yellow)
-      return 1; // Bottom (Green / Normal)
-    };
+      const priority = statusType === "critical" ? 3 : (statusType === "caution" ? 2 : 1);
+      stationInfoMap.set(st.id, { issues, statusType, priority });
+    });
 
-    const sortedStations = [...stations].sort((a, b) => getLayerPriority(a) - getLayerPriority(b));
+    // Layer Hierarchy Ordering:
+    // 1. Normal (Green / Dual) on bottom -> 2. Caution (Yellow) in middle -> 3. Critical (Red Warning) on top
+    const sortedStations = [...stations].sort((a, b) => {
+      const pA = stationInfoMap.get(a.id)?.priority || 1;
+      const pB = stationInfoMap.get(b.id)?.priority || 1;
+      return pA - pB;
+    });
 
     sortedStations.forEach(st => {
       const lat = st.coords?.lat;
@@ -390,20 +421,9 @@ class GISManager {
 
       const isDual = !!st.isDualGauge || st.gaugeCategory === "DUAL" || (st.gaugeType && st.gaugeType.includes("EWSV") && st.gaugeType.includes("ADVM"));
 
-      // Check real-time issues by code and name
-      let issues = [];
-      const stCodeStr = String(st.code || "").trim();
-      const stNameStr = String(st.name || "").trim();
-      const cleanName = stNameStr.replace(/[\(\)\s]/g, "");
-
-      if (stCodeStr && liveIssuesMap[stCodeStr]) {
-        issues = liveIssuesMap[stCodeStr];
-      } else if (stNameStr && liveIssuesMap[stNameStr]) {
-        issues = liveIssuesMap[stNameStr];
-      } else if (cleanName && liveIssuesMap[cleanName]) {
-        issues = liveIssuesMap[cleanName];
-      }
-      const statusType = this.classifyStationIssues(issues);
+      const info = stationInfoMap.get(st.id) || { issues: [], statusType: "normal", priority: 1 };
+      const issues = info.issues;
+      const statusType = info.statusType;
       const isAbnormal = statusType !== "normal";
       const isCritical = statusType === "critical";
       const isCaution = statusType === "caution";

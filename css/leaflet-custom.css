@@ -153,16 +153,30 @@
   gap: 0.5rem;
 }
 
-/* Real-time Monitor Abnormal Pin & Pulse Animation (Top Layer - Slightly Larger) */
+/* Real-time Monitor Abnormal Pin & Pulse Animation (Top Layer - Slightly Larger, GPU-accelerated) */
 .pin-issue-abnormal {
+  position: relative;
   width: 35px !important;
   height: 35px !important;
   font-size: 15.5px !important;
   background-color: #dc2626 !important;
   border: 2.5px solid #ffffff !important;
-  box-shadow: 0 0 0 3.5px rgba(220, 38, 38, 0.45), 0 4px 12px rgba(0, 0, 0, 0.4) !important;
-  animation: pulseWarning 1.8s infinite ease-in-out;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.45), 0 4px 10px rgba(0, 0, 0, 0.35) !important;
   z-index: 1000 !important;
+}
+
+.pin-issue-abnormal::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  border: 2px solid #ef4444;
+  animation: pulseWarningGpu 1.8s infinite ease-out;
+  pointer-events: none;
+  box-sizing: border-box;
 }
 
 .pin-issue-abnormal:hover {
@@ -170,6 +184,22 @@
   z-index: 3500 !important;
 }
 
+@keyframes pulseWarningGpu {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.85;
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* Retained for other UI badges (e.g., monitor.js) */
 @keyframes pulseWarning {
   0% {
     transform: scale(1);
