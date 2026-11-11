@@ -1508,6 +1508,7 @@
                   <option value="kihs02">이동오 (팀원)</option>
                   <option value="kihs03">나형욱 (팀원)</option>
                   <option value="kihs04">박세찬 (팀원)</option>
+                  <option value="test">테스트 (팀원)</option>
                 </select>
 
                 <select id="log-filter-action" class="filter-select">
@@ -1945,6 +1946,7 @@
                   <option value="이동오">이동오 팀원</option>
                   <option value="나형욱">나형욱 팀원</option>
                   <option value="박세찬">박세찬 팀원</option>
+                  <option value="테스트">테스트 팀원</option>
                 </select>
 
                 <!-- Schedule Type Filter -->
@@ -2649,6 +2651,7 @@
                 <option value="이동오">이동오 팀원</option>
                 <option value="나형욱">나형욱 팀원</option>
                 <option value="박세찬">박세찬 팀원</option>
+                <option value="테스트">테스트 팀원</option>
                 <option value="전체">👥 전체/공동</option>
               </select>
             </div>
@@ -2661,12 +2664,13 @@
             </label>
             <input type="text" id="sched-form-attendees" class="form-input" placeholder="예: 이동오, 박세찬 (직접 입력 또는 아래 버튼 클릭)">
             
-            <div style="display:flex; align-items:center; gap:6px; margin-top:0.4rem;">
+            <div style="display:flex; align-items:center; gap:6px; margin-top:0.4rem; flex-wrap:wrap;">
               <span style="font-size:0.72rem; color:#64748b; font-weight:600;">팀원 추가:</span>
               <button type="button" class="btn btn-outline btn-sm" style="padding:1px 7px; font-size:0.72rem; border-radius:12px;" onclick="window.scheduleManager.toggleAttendee('윤영선')">+ 윤영선</button>
               <button type="button" class="btn btn-outline btn-sm" style="padding:1px 7px; font-size:0.72rem; border-radius:12px;" onclick="window.scheduleManager.toggleAttendee('이동오')">+ 이동오</button>
               <button type="button" class="btn btn-outline btn-sm" style="padding:1px 7px; font-size:0.72rem; border-radius:12px;" onclick="window.scheduleManager.toggleAttendee('나형욱')">+ 나형욱</button>
               <button type="button" class="btn btn-outline btn-sm" style="padding:1px 7px; font-size:0.72rem; border-radius:12px;" onclick="window.scheduleManager.toggleAttendee('박세찬')">+ 박세찬</button>
+              <button type="button" class="btn btn-outline btn-sm" style="padding:1px 7px; font-size:0.72rem; border-radius:12px;" onclick="window.scheduleManager.toggleAttendee('테스트')">+ 테스트</button>
             </div>
           </div>
 

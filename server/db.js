@@ -32,7 +32,8 @@ const officialUsers = [
   { u: "kihs01", p: "kihs01", name: "윤영선", pos: "팀장", role: "member", team: "수자원인프라팀", email: "" },
   { u: "kihs02", p: "kihs02", name: "이동오", pos: "팀원", role: "member", team: "수자원인프라팀", email: "" },
   { u: "kihs03", p: "kihs03", name: "나형욱", pos: "팀원", role: "member", team: "수자원인프라팀", email: "" },
-  { u: "kihs04", p: "kihs04", name: "박세찬", pos: "팀원", role: "member", team: "수자원인프라팀", email: "" }
+  { u: "kihs04", p: "kihs04", name: "박세찬", pos: "팀원", role: "member", team: "수자원인프라팀", email: "" },
+  { u: "test", p: "test1234", name: "테스트", pos: "팀원", role: "member", team: "수자원인프라팀", email: "" }
 ];
 
 async function initDb() {
@@ -374,7 +375,7 @@ async function initDb() {
   if (supabase) {
     try {
       // 1. Seed Users in Supabase
-      const { data: existingUsers, error: uErr } = await supabase.from("users").select("username, email");
+      const { data: existingUsers, error: uErr } = await supabase.from("users").select("username");
       if (!uErr) {
         const existingMap = new Map((existingUsers || []).map(u => [u.username, u]));
         for (const user of officialUsers) {
@@ -386,12 +387,11 @@ async function initDb() {
               name: user.name,
               position: user.pos,
               role: user.role,
-              team: user.team,
-              email: ""
+              team: user.team
             });
           }
         }
-        console.log("✓ [Supabase] Official 5 accounts verified in cloud.");
+        console.log("✓ [Supabase] Official accounts verified in cloud.");
       }
 
       // 2. Seed Stations in Supabase (if empty)
