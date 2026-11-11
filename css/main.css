@@ -739,6 +739,12 @@ body {
   animation: modalIn 0.2s ease-out;
 }
 
+#detail-modal .modal-dialog,
+#edit-modal .modal-dialog {
+  max-width: 980px;
+  width: 94vw;
+}
+
 @keyframes modalIn {
   from { opacity: 0; transform: scale(0.96) translateY(10px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
