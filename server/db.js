@@ -28,7 +28,7 @@ const localDbPath = path.join(__dirname, "../data/khydro.db");
 const sqliteDb = new sqlite3.Database(localDbPath);
 
 const officialUsers = [
-  { u: "admin", p: "admin1234", name: "관리자 (총괄)", pos: "최고관리자", role: "admin", team: "수자원인프라팀", email: "" },
+  { u: "green", p: "green0617!", name: "관리자 (총괄)", pos: "최고관리자", role: "admin", team: "수자원인프라팀", email: "" },
   { u: "kihsa", p: "kihsa12#$", name: "송재현", pos: "실장", role: "manager", team: "수자원기획실", email: "" },
   { u: "kihs01", p: "kihs01", name: "윤영선", pos: "팀장", role: "member", team: "수자원인프라팀", email: "" },
   { u: "kihs02", p: "kihs02", name: "이동오", pos: "팀원", role: "member", team: "수자원인프라팀", email: "" },
