@@ -58,6 +58,9 @@ async function initDb() {
     // Ensure email column exists if users table was already created
     sqliteDb.run(`ALTER TABLE users ADD COLUMN email TEXT`, () => {});
 
+    // Ensure legacy 'admin' account is removed from local SQLite
+    sqliteDb.run(`DELETE FROM users WHERE username = 'admin'`, () => {});
+
     // Seed official users in SQLite (Email left empty for user direct input)
     for (const u of officialUsers) {
       const hash = bcrypt.hashSync(u.p, 10);
@@ -459,6 +462,10 @@ async function initDb() {
 const dbService = {
   // Users
   async getUserByUsername(username) {
+    if (username === "admin") {
+      // Legacy admin username is permanently disabled and replaced by 'green'
+      return null;
+    }
     let cloudUser = null;
     if (supabase) {
       const { data, error } = await supabase.from("users").select("*").eq("username", username).maybeSingle();
@@ -482,6 +489,7 @@ const dbService = {
 
   async getUserByUsernameAndEmail(username, email) {
     const cleanUser = (username || "").trim();
+    if (cleanUser === "admin") return null;
     const cleanEmail = (email || "").trim().toLowerCase();
 
     // 1. Check local SQLite (has real email column)
