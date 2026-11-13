@@ -685,7 +685,7 @@ class SmartNotifierService {
 
           <!-- Link CTA -->
           <div style="text-align:center; margin-top:28px; padding-top:20px; border-top:1px dashed #e2e8f0;">
-            <a href="https://khydro-flow-station-system.onrender.com" target="_blank" style="display:inline-block; background:#1e3a8a; color:#ffffff; padding:12px 28px; border-radius:8px; font-weight:700; text-decoration:none; font-size:14px; box-shadow:0 2px 6px rgba(30,58,138,0.25);">
+            <a href="https://khydro-hub.onrender.com" target="_blank" style="display:inline-block; background:#1e3a8a; color:#ffffff; padding:12px 28px; border-radius:8px; font-weight:700; text-decoration:none; font-size:14px; box-shadow:0 2px 6px rgba(30,58,138,0.25);">
               📊 통합 관리시스템 실시간 분석 바로가기 ➔
             </a>
             <div style="font-size:11px; color:#94a3b8; margin-top:8px;">
@@ -766,7 +766,7 @@ class SmartNotifierService {
           </div>
 
           <div style="text-align:center; margin-top:24px;">
-            <a href="https://khydro-flow-station-system.onrender.com" target="_blank" style="display:inline-block; background:#1e293b; color:#ffffff; padding:12px 24px; border-radius:8px; font-weight:700; text-decoration:none; font-size:14px;">
+            <a href="https://khydro-hub.onrender.com" target="_blank" style="display:inline-block; background:#1e293b; color:#ffffff; padding:12px 24px; border-radius:8px; font-weight:700; text-decoration:none; font-size:14px;">
               📊 통합 관리시스템 바로가기 ➔
             </a>
           </div>
