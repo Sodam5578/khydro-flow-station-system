@@ -144,7 +144,7 @@ class ExcelManager {
 
     if (title) {
       aoa.push([title]);
-      aoa.push([subtitle || `기준일시: ${new Date().toLocaleString("ko-KR")} | 한국수자원조사기술원 자동유량관측시설 관리시스템`]);
+      aoa.push([subtitle || `기준일시: ${new Date().toLocaleString("ko-KR")} | 한국수자원조사기술원 HydroHub (자동유량측정시설 통합관리시스템)`]);
       aoa.push([]); // blank spacing row
       startRowIdx = 3;
     }
