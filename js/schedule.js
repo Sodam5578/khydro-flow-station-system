@@ -277,8 +277,8 @@ class ScheduleManager {
     if (!s) return false;
     const currentUser = window.apiClient?.user;
     if (!currentUser) return false;
-    // 최고 관리자(admin)는 모든 일정 수정 및 드래그 이동 가능
-    if (currentUser.role === "admin" || currentUser.username === "admin") return true;
+    // 최고 관리자(admin) 및 관리자(manager)는 모든 일정 수정 및 드래그 이동 가능
+    if (currentUser.role === "admin" || currentUser.role === "manager" || currentUser.username === "admin") return true;
 
     const currentName = currentUser.name;
     const currentUsername = currentUser.username;

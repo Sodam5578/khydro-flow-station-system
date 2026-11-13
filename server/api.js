@@ -236,11 +236,11 @@ router.post("/auth/forgot-password", async (req, res) => {
   }
 });
 
-// 3. Activity Logs: Get Audit History (Admin Only)
+// 3. Activity Logs: Get Audit History (Admin & Manager)
 router.get("/logs", verifyToken, async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
-      return res.status(403).json({ success: false, message: "관리자(admin) 전용 메뉴입니다. 권한이 없습니다." });
+    if (req.user.role !== "admin" && req.user.role !== "manager") {
+      return res.status(403).json({ success: false, message: "관리자 전용 메뉴입니다. 권한이 없습니다." });
     }
     const limit = parseInt(req.query.limit, 10) || 200;
     const username = req.query.username;
@@ -768,7 +768,7 @@ router.put("/schedules/:id", verifyToken, async (req, res) => {
       return res.status(404).json({ success: false, message: "수정할 일정을 찾을 수 없습니다." });
     }
 
-    const isAdmin = req.user.role === "admin";
+    const isAdmin = req.user.role === "admin" || req.user.role === "manager";
     const isCreator = existing.created_by && existing.created_by.includes(req.user.username);
     const isAssignee = existing.assignee === req.user.name;
     const isAttendee = existing.attendees && existing.attendees.split(",").map(a => a.trim()).includes(req.user.name);
@@ -822,7 +822,7 @@ router.delete("/schedules/:id", verifyToken, async (req, res) => {
       return res.status(404).json({ success: false, message: "삭제할 일정을 찾을 수 없습니다." });
     }
 
-    const isAdmin = req.user.role === "admin";
+    const isAdmin = req.user.role === "admin" || req.user.role === "manager";
     const isCreator = existing.created_by && existing.created_by.includes(req.user.username);
     const isAssignee = existing.assignee === req.user.name;
 

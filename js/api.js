@@ -56,10 +56,14 @@ class ApiClient {
     const badgeContainer = document.getElementById("header-user-badge");
     if (!badgeContainer || !this.user) return;
 
-    const posText = this.user.position || (this.user.role === "admin" ? "관리자" : "팀원");
-    const roleBadge = this.user.role === "admin" 
-      ? `<span class="badge badge-purple" style="font-weight:700;">${posText}</span>` 
-      : `<span class="badge badge-blue">${posText}</span>`;
+    const posText = this.user.position || (this.user.role === "admin" ? "최고관리자" : (this.user.role === "manager" ? "관리자" : "팀원"));
+    let badgeClass = "badge-blue";
+    if (this.user.role === "admin") {
+      badgeClass = "badge-purple";
+    } else if (this.user.role === "manager") {
+      badgeClass = "badge-indigo";
+    }
+    const roleBadge = `<span class="badge ${badgeClass}" style="font-weight:700;">${posText}</span>`;
 
     badgeContainer.innerHTML = `
       <div style="display:flex; align-items:center; gap:0.5rem;">
@@ -77,14 +81,17 @@ class ApiClient {
       </div>
     `;
 
-    // Only Admin can see Audit Logs Navigation Menu
+    // Admin & Manager can see Audit Logs Navigation Menu
+    const canViewLogs = this.user && (this.user.role === "admin" || this.user.role === "manager");
     const navLogsBtn = document.getElementById("nav-logs-btn");
     if (navLogsBtn) {
-      navLogsBtn.style.display = (this.user.role === "admin") ? "flex" : "none";
+      navLogsBtn.style.display = canViewLogs ? "flex" : "none";
     }
 
-    // Only Admin can access Master Pack Download, Data Import, Restore, and Reset controls
-    const isAdmin = this.user && this.user.role === "admin";
+    // Only SuperAdmin (role === 'admin') can access Data Import (엑셀 밀어넣기), Restore, Reset, and Delete
+    const isSuperAdmin = this.user && this.user.role === "admin";
+    const canDownloadMasterPack = this.user && (this.user.role === "admin" || this.user.role === "manager");
+
     const masterPackEl = document.getElementById("setting-admin-masterpack");
     const userNoticeEl = document.getElementById("setting-user-excel-notice");
     const excelImportEl = document.getElementById("setting-admin-excel-import");
@@ -94,14 +101,14 @@ class ApiClient {
     const factoryResetEl = document.getElementById("setting-admin-factory-reset");
     const memberNoticeEl = document.getElementById("setting-member-notice");
 
-    if (masterPackEl) masterPackEl.style.display = isAdmin ? "flex" : "none";
-    if (userNoticeEl) userNoticeEl.style.display = isAdmin ? "none" : "block";
-    if (excelImportEl) excelImportEl.style.display = isAdmin ? "block" : "none";
-    if (stationsExcelImportBtn) stationsExcelImportBtn.style.display = isAdmin ? "inline-flex" : "none";
-    if (detailDeleteBtn) detailDeleteBtn.style.display = isAdmin ? "inline-flex" : "none";
-    if (jsonRestoreEl) jsonRestoreEl.style.display = isAdmin ? "block" : "none";
-    if (factoryResetEl) factoryResetEl.style.display = isAdmin ? "block" : "none";
-    if (memberNoticeEl) memberNoticeEl.style.display = isAdmin ? "none" : "block";
+    if (masterPackEl) masterPackEl.style.display = canDownloadMasterPack ? "flex" : "none";
+    if (userNoticeEl) userNoticeEl.style.display = isSuperAdmin ? "none" : "block";
+    if (excelImportEl) excelImportEl.style.display = isSuperAdmin ? "block" : "none";
+    if (stationsExcelImportBtn) stationsExcelImportBtn.style.display = isSuperAdmin ? "inline-flex" : "none";
+    if (detailDeleteBtn) detailDeleteBtn.style.display = isSuperAdmin ? "inline-flex" : "none";
+    if (jsonRestoreEl) jsonRestoreEl.style.display = isSuperAdmin ? "block" : "none";
+    if (factoryResetEl) factoryResetEl.style.display = isSuperAdmin ? "block" : "none";
+    if (memberNoticeEl) memberNoticeEl.style.display = isSuperAdmin ? "none" : "block";
   }
 
   logout() {

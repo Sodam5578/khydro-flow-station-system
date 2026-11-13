@@ -827,8 +827,16 @@ class App {
         document.getElementById("mypage-info-username").textContent = user.username || "-";
         const roleEl = document.getElementById("mypage-info-role");
         if (roleEl) {
-          roleEl.textContent = user.role === "admin" ? "최고관리자 (admin)" : "일반사용자 (member)";
-          roleEl.className = user.role === "admin" ? "badge badge-purple" : "badge badge-blue";
+          if (user.role === "admin") {
+            roleEl.textContent = "최고관리자 (admin)";
+            roleEl.className = "badge badge-purple";
+          } else if (user.role === "manager") {
+            roleEl.textContent = "관리자 (manager)";
+            roleEl.className = "badge badge-indigo";
+          } else {
+            roleEl.textContent = "일반사용자 (member)";
+            roleEl.className = "badge badge-blue";
+          }
         }
         document.getElementById("mypage-info-name").textContent = `${user.name || "-"} (${user.position || "팀원"})`;
         document.getElementById("mypage-info-team").textContent = user.team || "수자원인프라팀";
