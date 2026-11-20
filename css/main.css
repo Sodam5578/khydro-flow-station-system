@@ -2031,3 +2031,98 @@ textarea.form-input,
     flex-wrap: wrap;
   }
 }
+
+/* =========================================================
+   MONITORING ERROR LEDGER MODAL & TABLE ALIGNMENT RULES
+   ========================================================= */
+#monitoring-error-form-modal .modal-dialog {
+  max-width: 960px !important;
+  width: 94vw !important;
+}
+
+#station-action-history-modal .modal-dialog {
+  max-width: 960px !important;
+  width: 94vw !important;
+}
+
+#monitoring-error-form-modal .form-grid {
+  align-items: start;
+}
+
+#monitoring-error-form-modal .form-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 5px;
+  margin: 0 !important;
+  min-width: 0;
+}
+
+#monitoring-error-form-modal .form-label-row {
+  height: 22px;
+  min-height: 22px;
+  max-height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  white-space: nowrap;
+  gap: 6px;
+  margin: 0 !important;
+}
+
+#monitoring-error-form-modal .form-label {
+  height: 22px;
+  line-height: 22px;
+  white-space: nowrap;
+  margin: 0 !important;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+#monitoring-error-form-modal .form-select,
+#monitoring-error-form-modal .form-input {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  line-height: 38px !important;
+  margin: 0 !important;
+  padding: 0 12px !important;
+  font-size: 0.85rem !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  background-color: #ffffff !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  box-sizing: border-box !important;
+}
+
+#monitoring-error-form-modal .form-select {
+  padding-right: 32px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  background-size: 14px 14px !important;
+}
+
+#monitor-subview-ledger .custom-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+#monitor-subview-ledger .custom-table th,
+#monitor-subview-ledger .custom-table td {
+  padding: 0.65rem 0.6rem;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+#monitor-subview-ledger .custom-table td.cell-wrap {
+  white-space: normal !important;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+

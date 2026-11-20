@@ -380,13 +380,24 @@ class EquipmentService {
       [stationId]
     );
 
+    // Monitoring Error & Action Response Logs (from monitoring_error_logs)
+    const monitoringLogs = await this.all(
+      `SELECT * FROM monitoring_error_logs
+       WHERE station_id = ?
+          OR (station_code IS NOT NULL AND station_code != '' AND station_code = ?)
+          OR (station_name IS NOT NULL AND station_name != '' AND station_name = ?)
+       ORDER BY first_occur_date DESC, check_date DESC, id DESC`,
+      [stationId, station.code || "", station.name || ""]
+    );
+
     return {
       station,
       operatingDevices,
       otherDevices,
       totalCount: devices.length,
       works,
-      repairs
+      repairs,
+      monitoringLogs
     };
   }
 

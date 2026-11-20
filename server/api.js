@@ -933,6 +933,332 @@ router.post("/maintenance-history/batch", verifyToken, async (req, res) => {
   }
 });
 
+// ========================================================
+// 11.5 Monitoring Error Response Ledger (오류관리대장 & Rule_Codebook)
+// ========================================================
+router.get("/monitoring-logs/metadata", verifyToken, async (req, res) => {
+  try {
+    const meta = await dbService.getMonitoringMetadata();
+    res.json({ success: true, ...meta });
+  } catch (err) {
+    console.error("Get monitoring metadata error:", err);
+    res.status(500).json({ success: false, message: "모니터링 코드북/배정기준 조회 실패: " + err.message });
+  }
+});
+
+router.put("/monitoring-logs/station-assignment", verifyToken, async (req, res) => {
+  try {
+    const updated = await dbService.upsertStationAssignment(req.body || {});
+    logActivity(
+      req.user,
+      "지점담당자변경",
+      updated.station_name,
+      `관측소 기본 담당 변경: ${updated.region || ""} ${updated.assigned_team}팀 ${updated.assigned_manager}`,
+      req.ip
+    );
+    res.json({ success: true, data: updated, message: "지점 기본 담당자 정보가 저장되었습니다." });
+  } catch (err) {
+    console.error("Update station assignment error:", err);
+    res.status(500).json({ success: false, message: "지점 담당자 저장 실패: " + err.message });
+  }
+});
+
+router.put("/monitoring-logs/station-assignments/bulk", verifyToken, async (req, res) => {
+  try {
+    const records = req.body.records || req.body.assignments || [];
+    const result = await dbService.bulkUpsertStationAssignments(records);
+    logActivity(
+      req.user,
+      "지점담당자일괄변경",
+      `엑셀일괄업로드(${result.count}개소)`,
+      `엑셀 파일로 지점별 담당팀·담당자 ${result.count}개소 일괄 업데이트`,
+      req.ip
+    );
+    res.json({ success: true, count: result.count, message: `${result.count}개 관측소의 지점 담당자 정보가 일괄 반영되었습니다.` });
+  } catch (err) {
+    console.error("Bulk update station assignments error:", err);
+    res.status(500).json({ success: false, message: "지점 담당자 일괄 반영 실패: " + err.message });
+  }
+});
+
+router.get("/monitoring-logs", verifyToken, async (req, res) => {
+  try {
+    const result = await dbService.getMonitoringErrorLogs(req.query || {});
+    res.json({ success: true, ...result });
+  } catch (err) {
+    console.error("Get monitoring error logs error:", err);
+    res.status(500).json({ success: false, message: "오류관리대장 조회 실패: " + err.message });
+  }
+});
+
+router.get("/monitoring-logs/station", verifyToken, async (req, res) => {
+  try {
+    const { stationId, stationCode, stationName } = req.query;
+    const result = await dbService.getStationMonitoringErrorLogs(stationId, stationCode, stationName);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    console.error("Get station monitoring error logs error:", err);
+    res.status(500).json({ success: false, message: "지점별 오류관리대장 조회 실패: " + err.message });
+  }
+});
+
+// 11.6 Unified Station History Timeline (모니터링 조치 + 장비 유지관리·교체 + 수리 이력 통합 조회)
+router.get("/monitoring-logs/unified", verifyToken, async (req, res) => {
+  try {
+    const { stationId, stationCode, stationName, region, sourceType, keyword, limit = 1500 } = req.query;
+
+    // 1. Monitoring Error & Action Logs
+    const monRes = await dbService.getMonitoringErrorLogs({
+      stationId: stationId || "all",
+      stationCode: stationCode || "all",
+      region: region || "all",
+      keyword: "",
+      limit: 2000
+    });
+    let monRows = monRes.data || [];
+    if (stationName && (!stationId || stationId === "all") && (!stationCode || stationCode === "all")) {
+      monRows = monRows.filter(r => r.station_name && (r.station_name === stationName || r.station_name.includes(stationName)));
+    }
+
+    // 2. Equipment Field Works & Actions (유지관리·교체 이력)
+    const eqActions = await equipmentService.getActions({
+      stationId: stationId || stationName || "all",
+      region: region || "all",
+      search: "",
+      limit: 2000
+    });
+    let eqFiltered = eqActions || [];
+    if (stationCode && stationCode !== "all") {
+      eqFiltered = eqFiltered.filter(a => String(a.station_code || "") === String(stationCode) || (stationId && String(a.station_id) === String(stationId)));
+    }
+
+    // 3. Legacy Maintenance History table (if any records exist)
+    const maintRows = await dbService.getAllMaintenanceHistory({
+      stationId: stationId || "all",
+      limit: 1000
+    });
+    let maintFiltered = maintRows || [];
+    if (stationName && (!stationId || stationId === "all")) {
+      maintFiltered = maintFiltered.filter(m => m.station_name && m.station_name.includes(stationName));
+    }
+
+    // Build unified items list
+    const unified = [];
+
+    for (const m of monRows) {
+      unified.push({
+        uid: `MON-${m.id}`,
+        source: "MONITORING",
+        sourceLabel: "🛰️ 모니터링 조치·오류",
+        id: m.id,
+        date: m.first_occur_date || m.check_date || "",
+        subDate: m.end_date ? `종료: ${m.end_date}` : `확인: ${m.check_date || "-"}`,
+        station_id: m.station_id,
+        station_code: m.station_code || "",
+        station_name: m.station_name || "",
+        region: m.region || "",
+        install_method: m.install_method || "",
+        assigned_team: m.assigned_team || "",
+        assigned_manager: m.assigned_manager || "",
+        code: m.error_code || "",
+        title: m.error_name || "",
+        cause_or_part: m.cause_basis && m.cause_basis !== "-" ? m.cause_basis : (m.phenomenon || "-"),
+        action_summary: m.action_request || "-",
+        actor_category: m.action_actor_category || "용역사(RNS)",
+        worker: m.actual_worker || "",
+        discoverer: m.discoverer || "",
+        status: m.error_status || "조치요청",
+        is_unresolved: Boolean(m.is_unresolved),
+        duration_days: m.duration_days,
+        priority: m.priority || "보통",
+        detail: m.memo || "",
+        raw: m
+      });
+    }
+
+    for (const a of eqFiltered) {
+      let partDesc = "-";
+      if (a.before_sn && a.after_sn) {
+        partDesc = `교체: ${a.before_model || ""} (${a.before_sn}) ➔ ${a.after_model || ""} (${a.after_sn})`;
+      } else if (a.after_sn) {
+        partDesc = `신규설치: ${a.after_model || ""} (${a.after_sn})`;
+      } else if (a.before_sn) {
+        partDesc = `회수/철거: ${a.before_model || ""} (${a.before_sn})`;
+      } else if (a.part_name) {
+        partDesc = `${a.part_name} (${a.part_qty || 1}EA)${a.param_change ? ` · ${a.param_change}` : ""}`;
+      } else if (a.param_change) {
+        partDesc = `파라미터: ${a.param_change}`;
+      }
+
+      unified.push({
+        uid: `EQ-${a.id}`,
+        source: "MAINTENANCE",
+        sourceLabel: "🛠️ 현장 유지관리·교체",
+        id: a.id,
+        work_id: a.work_id,
+        work_no: a.work_no || "",
+        date: a.work_date || "",
+        subDate: a.work_type || "현장점검",
+        station_id: a.station_id,
+        station_code: a.station_code || "",
+        station_name: a.station_name || "",
+        region: a.region || "",
+        install_method: "",
+        assigned_team: "",
+        assigned_manager: "",
+        code: a.action_code || "NORMAL_CHECK",
+        title: a.action_name || "현장 점검·정비",
+        cause_or_part: partDesc,
+        action_summary: `[${a.work_type || "점검"}] ${a.action_category || "현장정비"}`,
+        actor_category: "현장정비(장비·부품)",
+        worker: a.workers || "",
+        discoverer: "",
+        status: "완료",
+        is_unresolved: false,
+        duration_days: null,
+        priority: "보통",
+        detail: a.detail_text || a.summary || "",
+        raw: a
+      });
+    }
+
+    for (const h of maintFiltered) {
+      unified.push({
+        uid: `HIST-${h.id}`,
+        source: "MAINTENANCE",
+        sourceLabel: "🛠️ 현장 유지관리·교체",
+        id: h.id,
+        date: h.action_date || h.issue_date || "",
+        subDate: h.action_type || "유지관리",
+        station_id: h.station_id,
+        station_code: "",
+        station_name: h.station_name || "",
+        region: "",
+        install_method: "",
+        assigned_team: "",
+        assigned_manager: "",
+        code: h.category || "유지관리",
+        title: h.action_method || h.action_type || "유지관리 조치",
+        cause_or_part: h.target_equipment ? `${h.target_equipment} (${h.cause_category || "-"})` : (h.cause_category || "-"),
+        action_summary: h.action_method || h.action_type || "-",
+        actor_category: h.actor_type || "기술원(자체)",
+        worker: h.worker_name || "",
+        discoverer: "",
+        status: h.result_status || "완료",
+        is_unresolved: h.result_status !== "완료",
+        duration_days: null,
+        priority: "보통",
+        detail: `${h.description || ""}${h.memo ? ` (${h.memo})` : ""}`,
+        raw: h
+      });
+    }
+
+    // Filter by sourceType if specified ("all" | "MONITORING" | "MAINTENANCE")
+    let resultList = unified;
+    if (sourceType && sourceType !== "all" && sourceType !== "ALL") {
+      resultList = resultList.filter(item => item.source === sourceType);
+    }
+
+    // Filter by keyword if specified
+    if (keyword && String(keyword).trim()) {
+      const kw = String(keyword).trim().toLowerCase();
+      resultList = resultList.filter(item =>
+        (item.station_name || "").toLowerCase().includes(kw) ||
+        (item.station_code || "").toLowerCase().includes(kw) ||
+        (item.code || "").toLowerCase().includes(kw) ||
+        (item.title || "").toLowerCase().includes(kw) ||
+        (item.cause_or_part || "").toLowerCase().includes(kw) ||
+        (item.action_summary || "").toLowerCase().includes(kw) ||
+        (item.worker || "").toLowerCase().includes(kw) ||
+        (item.assigned_manager || "").toLowerCase().includes(kw) ||
+        (item.detail || "").toLowerCase().includes(kw)
+      );
+    }
+
+    // Sort chronologically descending
+    resultList.sort((a, b) => {
+      const da = a.date || "0000-00-00";
+      const db = b.date || "0000-00-00";
+      if (da !== db) return db.localeCompare(da);
+      return String(b.uid).localeCompare(String(a.uid));
+    });
+
+    const monCount = unified.filter(i => i.source === "MONITORING").length;
+    const maintCount = unified.filter(i => i.source === "MAINTENANCE").length;
+    const unresolvedCount = unified.filter(i => i.source === "MONITORING" && i.is_unresolved).length;
+
+    res.json({
+      success: true,
+      counts: {
+        total: unified.length,
+        monitoring: monCount,
+        maintenance: maintCount,
+        unresolved: unresolvedCount,
+        filtered: resultList.length
+      },
+      rows: resultList.slice(0, parseInt(limit, 10) || 1500)
+    });
+  } catch (err) {
+    console.error("Get unified history error:", err);
+    res.status(500).json({ success: false, message: "통합 이력 조회 실패: " + err.message });
+  }
+});
+
+router.post("/monitoring-logs", verifyToken, async (req, res) => {
+  try {
+    const payload = {
+      ...req.body,
+      discoverer: req.body.discoverer || req.user.name || "미기록",
+      created_by: `${req.user.name} (${req.user.username})`
+    };
+    if (!payload.station_name && !payload.station_code) {
+      return res.status(400).json({ success: false, message: "대상 관측시설을 선택해주세요." });
+    }
+    const created = await dbService.createMonitoringErrorLog(payload);
+    logActivity(
+      req.user,
+      "모니터링오류등록",
+      payload.station_name,
+      `[${created.error_code}] ${created.error_name} | 상태:${created.error_status} | 배정:${created.action_request} (${created.action_actor_category})`,
+      req.ip
+    );
+    res.json({ success: true, data: created, message: "오류관리대장에 이력이 등록되었습니다." });
+  } catch (err) {
+    console.error("Create monitoring error log error:", err);
+    res.status(500).json({ success: false, message: "오류관리대장 등록 실패: " + err.message });
+  }
+});
+
+router.put("/monitoring-logs/:id", verifyToken, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const updated = await dbService.updateMonitoringErrorLog(id, req.body);
+    logActivity(
+      req.user,
+      "모니터링오류갱신",
+      updated.station_name,
+      `[${updated.error_code}] 상태:${updated.error_status} | 배정:${updated.action_request} | 비고:${updated.memo || "-"}`,
+      req.ip
+    );
+    res.json({ success: true, data: updated, message: "오류관리대장 이력이 갱신되었습니다." });
+  } catch (err) {
+    console.error("Update monitoring error log error:", err);
+    res.status(500).json({ success: false, message: "오류관리대장 갱신 실패: " + err.message });
+  }
+});
+
+router.delete("/monitoring-logs/:id", verifyToken, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    await dbService.deleteMonitoringErrorLog(id);
+    logActivity(req.user, "모니터링오류삭제", `오류이력 #${id}`, "오류관리대장 이력 삭제 처리", req.ip);
+    res.json({ success: true, message: "오류관리대장 이력이 삭제되었습니다." });
+  } catch (err) {
+    console.error("Delete monitoring error log error:", err);
+    res.status(500).json({ success: false, message: "오류관리대장 삭제 실패: " + err.message });
+  }
+});
+
 // 12. Live Monitor: Summary KPI & Issues
 router.get("/monitor/summary", (req, res) => {
   try {
@@ -1026,10 +1352,11 @@ router.put("/notifications/config", verifyToken, (req, res) => {
   }
 });
 
-// 17. Notifications: Get Notification Logs
-router.get("/notifications/logs", verifyToken, (req, res) => {
+// 17. Notifications: Get Notification Logs (Cloud DB + Brevo API Synced)
+router.get("/notifications/logs", verifyToken, async (req, res) => {
   try {
-    const logs = notifier.getLogs();
+    const forceRefresh = req.query.refresh === "true";
+    const logs = await notifier.getLogsAsync(forceRefresh);
     res.json({ success: true, count: logs.length, logs });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });

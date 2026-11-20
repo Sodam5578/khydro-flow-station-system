@@ -157,9 +157,10 @@ class App {
       el.classList.toggle("active", el.getAttribute("data-tab") === tabName);
     });
 
-    // 2. Update View Panels Active States
+    // 2. Update View Panels Active States ('error-ledger' shares #view-monitor panel)
+    const panelKey = tabName === "error-ledger" ? "monitor" : tabName;
     document.querySelectorAll(".view-panel").forEach(panel => {
-      const isTarget = panel.id === `view-${tabName}`;
+      const isTarget = panel.id === `view-${panelKey}`;
       panel.classList.toggle("active", isTarget);
       panel.style.display = isTarget ? "block" : "none";
     });
@@ -174,6 +175,7 @@ class App {
       "equipment": "전국 관측시설 장비 및 물품 통합 관리",
       "schedules": "팀원 업무 및 현장점검 일정 관리",
       "monitor": "전국 자동유량 실시간 관측자료 품질 모니터링",
+      "error-ledger": "전국 자동유량 모니터링 조치·오류관리대장 (전체 이력)",
       "timeseries": "실시간 관측자료 시계열 분석",
       "logs": "팀원 작업 이력 및 감사 로그",
       "settings": "데이터 백업 및 시스템 설정"
@@ -217,8 +219,15 @@ class App {
         window.scheduleManager.loadSchedules();
       }
     } else if (tabName === "monitor") {
+      if (window.errorLedgerManager) {
+        window.errorLedgerManager.switchMonitorSubTab("live");
+      }
       if (window.monitorManager) {
         window.monitorManager.loadData();
+      }
+    } else if (tabName === "error-ledger") {
+      if (window.errorLedgerManager) {
+        window.errorLedgerManager.switchMonitorSubTab("ledger");
       }
     } else if (tabName === "timeseries") {
       if (window.timeSeriesMenuManager) {
@@ -768,43 +777,223 @@ class App {
     }
   }
 
-  async showNotificationLogsModal() {
+  formatKstDateTime(isoStr) {
+    if (!isoStr) return "-";
+    try {
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return String(isoStr).slice(0, 19).replace("T", " ");
+      const parts = new Intl.DateTimeFormat("sv-SE", {
+        timeZone: "Asia/Seoul",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false
+      }).formatToParts(d);
+      const get = (t) => parts.find(p => p.type === t)?.value || "";
+      return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")}`;
+    } catch (_) {
+      return String(isoStr).slice(0, 19).replace("T", " ");
+    }
+  }
+
+  isLegacyPerStationLog(log) {
+    const subj = log.subject || "";
+    const st = log.stationName || "";
+    return subj.startsWith("[자동유량관측 경보]") || subj.startsWith("[자동유량관측 주의]") || subj.startsWith("[자동유량관측 복구완료]") || st.includes("(개별");
+  }
+
+  setEmailLogDatePreset(preset) {
+    const allLogs = this._cachedEmailLogs || [];
+    let minDate = "2026-10-30";
+    let maxDate = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
+    if (allLogs.length > 0) {
+      const dates = allLogs.map(l => this.formatKstDateTime(l.timestamp).slice(0, 10)).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+      if (dates.length > 0) {
+        minDate = dates[0];
+        maxDate = dates[dates.length - 1];
+      }
+    }
+
+    if (preset === "all") {
+      this._emailLogStartDate = minDate;
+      this._emailLogEndDate = maxDate;
+    } else if (preset === "7d") {
+      const end = new Date(maxDate + "T00:00:00");
+      const start = new Date(end.getTime() - 6 * 24 * 60 * 60 * 1000);
+      this._emailLogStartDate = start.toISOString().slice(0, 10);
+      this._emailLogEndDate = maxDate;
+    } else if (preset === "14d") {
+      const end = new Date(maxDate + "T00:00:00");
+      const start = new Date(end.getTime() - 13 * 24 * 60 * 60 * 1000);
+      this._emailLogStartDate = start.toISOString().slice(0, 10);
+      this._emailLogEndDate = maxDate;
+    } else if (preset === "month") {
+      this._emailLogStartDate = maxDate.slice(0, 8) + "01";
+      this._emailLogEndDate = maxDate;
+    }
+    this._emailLogPreset = preset;
+    this.showNotificationLogsModal(false);
+  }
+
+  onEmailLogDateInputChange() {
+    const sEl = document.getElementById("email-log-start-date");
+    const eEl = document.getElementById("email-log-end-date");
+    if (sEl) this._emailLogStartDate = sEl.value;
+    if (eEl) this._emailLogEndDate = eEl.value;
+    this._emailLogPreset = "custom";
+    this.showNotificationLogsModal(false);
+  }
+
+  async showNotificationLogsModal(forceRefresh = false) {
     if (!window.apiClient) return;
     try {
-      const res = await window.apiClient.getNotificationLogs();
-      const logs = res.logs || [];
-      
-      let html = `<div style="max-height:400px; overflow-y:auto;"><table class="custom-table" style="font-size:0.8rem;">
-        <thead><tr><th>발송시각</th><th>구분</th><th>관측소</th><th>연속결측</th><th>수신처</th><th>상태</th></tr></thead><tbody>`;
-      
-      if (logs.length === 0) {
-        html += `<tr><td colspan="6" style="text-align:center; padding:2rem; color:#94a3b8;">아직 발송된 알림 이력이 없습니다.</td></tr>`;
+      if (forceRefresh || !this._cachedEmailLogs) {
+        if (forceRefresh) this.showToast("🔄 최신 메일 발송 이력을 동기화 중입니다...", "info");
+        const res = await window.apiClient.getNotificationLogs(forceRefresh);
+        this._cachedEmailLogs = res.logs || [];
+      }
+      const allLogs = this._cachedEmailLogs || [];
+
+      // Determine available min/max dates
+      const dates = allLogs
+        .map(l => this.formatKstDateTime(l.timestamp).slice(0, 10))
+        .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d))
+        .sort();
+      const minDate = dates[0] || "2026-10-30";
+      const maxDate = dates[dates.length - 1] || new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
+
+      if (!this._emailLogStartDate) this._emailLogStartDate = minDate;
+      if (!this._emailLogEndDate) this._emailLogEndDate = maxDate;
+      if (!this._emailLogPreset) this._emailLogPreset = "all";
+
+      const startDate = this._emailLogStartDate;
+      const endDate = this._emailLogEndDate;
+
+      const filtered = allLogs.filter(l => {
+        const d = this.formatKstDateTime(l.timestamp).slice(0, 10);
+        if (startDate && d < startDate) return false;
+        if (endDate && d > endDate) return false;
+        return true;
+      });
+
+      const alertCount = filtered.filter(l => l.subject?.includes("신규") || l.subject?.includes("변동알림")).length;
+      const resolvedCount = filtered.filter(l => l.subject?.includes("복구") || l.subject?.includes("정상화")).length;
+
+      const presetBtnStyle = (p) => this._emailLogPreset === p
+        ? "background:#1e40af; color:#ffffff; border-color:#1e40af; font-weight:800;"
+        : "background:#ffffff; color:#334155; border-color:#cbd5e1; font-weight:600;";
+
+      let html = `
+        <div style="display:flex; flex-direction:column; gap:0.85rem;">
+          <!-- Top KPI Summary Cards -->
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.75rem;">
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:0.8rem 1rem; text-align:center;">
+              <div style="font-size:0.76rem; font-weight:700; color:#1e40af;">📊 조회 기간 통합 리포트 수</div>
+              <div style="font-size:1.45rem; font-weight:900; color:#1d4ed8; margin-top:2px;">${filtered.length}건 <span style="font-size:0.82rem; font-weight:700; color:#64748b;">/ 전체 ${allLogs.length}건</span></div>
+              <div style="font-size:0.7rem; color:#475569;">${startDate} ~ ${endDate}</div>
+            </div>
+            <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:0.8rem 1rem; text-align:center;">
+              <div style="font-size:0.76rem; font-weight:700; color:#b91c1c;">🚨 신규 · 변동 발생 리포트</div>
+              <div style="font-size:1.45rem; font-weight:900; color:#dc2626; margin-top:2px;">${alertCount}건</div>
+              <div style="font-size:0.7rem; color:#64748b;">1시간 이상 미수신·배터리 이상 발생</div>
+            </div>
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:0.8rem 1rem; text-align:center;">
+              <div style="font-size:0.76rem; font-weight:700; color:#15803d;">✅ 정상 복구 확인 리포트</div>
+              <div style="font-size:1.45rem; font-weight:900; color:#16a34a; margin-top:2px;">${resolvedCount}건</div>
+              <div style="font-size:0.7rem; color:#64748b;">결측 및 전압 이상 정상화 확인</div>
+            </div>
+          </div>
+
+          <!-- Date Range Filter Bar -->
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; background:#f8fafc; padding:0.65rem 0.9rem; border-radius:8px; border:1px solid #e2e8f0;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="font-size:0.8rem; font-weight:800; color:#1e293b;">📅 조회 기간 설정:</span>
+              <input type="date" id="email-log-start-date" class="form-input" value="${startDate}" onchange="window.app.onEmailLogDateInputChange()" style="width:142px; height:32px !important; padding:2px 8px; font-size:0.78rem; font-weight:700;">
+              <span style="color:#64748b; font-weight:700;">~</span>
+              <input type="date" id="email-log-end-date" class="form-input" value="${endDate}" onchange="window.app.onEmailLogDateInputChange()" style="width:142px; height:32px !important; padding:2px 8px; font-size:0.78rem; font-weight:700;">
+              <div style="display:flex; gap:4px; margin-left:4px;">
+                <button type="button" class="btn btn-sm" style="padding:4px 10px; font-size:0.75rem; ${presetBtnStyle("all")}" onclick="window.app.setEmailLogDatePreset('all')">전체 기간</button>
+                <button type="button" class="btn btn-sm" style="padding:4px 10px; font-size:0.75rem; ${presetBtnStyle("7d")}" onclick="window.app.setEmailLogDatePreset('7d')">최근 7일</button>
+                <button type="button" class="btn btn-sm" style="padding:4px 10px; font-size:0.75rem; ${presetBtnStyle("14d")}" onclick="window.app.setEmailLogDatePreset('14d')">최근 14일</button>
+                <button type="button" class="btn btn-sm" style="padding:4px 10px; font-size:0.75rem; ${presetBtnStyle("month")}" onclick="window.app.setEmailLogDatePreset('month')">이번 달</button>
+              </div>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" style="padding:4px 10px; font-size:0.75rem; font-weight:700; color:#1e40af; border-color:#93c5fd; background:#ffffff;" onclick="window.app.showNotificationLogsModal(true)">
+              🔄 새로고침
+            </button>
+          </div>
+
+          <!-- Table -->
+          <div style="max-height:460px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px;">
+            <table class="custom-table" style="font-size:0.79rem; width:100%;">
+              <thead style="position:sticky; top:0; z-index:2; background:#f1f5f9;">
+                <tr>
+                  <th style="width:44px; text-align:center;">No</th>
+                  <th style="width:150px; text-align:center;">발송일시 (KST)</th>
+                  <th style="width:105px; text-align:center;">구분</th>
+                  <th>통합 리포트 제목 및 관측품질 변동 요약</th>
+                  <th style="width:80px; text-align:center;">이상지점</th>
+                  <th style="width:165px;">수신처</th>
+                </tr>
+              </thead>
+              <tbody>`;
+
+      if (filtered.length === 0) {
+        html += `<tr><td colspan="6" style="text-align:center; padding:2.5rem; color:#94a3b8;">설정한 조회 기간(${startDate} ~ ${endDate})에 해당하는 통합 리포트 이력이 없습니다.</td></tr>`;
       } else {
-        logs.forEach(l => {
-          const badge = l.level === "CRITICAL" ? `<span class="badge badge-red">경보</span>` : (l.level === "WARNING" ? `<span class="badge badge-amber">주의</span>` : `<span class="badge badge-green">복구</span>`);
-          html += `<tr>
-            <td>${l.timestamp.slice(0, 19).replace("T", " ")}</td>
-            <td>${badge}</td>
-            <td><b>${l.stationName}</b></td>
-            <td>${l.count}회</td>
-            <td>${l.recipients}</td>
-            <td><span class="badge badge-blue">${l.mode}</span></td>
-          </tr>`;
+        filtered.forEach((l, idx) => {
+          const subj = l.subject || l.stationName || "-";
+          let typeBadge = `<span class="badge badge-blue">📊 기준리포트</span>`;
+          if (subj.includes("[관측품질 변동알림]")) {
+            typeBadge = `<span class="badge badge-red">🚨 신규+복구</span>`;
+          } else if (subj.includes("[관측품질 신규이상]")) {
+            typeBadge = `<span class="badge badge-red">🚨 신규이상</span>`;
+          } else if (subj.includes("[관측품질 정상복구]") || subj.includes("[관측품질 전 지점 정상화]")) {
+            typeBadge = `<span class="badge badge-green">✅ 정상복구</span>`;
+          } else if (l.level === "TEST" || subj.includes("[테스트]")) {
+            typeBadge = `<span class="badge badge-purple">🧪 테스트</span>`;
+          }
+
+          const countText = `<b style="color:${l.count > 0 ? "#dc2626" : "#16a34a"};">${l.count || 0}개소</b>`;
+
+          html += `
+            <tr>
+              <td style="text-align:center; color:#64748b; font-weight:600;">${idx + 1}</td>
+              <td style="text-align:center; font-family:monospace; font-size:0.77rem; color:#1e293b; font-weight:700; white-space:nowrap;">
+                ${this.formatKstDateTime(l.timestamp)}
+              </td>
+              <td style="text-align:center; white-space:nowrap;">${typeBadge}</td>
+              <td style="line-height:1.4;">
+                <div style="font-weight:700; color:#0f172a;">${subj}</div>
+                ${l.error ? `<div style="font-size:0.72rem; color:#475569; margin-top:2px;">• ${l.error}</div>` : ""}
+              </td>
+              <td style="text-align:center; white-space:nowrap;">${countText}</td>
+              <td style="font-size:0.75rem; color:#334155; word-break:break-all;">${l.recipients || "psn5578@naver.com"}</td>
+            </tr>`;
         });
       }
-      html += `</tbody></table></div>`;
+      html += `
+              </tbody>
+            </table>
+          </div>
+        </div>`;
 
-      // Display in a simple alert or reuse detail modal
       const modal = document.getElementById("detail-modal");
+      const dialog = modal ? modal.querySelector(".modal-dialog") : null;
+      if (dialog) dialog.style.maxWidth = "960px";
       const title = document.getElementById("detail-modal-title");
       const body = document.getElementById("detail-modal-body");
       if (modal && title && body) {
-        title.innerHTML = `<span>📜 스마트 결측 알림 발송 이력 (최근 ${logs.length}건)</span>`;
+        title.innerHTML = `<span>📜 정각 통합 리포트 발송 이력 (조회 기간 ${filtered.length}건 / 누적 ${allLogs.length}건)</span>`;
         body.innerHTML = html;
         modal.classList.add("active");
       }
     } catch (e) {
-      alert("발송 로그 조회 실패");
+      console.error("showNotificationLogsModal error:", e);
+      alert("발송 로그 조회 중 오류가 발생했습니다: " + e.message);
     }
   }
 

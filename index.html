@@ -21,7 +21,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="css/main.css?v=4.7">
+  <link rel="stylesheet" href="css/main.css?v=4.9">
   <link rel="stylesheet" href="css/leaflet-custom.css?v=4.2">
 </head>
 <body>
@@ -81,6 +81,10 @@
         <button class="nav-item" data-tab="monitor">
           <span class="nav-icon">🛰️</span>
           <span>실시간 관측 모니터링</span>
+        </button>
+        <button class="nav-item" data-tab="error-ledger">
+          <span class="nav-icon">📋</span>
+          <span>모니터링·유지관리 통합이력</span>
         </button>
         <button class="nav-item" data-tab="timeseries">
           <span class="nav-icon">📈</span>
@@ -482,13 +486,16 @@
               <button class="btn btn-primary btn-sm" id="btn-subtab-checklist" onclick="window.maintenanceHistoryManager.switchSubTab('checklist')">
                 📋 2026년 유지관리 과업 총괄
               </button>
-              <button class="btn btn-outline btn-sm" id="btn-subtab-history" onclick="window.maintenanceHistoryManager.switchSubTab('history')">
-                📜 전국 시설 유지관리 조치 이력 대장 (누적 로그)
+              <button class="btn btn-outline btn-sm" id="btn-subtab-history" onclick="window.app.switchTab('error-ledger')">
+                📋 모니터링 조치 + 현장 유지관리 통합대장 (668건+) ➔
               </button>
             </div>
             <div style="display:flex; gap:6px;">
-              <button class="btn btn-primary btn-sm" onclick="window.maintenanceHistoryManager.openCreateModal()">
-                ➕ 새 유지관리 조치 이력 등록
+              <button class="btn btn-outline btn-sm" onclick="window.equipmentManager.openWorkModal()" style="font-weight:700; color:#047857; border-color:#6ee7b7; background:#ecfdf5;">
+                🛠️ 현장 유지관리·교체 등록
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="window.errorLedgerManager.openRegisterModal()">
+                ✍️ 모니터링 오류·조치 등록
               </button>
             </div>
           </div>
@@ -2059,22 +2066,34 @@
 
         <!-- 8. REAL-TIME DATA & DIAGNOSTIC MONITOR VIEW -->
         <section class="view-panel" id="view-monitor">
-          <!-- Monitor Header Bar with Target Time & Manual Sync -->
-          <div class="table-controls-card" style="margin-bottom: 1.25rem; background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; border: none; border-radius:12px; padding:1.25rem;">
+          <!-- Monitor Header Bar with Sub-Tab Switcher & Quick Actions -->
+          <div class="table-controls-card" style="margin-bottom: 1rem; background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: white; border: none; border-radius:12px; padding:1.15rem 1.35rem;">
             <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:1rem;">
               <div>
                 <div style="display:flex; align-items:center; gap:8px;">
                   <span style="font-size:1.5rem;">🛰️</span>
-                  <h2 style="font-size:1.25rem; font-weight:800; margin:0; color:#ffffff;">전국 자동유량 실시간 관측자료 품질 모니터링</h2>
+                  <h2 style="font-size:1.25rem; font-weight:800; margin:0; color:#ffffff;">전국 자동유량 실시간 관측 모니터링 & 오류관리대장</h2>
                 </div>
-                <div style="font-size:0.85rem; color:#bfdbfe; margin-top:4px;">
+                <div style="font-size:0.84rem; color:#bfdbfe; margin-top:4px;">
                   최신 관측 대상시각: <strong id="monitor-target-time" style="color:#ffffff; background:rgba(255,255,255,0.2); padding:2px 6px; border-radius:4px;">로딩중...</strong> 
                   <span style="margin: 0 6px; opacity:0.6;">|</span>
                   동기화 시각: <span id="monitor-last-sync-time" style="color:#ffffff;">-</span> (10분 주기 자동 검증)
                 </div>
               </div>
 
-              <div style="display:flex; gap:0.5rem; align-items:center;">
+              <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                <button class="btn btn-sm" onclick="window.errorLedgerManager.openRegisterModal()" style="background:#f59e0b; color:#ffffff; font-weight:800; border:none; box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+                  ✍️ 오류·조치 빠른 등록
+                </button>
+                <button class="btn btn-sm" onclick="window.errorLedgerManager.openStationAssignmentsModal()" style="background:rgba(255,255,255,0.16); color:#ffffff; font-weight:700; border:1px solid rgba(255,255,255,0.35);">
+                  👥 지점 담당자 관리
+                </button>
+                <button class="btn btn-sm" id="monitor-admin-email-logs-btn" onclick="window.app.showNotificationLogsModal()" style="background:rgba(255,255,255,0.16); color:#ffffff; font-weight:700; border:1px solid rgba(255,255,255,0.35); display:none;">
+                  📜 이메일 발송 이력
+                </button>
+                <button class="btn btn-sm" onclick="window.errorLedgerManager.openCodebookModal()" style="background:rgba(255,255,255,0.16); color:#ffffff; font-weight:700; border:1px solid rgba(255,255,255,0.35);">
+                  📖 Rule 코드북
+                </button>
                 <button class="btn btn-sm" id="monitor-btn-sync" onclick="window.monitorManager.syncNow()" style="background:#ffffff; color:#1e40af; font-weight:700; border:none;">
                   🔄 실시간 데이터 갱신
                 </button>
@@ -2083,146 +2102,516 @@
                 </a>
               </div>
             </div>
-          </div>
 
-          <!-- Monitor KPI Summary Cards -->
-          <div class="kpi-grid" style="margin-bottom: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-            <div class="kpi-card">
-              <div class="kpi-icon blue">📡</div>
-              <div class="kpi-info">
-                <div class="kpi-value" id="kpi-mon-target">187개소</div>
-                <div class="kpi-label">실시간 관측 대상 지점</div>
+            <!-- Sub-Tab Navigation Inside Monitor View -->
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-top:1rem; padding-top:0.85rem; border-top:1px solid rgba(255,255,255,0.18);">
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <button type="button" id="mon-subtab-btn-live" class="btn btn-sm" onclick="window.errorLedgerManager.switchMonitorSubTab('live')" style="background:#ffffff; color:#1e3a8a; font-weight:800; border:none; padding:7px 16px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.15);">
+                  📡 실시간 이상 감지 현황
+                </button>
+                <button type="button" id="mon-subtab-btn-ledger" class="btn btn-sm" onclick="window.errorLedgerManager.switchMonitorSubTab('ledger')" style="background:rgba(255,255,255,0.15); color:#ffffff; font-weight:700; border:1px solid rgba(255,255,255,0.3); padding:7px 16px; border-radius:8px; display:inline-flex; align-items:center; gap:6px;">
+                  <span>📋 모니터링·유지관리 통합 이력 대장 (지점별 통합조회)</span>
+                  <span id="mon-ledger-unresolved-badge" style="background:#ef4444; color:#ffffff; font-size:0.72rem; padding:1px 7px; border-radius:999px; font-weight:800;">미종료 15</span>
+                </button>
               </div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-icon green">✅</div>
-              <div class="kpi-info">
-                <div class="kpi-value" id="kpi-mon-normal">147개소</div>
-                <div class="kpi-label" id="kpi-mon-normal-sub">정상 수신 및 운영 지점</div>
-              </div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-icon red">🚨</div>
-              <div class="kpi-info">
-                <div class="kpi-value" id="kpi-mon-issues" style="color:#dc2626;">40개소</div>
-                <div class="kpi-label" id="kpi-mon-issues-sub">확인·조치 필요 지점 (54건)</div>
-              </div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-icon amber">⚠️</div>
-              <div class="kpi-info">
-                <div class="kpi-value" id="kpi-mon-new">0건</div>
-                <div class="kpi-label">신규 및 재발 이상</div>
-              </div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-icon cyan">📊</div>
-              <div class="kpi-info">
-                <div class="kpi-value" id="kpi-mon-rx-rate">99.5%</div>
-                <div class="kpi-label">원시자료 실시간 수신율</div>
+              <div style="font-size:0.78rem; color:#dbeafe;">
+                💡 관측소를 선택하면 해당 지점의 <b>[🛰️ 모니터링 조치·오류]</b>와 <b>[🛠️ 현장 유지관리·부품교체]</b> 이력을 한눈에 교차 확인할 수 있습니다.
               </div>
             </div>
           </div>
 
-          <!-- Filter & Control Card -->
-          <div class="table-controls-card" style="margin-bottom: 1rem;">
-            <!-- Category Quick Filter Pills Row (자료 미수신 / 배터리 전압 이상 전용 퀵 필터) -->
-            <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem; padding-bottom:0.75rem; margin-bottom:0.75rem; border-bottom:1px solid #e2e8f0;">
-              <div style="display:flex; flex-wrap:wrap; gap:0.45rem; align-items:center;">
-                <span style="font-size:0.82rem; font-weight:700; color:#334155; margin-right:4px;">🔍 이상 유형 퀵필터:</span>
-                <button type="button" class="btn-filter-pill active" data-category="all" onclick="window.monitorManager.setCategory('all')">
-                  전체 이상 <span class="pill-count" id="pill-count-all">0</span>
-                </button>
-                <button type="button" class="btn-filter-pill pill-missing" data-category="DATA_MISSING" onclick="window.monitorManager.setCategory('DATA_MISSING')">
-                  📡 자료 미수신 <span class="pill-count" id="pill-count-missing">0</span>
-                </button>
-                <button type="button" class="btn-filter-pill pill-battery" data-category="BATTERY_VOLTAGE" onclick="window.monitorManager.setCategory('BATTERY_VOLTAGE')">
-                  🔋 배터리 전압 이상 <span class="pill-count" id="pill-count-battery">0</span>
-                </button>
-                <button type="button" class="btn-filter-pill pill-other" data-category="OTHER" onclick="window.monitorManager.setCategory('OTHER')">
-                  ⚡ 기타 품질 이상 <span class="pill-count" id="pill-count-other">0</span>
-                </button>
+          <!-- ========================================================= -->
+          <!-- SUB-VIEW 1: 실시간 이상 감지 현황 (Live Monitor) -->
+          <!-- ========================================================= -->
+          <div id="monitor-subview-live">
+            <!-- Monitor KPI Summary Cards -->
+            <div class="kpi-grid" style="margin-bottom: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+              <div class="kpi-card">
+                <div class="kpi-icon blue">📡</div>
+                <div class="kpi-info">
+                  <div class="kpi-value" id="kpi-mon-target">187개소</div>
+                  <div class="kpi-label">실시간 관측 대상 지점</div>
+                </div>
               </div>
-
-              <div style="display:flex; align-items:center; gap:0.5rem;">
-                <button type="button" class="btn btn-outline btn-sm" onclick="window.monitorManager.resetFilters()" style="padding:4px 10px; font-size:0.8rem; color:#64748b; font-weight:600;" title="모든 검색 및 필터 초기화">
-                  ↺ 필터 전체 초기화
-                </button>
+              <div class="kpi-card">
+                <div class="kpi-icon green">✅</div>
+                <div class="kpi-info">
+                  <div class="kpi-value" id="kpi-mon-normal">147개소</div>
+                  <div class="kpi-label" id="kpi-mon-normal-sub">정상 수신 및 운영 지점</div>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon red">🚨</div>
+                <div class="kpi-info">
+                  <div class="kpi-value" id="kpi-mon-issues" style="color:#dc2626;">40개소</div>
+                  <div class="kpi-label" id="kpi-mon-issues-sub">확인·조치 필요 지점 (54건)</div>
+                </div>
+              </div>
+              <div class="kpi-card" style="cursor:pointer;" onclick="window.errorLedgerManager.switchMonitorSubTab('ledger', 'UNRESOLVED')" title="클릭 시 오류관리대장의 현재 미종료(진행중) 목록으로 이동합니다">
+                <div class="kpi-icon amber">🛠️</div>
+                <div class="kpi-info">
+                  <div class="kpi-value" id="kpi-mon-new" style="color:#d97706;">15건</div>
+                  <div class="kpi-label" id="kpi-mon-new-sub">오류관리대장 진행중(미종료) ➔</div>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon cyan">📊</div>
+                <div class="kpi-info">
+                  <div class="kpi-value" id="kpi-mon-rx-rate">99.5%</div>
+                  <div class="kpi-label">원시자료 실시간 수신율</div>
+                </div>
               </div>
             </div>
 
-            <!-- Detailed Multi-Filter Controls Row -->
-            <div class="controls-row" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem;">
-              <div style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
-                <!-- Category Select Dropdown (Synced with Pills) -->
-                <select id="monitor-filter-category" class="filter-select" style="min-width:145px; font-weight:600;" onchange="window.monitorManager.onCategoryChange(this.value)">
-                  <option value="all">전체 이상 유형</option>
-                  <option value="DATA_MISSING">📡 자료 미수신</option>
-                  <option value="BATTERY_VOLTAGE">🔋 배터리 전압 이상</option>
-                  <option value="OTHER">⚡ 기타 품질 이상</option>
-                </select>
+            <!-- Filter & Control Card -->
+            <div class="table-controls-card" style="margin-bottom: 1rem;">
+              <!-- Category Quick Filter Pills Row (자료 미수신 / 배터리 전압 이상 전용 퀵 필터) -->
+              <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem; padding-bottom:0.75rem; margin-bottom:0.75rem; border-bottom:1px solid #e2e8f0;">
+                <div style="display:flex; flex-wrap:wrap; gap:0.45rem; align-items:center;">
+                  <span style="font-size:0.82rem; font-weight:700; color:#334155; margin-right:4px;">🔍 이상 유형 퀵필터:</span>
+                  <button type="button" class="btn-filter-pill active" data-category="all" onclick="window.monitorManager.setCategory('all')">
+                    전체 이상 <span class="pill-count" id="pill-count-all">0</span>
+                  </button>
+                  <button type="button" class="btn-filter-pill pill-missing" data-category="DATA_MISSING" onclick="window.monitorManager.setCategory('DATA_MISSING')">
+                    📡 자료 미수신 <span class="pill-count" id="pill-count-missing">0</span>
+                  </button>
+                  <button type="button" class="btn-filter-pill pill-battery" data-category="BATTERY_VOLTAGE" onclick="window.monitorManager.setCategory('BATTERY_VOLTAGE')">
+                    🔋 배터리 전압 이상 <span class="pill-count" id="pill-count-battery">0</span>
+                  </button>
+                  <button type="button" class="btn-filter-pill pill-other" data-category="OTHER" onclick="window.monitorManager.setCategory('OTHER')">
+                    ⚡ 기타 품질 이상 <span class="pill-count" id="pill-count-other">0</span>
+                  </button>
+                </div>
 
-                <!-- Method Filter -->
-                <select id="monitor-filter-method" class="filter-select" style="min-width:130px;" onchange="window.monitorManager.onFilterChange()">
-                  <option value="all">전체 관측방식</option>
-                  <option value="ADVM">ADVM (초음파)</option>
-                  <option value="EWSV">EWSV (전자파)</option>
-                </select>
-
-                <!-- Basin Filter -->
-                <select id="monitor-filter-basin" class="filter-select" style="min-width:130px;" onchange="window.monitorManager.onFilterChange()">
-                  <option value="all">전체 관할 권역</option>
-                  <option value="한강">한강 권역</option>
-                  <option value="낙동강">낙동강 권역</option>
-                  <option value="금강">금강 권역</option>
-                  <option value="영산강">영산강·섬진강 권역</option>
-                </select>
-
-                <!-- Status Filter -->
-                <select id="monitor-filter-status" class="filter-select" style="min-width:130px;" onchange="window.monitorManager.onFilterChange()">
-                  <option value="all">전체 이상 상태</option>
-                  <option value="ongoing">지속 이상</option>
-                  <option value="new">🚨 신규 이상</option>
-                  <option value="reopened">⚠️ 재발 이상</option>
-                  <option value="resolved">✓ 해소</option>
-                </select>
-
-                <!-- Search Input -->
-                <div class="search-input-wrapper" style="min-width: 220px;">
-                  <span class="search-icon">🔍</span>
-                  <input type="text" id="monitor-search-input" class="search-input" placeholder="관측소명, 지점코드, Rule ID 검색...">
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <button type="button" class="btn btn-outline btn-sm" onclick="window.monitorManager.resetFilters()" style="padding:4px 10px; font-size:0.8rem; color:#64748b; font-weight:600;" title="모든 검색 및 필터 초기화">
+                    ↺ 필터 전체 초기화
+                  </button>
                 </div>
               </div>
 
-              <div style="font-size:0.8rem; color:#64748b;">
-                <span>조회된 이상 결과: </span><b id="monitor-table-count" style="color:#dc2626;">0개소 (총 0건)</b>
+              <!-- Detailed Multi-Filter Controls Row -->
+              <div class="controls-row" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem;">
+                <div style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+                  <!-- Category Select Dropdown (Synced with Pills) -->
+                  <select id="monitor-filter-category" class="filter-select" style="min-width:145px; font-weight:600;" onchange="window.monitorManager.onCategoryChange(this.value)">
+                    <option value="all">전체 이상 유형</option>
+                    <option value="DATA_MISSING">📡 자료 미수신</option>
+                    <option value="BATTERY_VOLTAGE">🔋 배터리 전압 이상</option>
+                    <option value="OTHER">⚡ 기타 품질 이상</option>
+                  </select>
+
+                  <!-- Method Filter -->
+                  <select id="monitor-filter-method" class="filter-select" style="min-width:130px;" onchange="window.monitorManager.onFilterChange()">
+                    <option value="all">전체 관측방식</option>
+                    <option value="ADVM">ADVM (초음파)</option>
+                    <option value="EWSV">EWSV (전자파)</option>
+                  </select>
+
+                  <!-- Basin Filter -->
+                  <select id="monitor-filter-basin" class="filter-select" style="min-width:130px;" onchange="window.monitorManager.onFilterChange()">
+                    <option value="all">전체 관할 권역</option>
+                    <option value="한강">한강 권역</option>
+                    <option value="낙동강">낙동강 권역</option>
+                    <option value="금강">금강 권역</option>
+                    <option value="영산강">영산강·섬진강 권역</option>
+                  </select>
+
+                  <!-- Status Filter -->
+                  <select id="monitor-filter-status" class="filter-select" style="min-width:130px;" onchange="window.monitorManager.onFilterChange()">
+                    <option value="all">전체 이상 상태</option>
+                    <option value="ongoing">지속 이상</option>
+                    <option value="new">🚨 신규 이상</option>
+                    <option value="reopened">⚠️ 재발 이상</option>
+                    <option value="resolved">✓ 해소</option>
+                  </select>
+
+                  <!-- Search Input -->
+                  <div class="search-input-wrapper" style="min-width: 220px;">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="monitor-search-input" class="search-input" placeholder="관측소명, 지점코드, Rule ID 검색...">
+                  </div>
+                </div>
+
+                <div style="font-size:0.8rem; color:#64748b;">
+                  <span>조회된 이상 결과: </span><b id="monitor-table-count" style="color:#dc2626;">0개소 (총 0건)</b>
+                </div>
+              </div>
+            </div>
+
+            <!-- Issues Table Card -->
+            <div class="table-container-card">
+              <div class="table-responsive">
+                <table class="custom-table" style="width:100%;">
+                  <thead>
+                    <tr>
+                      <th style="width:45px; text-align:center;">No.</th>
+                      <th style="width:65px; text-align:center;">구분</th>
+                      <th style="width:75px; text-align:center;">방식</th>
+                      <th style="width:75px; text-align:center;">권역</th>
+                      <th style="min-width:160px;">관측소명 (코드·담당)</th>
+                      <th style="width:60px; text-align:center;">센서</th>
+                      <th style="width:95px; text-align:center;">Rule ID</th>
+                      <th style="min-width:250px;">진단 문제명 및 진행중 조치상태</th>
+                      <th style="width:80px; text-align:center;">연속발생</th>
+                      <th style="width:155px; text-align:center;">오류대응 및 연계</th>
+                    </tr>
+                  </thead>
+                  <tbody id="monitor-table-tbody">
+                    <!-- Dynamic Rows -->
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
 
-          <!-- Issues Table Card -->
-          <div class="table-container-card">
-            <div class="table-responsive">
-              <table class="custom-table" style="width:100%;">
-                <thead>
-                  <tr>
-                    <th style="width:45px; text-align:center;">No.</th>
-                    <th style="width:65px; text-align:center;">구분</th>
-                    <th style="width:75px; text-align:center;">방식</th>
-                    <th style="width:75px; text-align:center;">권역</th>
-                    <th style="min-width:150px;">관측소명 (코드)</th>
-                    <th style="width:60px; text-align:center;">센서</th>
-                    <th style="width:95px; text-align:center;">Rule ID</th>
-                    <th style="min-width:260px;">진단 문제명 및 상세 내용</th>
-                    <th style="width:80px; text-align:center;">연속발생</th>
-                    <th style="width:140px; text-align:center;">조치 및 연계</th>
-                  </tr>
-                </thead>
-                <tbody id="monitor-table-tbody">
-                  <!-- Dynamic Rows -->
-                </tbody>
-              </table>
+          <!-- ========================================================= -->
+          <!-- SUB-VIEW 2: 모니터링·유지관리 통합 이력 대장 (지점별 통합조회 & 분류별 대장) -->
+          <!-- ========================================================= -->
+          <div id="monitor-subview-ledger" style="display:none;">
+            <!-- 0. Unified History Mode Bar & Quick Station Picker -->
+            <div class="card" style="margin-bottom: 1rem; padding: 1rem 1.25rem; border: 1px solid #cbd5e1; border-radius: 12px; background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%); box-shadow: 0 2px 6px rgba(15,23,42,0.04);">
+              <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.85rem;">
+                <!-- Mode Switcher Tabs -->
+                <div style="display:flex; align-items:center; gap:0.45rem; flex-wrap:wrap;">
+                  <span style="font-size:0.84rem; font-weight:800; color:#0f172a; margin-right:4px;">🗂️ 이력 보기 모드:</span>
+                  <button type="button" id="err-mode-btn-unified" class="btn btn-sm" onclick="window.errorLedgerManager.setHistoryViewMode('UNIFIED')" style="background:#1e3a8a; color:#ffffff; font-weight:800; border:none; padding:7px 14px; border-radius:8px; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(30,58,138,0.2);">
+                    <span>🔗 전체 통합 타임라인 (모니터링+유지관리)</span>
+                    <span id="err-mode-count-unified" style="background:rgba(255,255,255,0.22); color:#ffffff; font-size:0.73rem; padding:1px 7px; border-radius:999px;">668</span>
+                  </button>
+                  <button type="button" id="err-mode-btn-monitoring" class="btn btn-sm" onclick="window.errorLedgerManager.setHistoryViewMode('MONITORING')" style="background:#ffffff; color:#334155; font-weight:700; border:1px solid #cbd5e1; padding:7px 14px; border-radius:8px; display:inline-flex; align-items:center; gap:6px;">
+                    <span>🛰️ 모니터링 조치·오류대장</span>
+                    <span id="err-mode-count-monitoring" style="background:#fee2e2; color:#b91c1c; font-size:0.73rem; padding:1px 7px; border-radius:999px; font-weight:800;">370</span>
+                  </button>
+                  <button type="button" id="err-mode-btn-maintenance" class="btn btn-sm" onclick="window.errorLedgerManager.setHistoryViewMode('MAINTENANCE')" style="background:#ffffff; color:#334155; font-weight:700; border:1px solid #cbd5e1; padding:7px 14px; border-radius:8px; display:inline-flex; align-items:center; gap:6px;">
+                    <span>🛠️ 현장 유지관리·장비교체 이력</span>
+                    <span id="err-mode-count-maintenance" style="background:#dcfce7; color:#15803d; font-size:0.73rem; padding:1px 7px; border-radius:999px; font-weight:800;">298</span>
+                  </button>
+                </div>
+
+                <!-- Display Mode Switcher: Timeline vs Station Grouped Summary -->
+                <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap; justify-content:flex-end;">
+                  <span style="font-size:0.82rem; font-weight:800; color:#475569; margin-right:2px;">🖥️ 화면 보기:</span>
+                  <button type="button" id="err-view-btn-timeline" class="btn btn-sm" onclick="window.errorLedgerManager.setDisplayViewMode('TIMELINE')" style="background:#1e3a8a; color:#ffffff; font-weight:800; border:none; padding:6px 13px; border-radius:7px; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 4px rgba(30,58,138,0.2);">
+                    <span>📋 건별 조치 타임라인</span>
+                  </button>
+                  <button type="button" id="err-view-btn-stations" class="btn btn-sm" onclick="window.errorLedgerManager.setDisplayViewMode('STATION_SUMMARY')" style="background:#ffffff; color:#334155; font-weight:700; border:1px solid #cbd5e1; padding:6px 13px; border-radius:7px; display:inline-flex; align-items:center; gap:5px;" title="지점별 총 조치건수, 모니터링/유지관리 내역, 미종료 현황을 151개 지점별로 한눈에 요약 집계">
+                    <span>🏢 지점별 종합 현황 대장</span>
+                    <span id="err-view-badge-stations" style="background:#dbeafe; color:#1e40af; font-size:0.72rem; padding:1px 6px; border-radius:999px; font-weight:800;">151개소</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Focused Station Filter Chip in Timeline Mode -->
+              <div id="err-active-station-chip" style="display:none; margin-top:0.75rem; padding:0.6rem 1rem; background:#eff6ff; border:1.5px solid #60a5fa; border-radius:8px; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <span style="font-size:0.9rem; font-weight:800; color:#1e40af;" id="err-active-station-label">📍 선택 지점: -</span>
+                  <span class="badge badge-blue" id="err-active-station-meta">-</span>
+                  <span id="err-active-station-stats" style="font-size:0.78rem; font-weight:700; color:#334155; background:#ffffff; border:1px solid #bfdbfe; padding:2px 8px; border-radius:4px;">-</span>
+                </div>
+                <div style="display:flex; gap:6px;">
+                  <button type="button" class="btn btn-outline btn-sm" onclick="window.errorLedgerManager.openFocusedStationTimelineModal()" style="font-size:0.75rem; padding:3px 9px; color:#0f766e; border-color:#5eead4; background:#f0fdfa; font-weight:700;">
+                    📜 이 지점 타임라인 카드창 열기
+                  </button>
+                  <button type="button" class="btn btn-sm" onclick="window.errorLedgerManager.clearStationFocus()" style="font-size:0.75rem; padding:3px 9px; background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5; font-weight:800; border-radius:5px;">
+                    ✕ 전체 지점으로 돌아가기
+                  </button>
+                </div>
+              </div>
             </div>
+
+            <!-- TIMELINE VIEW WRAPPER -->
+            <div id="err-timeline-view-wrapper">
+            <!-- 1. Top Summary & Actor Assignment Tracking KPI Cards -->
+            <div class="kpi-grid" style="margin-bottom: 1rem; grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));">
+              <div class="kpi-card" style="cursor:pointer; border-left:4px solid #1e3a8a;" onclick="window.errorLedgerManager.setHistoryViewMode('UNIFIED')">
+                <div class="kpi-icon blue">🔗</div>
+                <div class="kpi-info">
+                  <div class="kpi-value" id="err-kpi-unified-total">668건</div>
+                  <div class="kpi-label" id="err-kpi-unified-sub">모니터링 370 · 현장정비 298</div>
+                </div>
+              </div>
+
+              <div class="kpi-card" style="cursor:pointer; border-left:4px solid #dc2626; background:#fffafa;" onclick="window.errorLedgerManager.setQuickStatus('UNRESOLVED')">
+                <div class="kpi-icon red">🚨</div>
+                <div class="kpi-info">
+                  <div class="kpi-value" id="err-kpi-unresolved" style="color:#dc2626;">15건</div>
+                  <div class="kpi-label" id="err-kpi-unresolved-sub">현재 미종료 오류 (높음 14건)</div>
+                </div>
+              </div>
+
+              <div class="kpi-card" style="cursor:pointer; border-left:4px solid #2563eb;" onclick="window.errorLedgerManager.setHistoryViewMode('MONITORING')">
+                <div class="kpi-icon blue">🛰️</div>
+                <div class="kpi-info">
+                  <div class="kpi-value" id="err-kpi-total">370건</div>
+                  <div class="kpi-label" id="err-kpi-total-sub">모니터링 조치·오류대장</div>
+                </div>
+              </div>
+
+              <div class="kpi-card" style="cursor:pointer; border-left:4px solid #059669;" onclick="window.errorLedgerManager.setHistoryViewMode('MAINTENANCE')">
+                <div class="kpi-icon green">🛠️</div>
+                <div class="kpi-info">
+                  <div class="kpi-value" id="err-kpi-maint-total" style="color:#047857;">298건</div>
+                  <div class="kpi-label" id="err-kpi-maint-sub">현장 점검·부품교체 이력</div>
+                </div>
+              </div>
+
+              <div class="kpi-card" style="cursor:pointer; border-left:4px solid #d97706;" onclick="window.errorLedgerManager.setActorFilter('용역사(RNS)')">
+                <div class="kpi-icon amber">🚚</div>
+                <div class="kpi-info">
+                  <div class="kpi-value" id="err-kpi-actor-rns" style="color:#b45309;">0건</div>
+                  <div class="kpi-label" id="err-kpi-actor-rns-sub">용역사(RNS) 지시·조치</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Status Step Filter Pills & Action Toolbar -->
+            <div class="table-controls-card" style="margin-bottom: 1rem;">
+              <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem; padding-bottom:0.75rem; margin-bottom:0.75rem; border-bottom:1px solid #e2e8f0;">
+                <div id="err-status-pills-wrap" style="display:flex; flex-wrap:wrap; gap:0.4rem; align-items:center;">
+                  <span style="font-size:0.82rem; font-weight:800; color:#1e293b; margin-right:4px;">📌 진행상태별 조회:</span>
+                  <button type="button" class="btn-filter-pill active" data-err-status="all" onclick="window.errorLedgerManager.setQuickStatus('all')">
+                    전체 <span class="pill-count" id="err-pill-all">0</span>
+                  </button>
+                  <button type="button" class="btn-filter-pill" data-err-status="UNRESOLVED" onclick="window.errorLedgerManager.setQuickStatus('UNRESOLVED')" style="border-color:#fca5a5; color:#b91c1c; background:#fef2f2;">
+                    🔥 미종료(진행중) <span class="pill-count" id="err-pill-unresolved" style="background:#dc2626; color:#fff;">0</span>
+                  </button>
+                  <button type="button" class="btn-filter-pill" data-err-status="신규" onclick="window.errorLedgerManager.setQuickStatus('신규')">
+                    🚨 신규 <span class="pill-count" id="err-pill-new">0</span>
+                  </button>
+                  <button type="button" class="btn-filter-pill" data-err-status="원인확인" onclick="window.errorLedgerManager.setQuickStatus('원인확인')">
+                    🔍 원인확인 <span class="pill-count" id="err-pill-check">0</span>
+                  </button>
+                  <button type="button" class="btn-filter-pill" data-err-status="조치요청" onclick="window.errorLedgerManager.setQuickStatus('조치요청')">
+                    📢 조치요청 <span class="pill-count" id="err-pill-req">0</span>
+                  </button>
+                  <button type="button" class="btn-filter-pill" data-err-status="조치중" onclick="window.errorLedgerManager.setQuickStatus('조치중')">
+                    🛠️ 조치중 <span class="pill-count" id="err-pill-prog">0</span>
+                  </button>
+                  <button type="button" class="btn-filter-pill" data-err-status="정상화확인" onclick="window.errorLedgerManager.setQuickStatus('정상화확인')">
+                    ✅ 정상화확인 <span class="pill-count" id="err-pill-verify">0</span>
+                  </button>
+                  <button type="button" class="btn-filter-pill" data-err-status="보류" onclick="window.errorLedgerManager.setQuickStatus('보류')">
+                    ⏸️ 보류 <span class="pill-count" id="err-pill-hold">0</span>
+                  </button>
+                  <button type="button" class="btn-filter-pill" data-err-status="종료" onclick="window.errorLedgerManager.setQuickStatus('종료')">
+                    🏁 종료/완료 <span class="pill-count" id="err-pill-done">0</span>
+                  </button>
+                  <button type="button" class="btn-filter-pill" data-err-status="참고" onclick="window.errorLedgerManager.setQuickStatus('참고')">
+                    📌 참고(운영이력) <span class="pill-count" id="err-pill-ref">0</span>
+                  </button>
+                </div>
+
+                <div style="display:flex; gap:0.45rem; align-items:center; flex-wrap:wrap;">
+                  <button type="button" class="btn btn-outline btn-sm" onclick="window.errorLedgerManager.openStationAssignmentsModal()" style="color:#1e40af; border-color:#93c5fd; background:#eff6ff; font-weight:700;">
+                    👥 지점 담당자 관리 (엑셀 업로드)
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="window.errorLedgerManager.exportExcel()" style="color:#047857; border-color:#6ee7b7; background:#ecfdf5; font-weight:700;">
+                    📥 통합·조치내역 엑셀 다운로드 (.xlsx)
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="window.equipmentManager.openWorkModal(window.errorLedgerManager.selectedStationId !== 'all' ? window.errorLedgerManager.selectedStationId : null)" style="color:#0f766e; border-color:#5eead4; background:#f0fdfa; font-weight:800;">
+                    🛠️ 현장 유지관리·교체 등록
+                  </button>
+                  <button type="button" class="btn btn-primary btn-sm" onclick="window.errorLedgerManager.openRegisterModal(window.errorLedgerManager.getSelectedStationPrefill())" style="font-weight:800;">
+                    ➕ 모니터링 오류·조치 등록
+                  </button>
+                </div>
+              </div>
+
+              <!-- Multi-Filter Row -->
+              <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.6rem;">
+                <div style="display:flex; flex-wrap:wrap; gap:0.45rem; align-items:center; flex:1;">
+                  <select id="err-filter-region" class="filter-select" onchange="window.errorLedgerManager.onRegionFilterChange(this.value)">
+                    <option value="all">전체 수계(권역)</option>
+                    <option value="한강">한강 (1~6팀)</option>
+                    <option value="낙동강">낙동강 (1~6팀)</option>
+                    <option value="금강">금강 (1~5팀)</option>
+                    <option value="영산강">영산강 (1~5팀)</option>
+                  </select>
+
+                  <select id="err-filter-method" class="filter-select" onchange="window.errorLedgerManager.onFilterChange()">
+                    <option value="all">전체 설치방식</option>
+                    <option value="EWSV">EWSV (전자파)</option>
+                    <option value="ADVM">ADVM (초음파)</option>
+                    <option value="ADVM/EWSV">ADVM/EWSV (이중화)</option>
+                  </select>
+
+                  <select id="err-filter-actor" class="filter-select" onchange="window.errorLedgerManager.onFilterChange()" style="font-weight:700; color:#1e3a8a;">
+                    <option value="all">전체 조치배정 주체</option>
+                    <option value="용역사(RNS)">🚚 외부 용역사 (RNS)</option>
+                    <option value="내부출장직(담당팀)">🏃 내부 직원 (현장·출장)</option>
+                    <option value="수문정보관리팀">💻 수문정보관리팀 (원격)</option>
+                    <option value="AI품질팀">📊 AI품질팀 (유량·영점)</option>
+                    <option value="인프라팀(자체)">🏢 수자원인프라팀 (자체)</option>
+                    <option value="현장정비(장비·부품)">🛠️ 현장정비 (장비·부품교체)</option>
+                    <option value="기타/관망">📌 기타 / 운영참고</option>
+                  </select>
+
+                  <select id="err-filter-team" class="filter-select" onchange="window.errorLedgerManager.onFilterChange()">
+                    <option value="all">전체 수계별 담당팀</option>
+                    <optgroup label="한강 (1~6팀)">
+                      <option value="한강|1">한강 1팀</option>
+                      <option value="한강|2">한강 2팀</option>
+                      <option value="한강|3">한강 3팀</option>
+                      <option value="한강|4">한강 4팀</option>
+                      <option value="한강|5">한강 5팀</option>
+                      <option value="한강|6">한강 6팀</option>
+                    </optgroup>
+                    <optgroup label="낙동강 (1~6팀)">
+                      <option value="낙동강|1">낙동강 1팀</option>
+                      <option value="낙동강|2">낙동강 2팀</option>
+                      <option value="낙동강|3">낙동강 3팀</option>
+                      <option value="낙동강|4">낙동강 4팀</option>
+                      <option value="낙동강|5">낙동강 5팀</option>
+                      <option value="낙동강|6">낙동강 6팀</option>
+                    </optgroup>
+                    <optgroup label="금강 (1~5팀)">
+                      <option value="금강|1">금강 1팀</option>
+                      <option value="금강|2">금강 2팀</option>
+                      <option value="금강|3">금강 3팀</option>
+                      <option value="금강|4">금강 4팀</option>
+                      <option value="금강|5">금강 5팀</option>
+                    </optgroup>
+                    <optgroup label="영산강 (1~5팀)">
+                      <option value="영산강|1">영산강 1팀</option>
+                      <option value="영산강|2">영산강 2팀</option>
+                      <option value="영산강|3">영산강 3팀</option>
+                      <option value="영산강|4">영산강 4팀</option>
+                      <option value="영산강|5">영산강 5팀</option>
+                    </optgroup>
+                  </select>
+
+                  <select id="err-filter-priority" class="filter-select" onchange="window.errorLedgerManager.onFilterChange()">
+                    <option value="all">전체 우선순위</option>
+                    <option value="높음">🔴 높음</option>
+                    <option value="보통">🟡 보통</option>
+                    <option value="낮음">🟢 낮음</option>
+                  </select>
+
+                  <div class="search-input-wrapper" style="min-width:220px; flex:1;">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="err-filter-keyword" class="search-input" placeholder="관측소, 오류코드, 교체 S/N, 조치자, 비고 검색..." oninput="window.errorLedgerManager.onFilterChange()">
+                  </div>
+
+                  <button type="button" class="btn btn-outline btn-sm" onclick="window.errorLedgerManager.QuickFilterReset()" style="padding:4px 10px; font-size:0.78rem; color:#64748b;">
+                    ↺ 초기화
+                  </button>
+                </div>
+
+                <div style="font-size:0.82rem; color:#475569; white-space:nowrap;">
+                  조회 결과: <b id="err-ledger-count" style="color:#1e40af; font-size:0.92rem;">0</b>건
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Unified / Error Management Ledger Table -->
+            <div class="table-container-card">
+              <div class="table-responsive" style="max-height:680px; overflow-y:auto;">
+                <table class="custom-table" style="width:100%; font-size:0.82rem; table-layout:fixed;">
+                  <thead id="err-ledger-thead">
+                    <tr>
+                      <th style="width:46px; text-align:center;">No.</th>
+                      <th style="width:110px; text-align:center;">이력구분 · 일자</th>
+                      <th style="width:155px; text-align:left;">관측소 (권역·방식)</th>
+                      <th style="width:105px; text-align:center;">지점 담당자</th>
+                      <th style="width:165px; text-align:left;">진단규칙 / 작업유형</th>
+                      <th style="width:155px; text-align:left;">추정원인 / 교체장비·부품</th>
+                      <th style="width:160px; text-align:left;">조치구분 · 실제 조치자</th>
+                      <th style="width:95px; text-align:center;">상태 · 지속일</th>
+                      <th style="text-align:left;">상세 조치내용 및 경과 (비고)</th>
+                      <th style="width:105px; text-align:center;">관리</th>
+                    </tr>
+                  </thead>
+                  <tbody id="err-ledger-tbody">
+                    <tr><td colspan="10" style="text-align:center; padding:3rem; color:#94a3b8;">통합 이력 데이터를 불러오는 중...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            </div><!-- /err-timeline-view-wrapper -->
+
+            <!-- 4. Station-Grouped Summary Matrix View (지점별 종합 집계 현황 대장) -->
+            <div id="err-station-summary-view-wrapper" style="display:none;">
+              <!-- Quick Filter Pills & Station Controls -->
+              <div class="table-controls-card" style="margin-bottom: 1rem;">
+                <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.75rem; padding-bottom:0.75rem; margin-bottom:0.75rem; border-bottom:1px solid #e2e8f0;">
+                  <div style="display:flex; flex-wrap:wrap; gap:0.4rem; align-items:center;">
+                    <span style="font-size:0.82rem; font-weight:800; color:#1e293b; margin-right:4px;">🏢 지점 현황 필터:</span>
+                    <button type="button" class="btn-filter-pill active" id="err-st-pill-all" onclick="window.errorLedgerManager.setStationSummaryFilter('all')">
+                      🌐 전체 이력 지점 <span class="pill-count" id="err-st-pill-all-count">0</span>
+                    </button>
+                    <button type="button" class="btn-filter-pill" id="err-st-pill-unres" onclick="window.errorLedgerManager.setStationSummaryFilter('unresolved')" style="border-color:#fca5a5; color:#b91c1c; background:#fef2f2;">
+                      🔥 미종료 오류 발생 지점 <span class="pill-count" id="err-st-pill-unres-count" style="background:#dc2626; color:#fff;">0</span>
+                    </button>
+                    <button type="button" class="btn-filter-pill" id="err-st-pill-freq" onclick="window.errorLedgerManager.setStationSummaryFilter('frequent')" style="border-color:#fde68a; color:#b45309; background:#fffbeb;">
+                      🚨 조치 빈발 취약 지점 (5건 이상) <span class="pill-count" id="err-st-pill-freq-count" style="background:#d97706; color:#fff;">0</span>
+                    </button>
+                    <button type="button" class="btn-filter-pill" id="err-st-pill-hk" onclick="window.errorLedgerManager.setStationSummaryFilter('한강')">
+                      한강 <span class="pill-count" id="err-st-pill-hk-count">0</span>
+                    </button>
+                    <button type="button" class="btn-filter-pill" id="err-st-pill-nd" onclick="window.errorLedgerManager.setStationSummaryFilter('낙동강')">
+                      낙동강 <span class="pill-count" id="err-st-pill-nd-count">0</span>
+                    </button>
+                    <button type="button" class="btn-filter-pill" id="err-st-pill-gg" onclick="window.errorLedgerManager.setStationSummaryFilter('금강')">
+                      금강 <span class="pill-count" id="err-st-pill-gg-count">0</span>
+                    </button>
+                    <button type="button" class="btn-filter-pill" id="err-st-pill-ys" onclick="window.errorLedgerManager.setStationSummaryFilter('영산강')">
+                      영산강 <span class="pill-count" id="err-st-pill-ys-count">0</span>
+                    </button>
+                  </div>
+                  <div style="display:flex; gap:0.5rem; align-items:center;">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="window.errorLedgerManager.exportExcel()" style="color:#047857; border-color:#6ee7b7; background:#ecfdf5; font-weight:700;">
+                      📥 통합 대장 엑셀 다운로드 (.xlsx)
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Search & Sort Row -->
+                <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:0.6rem;">
+                  <div style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center; flex:1;">
+                    <div class="search-input-wrapper" style="min-width:240px; flex:1;">
+                      <span class="search-icon">🔍</span>
+                      <input type="text" id="err-st-search-keyword" class="search-input" placeholder="관측소명, 관측소코드, 담당자 성명 실시간 검색..." oninput="window.errorLedgerManager.renderStationSummaryTable()">
+                    </div>
+                    <select id="err-st-sort-select" class="filter-select" onchange="window.errorLedgerManager.onStationSummarySortChange(this.value)" style="font-weight:700; color:#1e40af;">
+                      <option value="TOTAL_DESC">총 이력 많은 순 (취약지점순) ▼</option>
+                      <option value="UNRES_DESC">미종료 오류 많은 순 ▼</option>
+                      <option value="LATEST_DESC">최근 조치일자순 ▼</option>
+                      <option value="NAME_ASC">관측소 가나다순 ▲</option>
+                    </select>
+                  </div>
+                  <div style="font-size:0.82rem; color:#475569; white-space:nowrap;">
+                    표시 관측소: <b id="err-st-summary-count" style="color:#1e40af; font-size:0.92rem;">0</b>개소
+                  </div>
+                </div>
+              </div>
+
+              <!-- Station Summary Table -->
+              <div class="table-container-card">
+                <div class="table-responsive" style="max-height:680px; overflow-y:auto;">
+                  <table class="custom-table" style="width:100%; font-size:0.82rem; table-layout:fixed;">
+                    <thead>
+                      <tr>
+                        <th style="width:42px; text-align:center;">순위</th>
+                        <th style="width:145px; text-align:left;">관측소명 (코드)</th>
+                        <th style="width:110px; text-align:center;">수계 · 담당팀</th>
+                        <th style="width:70px; text-align:center;">측정방식</th>
+                        <th style="width:105px; text-align:center;">지점 담당자</th>
+                        <th style="width:80px; text-align:center;">총 이력</th>
+                        <th style="width:130px; text-align:center;">🛰️ 모니터링 조치</th>
+                        <th style="width:110px; text-align:center;">🛠️ 현장 유지관리</th>
+                        <th style="width:95px; text-align:center;">최근 조치일자</th>
+                        <th style="min-width:180px; text-align:left;">최근 조치·오류 요약</th>
+                        <th style="width:150px; text-align:center;">이력 확인 및 액션</th>
+                      </tr>
+                    </thead>
+                    <tbody id="err-station-summary-tbody">
+                      <tr><td colspan="11" style="text-align:center; padding:3rem; color:#94a3b8;">지점별 종합 집계 데이터를 산출하는 중...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div><!-- /err-station-summary-view-wrapper -->
           </div>
         </section>
 
@@ -2945,20 +3334,20 @@
     </div>
   </div>
 
-  <!-- 4.2 Station-Specific Action History & Anomaly Action Modal -->
+  <!-- 4.2 Station-Specific Unified Action & Maintenance History Modal -->
   <div class="modal-backdrop" id="station-action-history-modal" style="z-index: 9998;">
-    <div class="modal-dialog" style="max-width: 860px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
-      <div class="modal-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 1rem 1.25rem;">
+    <div class="modal-dialog" style="max-width: 940px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="background: #1e3a8a; color: #ffffff; border-bottom: none; padding: 1rem 1.35rem;">
         <div>
           <div class="modal-title" id="st-hist-modal-title" style="font-size: 1.18rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <span id="st-hist-modal-station-name" style="color: #1e3a8a; font-weight: 800;">📍 지점명</span>
-            <span style="font-size: 0.92rem; font-weight: 600; color: #475569;">실시간 이상 조치 및 유지관리 이력</span>
+            <span id="st-hist-modal-station-name" style="color: #ffffff; font-weight: 800;">📍 지점명</span>
+            <span style="font-size: 0.92rem; font-weight: 600; color: #bfdbfe;">모니터링 조치 및 유지관리 통합 타임라인</span>
           </div>
-          <div style="font-size: 0.82rem; color: #64748b; margin-top: 3px;" id="st-hist-modal-station-meta">
+          <div style="font-size: 0.82rem; color: #dbeafe; margin-top: 3px;" id="st-hist-modal-station-meta">
             수계/하천명 | 관측소 코드 | 유속계 형식
           </div>
         </div>
-        <button class="modal-close-btn" onclick="window.monitorManager.closeStationActionHistoryModal()">&times;</button>
+        <button class="modal-close-btn" onclick="window.monitorManager.closeStationActionHistoryModal()" style="color:#ffffff;">&times;</button>
       </div>
 
       <div class="modal-body" style="padding: 1.25rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 1rem;">
@@ -2967,30 +3356,48 @@
           <!-- Dynamically populated -->
         </div>
 
-        <!-- History Summary & Add Button Toolbar -->
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 0.65rem 1rem; border-radius: 6px; border: 1px solid #e2e8f0; flex-wrap: wrap; gap: 8px;">
-          <div style="font-size: 0.88rem; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 6px;">
-            <span>📜</span> <span>지점별 누적 조치 이력</span>
-            <span class="badge badge-blue" id="st-hist-modal-count" style="font-size: 0.78rem;">0건</span>
+        <!-- Unified Source Filter Tabs & Action Buttons Toolbar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 0.7rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-sm" id="st-hist-tab-all" onclick="window.monitorManager.setStationModalSourceFilter('ALL')" style="background:#1e3a8a; color:#ffffff; font-weight:800; font-size:0.78rem; padding:5px 11px; border:none; border-radius:6px;">
+              🔗 전체 통합 <span id="st-hist-modal-count" style="background:rgba(255,255,255,0.22); padding:1px 6px; border-radius:999px; margin-left:3px;">0건</span>
+            </button>
+            <button type="button" class="btn btn-sm" id="st-hist-tab-mon" onclick="window.monitorManager.setStationModalSourceFilter('MONITORING')" style="background:#ffffff; color:#334155; font-weight:700; font-size:0.78rem; padding:5px 11px; border:1px solid #cbd5e1; border-radius:6px;">
+              🛰️ 모니터링 조치·오류 <span id="st-hist-modal-mon-count" style="background:#fee2e2; color:#b91c1c; padding:1px 6px; border-radius:999px; margin-left:3px; font-weight:800;">0건</span>
+            </button>
+            <button type="button" class="btn btn-sm" id="st-hist-tab-maint" onclick="window.monitorManager.setStationModalSourceFilter('MAINTENANCE')" style="background:#ffffff; color:#334155; font-weight:700; font-size:0.78rem; padding:5px 11px; border:1px solid #cbd5e1; border-radius:6px;">
+              🛠️ 현장 유지관리·교체 <span id="st-hist-modal-maint-count" style="background:#dcfce7; color:#15803d; padding:1px 6px; border-radius:999px; margin-left:3px; font-weight:800;">0건</span>
+            </button>
           </div>
           <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-            <button type="button" class="btn btn-outline btn-sm" id="st-hist-modal-excel-btn" style="font-size: 0.8rem; padding: 5px 12px; color: #047857; border-color: #6ee7b7; background: #ecfdf5; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" onclick="window.excelManager.exportStationMaintenanceHistory(window.monitorManager.currentStationActionId)">
-              📥 엑셀 다운로드 (.xlsx)
+            <button type="button" class="btn btn-outline btn-sm" id="st-hist-modal-excel-btn" style="font-size: 0.78rem; padding: 5px 10px; color: #047857; border-color: #6ee7b7; background: #ecfdf5; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" onclick="window.monitorManager.exportStationUnifiedHistoryExcel()">
+              📥 이 지점 통합이력 엑셀 (.xlsx)
             </button>
-            <button type="button" class="btn btn-primary btn-sm" id="st-hist-modal-add-btn" style="font-size: 0.8rem; padding: 5px 12px; display: inline-flex; align-items: center; gap: 4px;">
-              ➕ 새 조치 내역 등록
+            <button type="button" class="btn btn-outline btn-sm" id="st-hist-modal-add-maint-btn" style="font-size: 0.78rem; padding: 5px 10px; color: #0f766e; border-color: #5eead4; background: #f0fdfa; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;">
+              🛠️ 현장 유지관리·교체 등록
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" id="st-hist-modal-add-btn" style="font-size: 0.78rem; padding: 5px 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;">
+              ✍️ 모니터링 조치 등록
             </button>
           </div>
         </div>
 
         <!-- History Items List Container -->
         <div id="st-hist-modal-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
-          <!-- Dynamically populated with history cards -->
+          <!-- Dynamically populated with unified timeline cards -->
         </div>
       </div>
 
-      <div class="modal-footer" style="display: flex; justify-content: flex-end; background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 0.75rem 1.25rem;">
-        <button type="button" class="btn btn-outline btn-sm" onclick="window.monitorManager.closeStationActionHistoryModal()">닫기</button>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 0.75rem 1.25rem; flex-wrap: wrap; gap: 8px;">
+        <div style="font-size: 0.78rem; color: #64748b;">
+          💡 모니터링 원격 이상 감지 기록과 실제 현장 출동·부품교체 내역이 시간순으로 통합 표시됩니다.
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="if(window.monitorManager.currentStationActionId) { window.monitorManager.closeStationActionHistoryModal(); window.errorLedgerManager.focusStationInUnifiedLedger(window.monitorManager.currentStationActionId); }" style="color:#1e40af; border-color:#93c5fd; background:#eff6ff; font-weight:700;">
+            📋 전체 통합대장에서 이 지점 보기 ➔
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="window.monitorManager.closeStationActionHistoryModal()">닫기</button>
+        </div>
       </div>
     </div>
   </div>
@@ -3975,6 +4382,321 @@
     </div>
   </div>
 
+  <!-- ========================================================= -->
+  <!-- 6. MONITORING ERROR LEDGER MODAL (간결한 HydroMonitor 표준 등록/갱신) -->
+  <!-- ========================================================= -->
+  <div class="modal-backdrop" id="monitoring-error-form-modal" style="z-index: 10010;">
+    <div class="modal-dialog" style="max-width: 960px; width: 94vw; max-height: 92vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="background: #1e3a8a; color: #ffffff; padding: 1rem 1.5rem; border-bottom: none;">
+        <div>
+          <div class="modal-title" id="err-modal-title" style="font-size: 1.12rem; font-weight: 800; color: #ffffff;">
+            ✍️ 모니터링 조치·오류 이력 등록
+          </div>
+          <div style="font-size: 0.78rem; color: #bfdbfe; margin-top: 2px;">
+            HydroMonitor 진단 규칙을 기준으로 원인과 실제 조치 대상(용역사/내부직원)을 간편하게 기록합니다.
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="window.errorLedgerManager.closeFormModal()" style="color:#ffffff;">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 0.9rem;">
+        <!-- 동일 지점 미종료 오류 자동 감지 배너 -->
+        <div id="err-modal-ongoing-banner" style="display: none; background: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px; padding: 0.65rem 1rem;"></div>
+
+        <!-- 1. 관측소 선택 및 지점 기본 담당자 참고 표시 -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.9rem 1.15rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:0.6rem;">
+            <span style="font-size:0.84rem; font-weight:800; color:#1e3a8a;">1. 대상 관측소 및 발생·확인 정보</span>
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <div id="err-form-station-meta-badges" style="display:flex; gap:6px; align-items:center; font-size:0.78rem;"></div>
+            </div>
+          </div>
+
+          <div class="form-grid" style="grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.75rem;">
+            <div class="form-group">
+              <div class="form-label-row"><label class="form-label" style="color:#475569;">관측소 선택 *</label></div>
+              <select id="err-form-station-select" class="form-select" style="font-weight:700; color:#0f172a;" onchange="window.errorLedgerManager.onStationSelectChange(this.value)"></select>
+            </div>
+            <div class="form-group">
+              <div class="form-label-row"><label class="form-label" style="color:#475569;">최초발생일 *</label></div>
+              <input type="date" id="err-form-first-date" class="form-input">
+            </div>
+            <div class="form-group">
+              <div class="form-label-row"><label class="form-label" style="color:#475569;">최근확인일 *</label></div>
+              <input type="date" id="err-form-check-date" class="form-input">
+            </div>
+            <div class="form-group">
+              <div class="form-label-row"><label class="form-label" style="color:#475569;">발견자 (모니터링)</label></div>
+              <select id="err-form-discoverer" class="form-select" style="font-weight:600;">
+                <option value="박세찬">박세찬</option>
+                <option value="이동오">이동오</option>
+                <option value="나형욱">나형욱</option>
+                <option value="윤영선">윤영선</option>
+                <option value="김찬우">김찬우</option>
+                <option value="이나현">이나현</option>
+                <option value="미기록">기타/미기록</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. HydroMonitor 오류 규칙 & 추정 원인 -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.9rem 1.15rem;">
+          <div style="margin-bottom:0.6rem;">
+            <span style="font-size:0.84rem; font-weight:800; color:#0f172a;">2. HydroMonitor 진단 규칙 및 추정 원인</span>
+          </div>
+          <div class="form-grid" style="grid-template-columns: 1.4fr 1.2fr 0.6fr; gap: 0.75rem;">
+            <div class="form-group">
+              <div class="form-label-row"><label class="form-label" style="color:#475569;">HydroMonitor 오류 규칙 *</label></div>
+              <select id="err-form-code-select" class="form-select" style="font-weight:700; color:#b91c1c;" onchange="window.errorLedgerManager.onRuleCodeChange(this.value)"></select>
+              <input type="hidden" id="err-form-error-name" value="자료 미수신">
+            </div>
+            <div class="form-group">
+              <div class="form-label-row"><label class="form-label" style="color:#475569;">추정 원인 *</label></div>
+              <select id="err-form-cause-select" class="form-select" style="font-weight:600;">
+                <option value="Sender PC / 전송 프로그램 이상">Sender PC / 전송 프로그램 이상</option>
+                <option value="Logger PC / 수집 프로그램 이상">Logger PC / 수집 프로그램 이상</option>
+                <option value="현장 통신모뎀 / 네트워크 단절">현장 통신모뎀 / 네트워크 단절</option>
+                <option value="상전(AC) 차단 / 배터리·충전기 전압 저하">상전(AC) 차단 / 배터리·충전기 전압 저하</option>
+                <option value="유속계 센서 / 컨트롤러 하드웨어 이상">유속계 센서 / 컨트롤러 하드웨어 이상</option>
+                <option value="수위계 센서 / 대기압 보정 이상">수위계 센서 / 대기압 보정 이상</option>
+                <option value="수위 영점(Offset) / 유량 매개변수 이상">수위 영점(Offset) / 유량 매개변수 이상</option>
+                <option value="하천 공사 / 식생·부유물 등 현장 환경 요인">하천 공사 / 식생·부유물 등 현장 환경 요인</option>
+                <option value="장비 신규설치 · 철거 · 정기교체">장비 신규설치 · 철거 · 정기교체</option>
+                <option value="원인 파악중 / 현장 확인 필요">원인 파악중 / 현장 확인 필요</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <div class="form-label-row"><label class="form-label" style="color:#475569;">우선순위</label></div>
+              <select id="err-form-priority" class="form-select" style="font-weight:700;">
+                <option value="높음">🔴 높음</option>
+                <option value="보통">🟡 보통</option>
+                <option value="낮음">🟢 낮음</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. 조치 수행 구분 & 실제 조치자 (직접 수기 텍스트 입력) -->
+        <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 0.9rem 1.15rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px; margin-bottom:0.6rem;">
+            <span style="font-size:0.84rem; font-weight:800; color:#166534;">3. 조치 배정 및 실제 조치자 (직접 수기 입력)</span>
+            <span id="err-form-station-mgr-ref-hint" style="font-size:0.77rem; font-weight:700; color:#15803d; background:#dcfce7; padding:2px 9px; border-radius:6px;">📍 지점 기본 담당자: -</span>
+          </div>
+
+          <div class="form-grid" style="grid-template-columns: 1.1fr 1.2fr 1.2fr; gap: 0.75rem;">
+            <div class="form-group">
+              <div class="form-label-row"><label class="form-label" style="color:#166534;">조치 수행 구분 *</label></div>
+              <select id="err-form-actor-category" class="form-select" style="font-weight:700; background:#ffffff;" onchange="window.errorLedgerManager.onActorCategoryChange(this.value)">
+                <option value="용역사(RNS)">🚚 유지관리 용역사 (RNS)</option>
+                <option value="내부출장직(담당팀)">🏃 내부 직원 (현장·출장)</option>
+                <option value="인프라팀(자체)">🏢 내부 직원 (인프라팀 자체)</option>
+                <option value="수문정보관리팀">💻 내부 협조 (수문정보관리팀)</option>
+                <option value="AI품질팀">📊 내부 협조 (AI품질팀)</option>
+                <option value="기타/관망">📌 기타 / 운영참고</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label-row">
+                <label class="form-label" style="color:#166534;">실제 조치자 (수기 입력)</label>
+              </div>
+              <input type="text" id="err-form-actual-worker" class="form-input" placeholder="실제 조치자 성명 직접 수기 입력 (선택)" autocomplete="off" style="font-weight:700; background:#ffffff;">
+            </div>
+
+            <div class="form-group">
+              <div class="form-label-row"><label class="form-label" style="color:#166534;">조치 요청 / 수행 내용</label></div>
+              <select id="err-form-action-request" class="form-select" style="font-weight:600; background:#ffffff;">
+                <option value="유지관리업체 점검요청">유지관리업체 점검요청</option>
+                <option value="원격점검 및 제어 복구">원격점검 및 제어 복구</option>
+                <option value="현장 긴급점검 및 부품교체">현장 긴급점검 및 부품교체</option>
+                <option value="담당직원 현장점검 요청">담당직원 현장점검 요청</option>
+                <option value="수위 영점 / 매개변수 조정">수위 영점 / 매개변수 조정</option>
+                <option value="과거자료 재계산 및 사후전송">과거자료 재계산 및 사후전송</option>
+                <option value="장비 설치·철거·공사 이력 기록">장비 설치·철거·공사 이력 기록</option>
+                <option value="지속 모니터링 (관망)">지속 모니터링 (관망)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. 진행상태 및 비고 -->
+        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.9rem 1.15rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:nowrap; gap:12px; margin-bottom:0.75rem;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="font-size:0.84rem; font-weight:800; color:#0f172a; white-space:nowrap;">4. 진행 상태:</span>
+              <div id="err-status-step-btns" style="display:flex; flex-wrap:wrap; gap:6px;">
+                <button type="button" class="btn btn-outline btn-sm err-status-btn active" data-status="조치요청" onclick="window.errorLedgerManager.selectStatus('조치요청')" style="font-size:0.8rem; padding:6px 14px; font-weight:700;">📢 조치요청</button>
+                <button type="button" class="btn btn-outline btn-sm err-status-btn" data-status="조치중" onclick="window.errorLedgerManager.selectStatus('조치중')" style="font-size:0.8rem; padding:6px 14px; font-weight:700;">🛠️ 조치중</button>
+                <button type="button" class="btn btn-outline btn-sm err-status-btn" data-status="종료" onclick="window.errorLedgerManager.selectStatus('종료')" style="font-size:0.8rem; padding:6px 14px; font-weight:800;">🏁 종료(완료)</button>
+                <button type="button" class="btn btn-outline btn-sm err-status-btn" data-status="보류" onclick="window.errorLedgerManager.selectStatus('보류')" style="font-size:0.8rem; padding:6px 14px; font-weight:700;">⏸️ 보류</button>
+                <button type="button" class="btn btn-outline btn-sm err-status-btn" data-status="참고" onclick="window.errorLedgerManager.selectStatus('참고')" style="font-size:0.8rem; padding:6px 14px; font-weight:700;">📌 참고</button>
+              </div>
+              <input type="hidden" id="err-form-status" value="조치요청">
+            </div>
+
+            <div style="display:flex; align-items:center; gap:6px; white-space:nowrap;">
+              <label style="font-size:0.8rem; font-weight:700; color:#475569;">종료일:</label>
+              <input type="date" id="err-form-end-date" class="form-input" style="height:34px !important; min-height:34px !important; padding:0 10px !important; width:145px; font-size:0.82rem !important;">
+            </div>
+          </div>
+
+          <div>
+            <label class="form-label" style="font-size:0.78rem; font-weight:700; color:#334155; margin-bottom:5px; display:block;">
+              📝 비고 (상세 조치내용 / 특이사항 메모)
+            </label>
+            <textarea id="err-form-memo" class="form-textarea" rows="2" placeholder="세부 조치경과나 특이사항이 있을 때만 자유롭게 입력하세요." style="font-size:0.85rem;"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="justify-content: flex-end; background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 0.85rem 1.5rem; gap: 0.6rem;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="window.errorLedgerManager.closeFormModal()" style="padding:6px 16px;">취소</button>
+        <button type="button" class="btn btn-primary btn-sm" id="err-form-submit-btn" onclick="window.errorLedgerManager.saveForm()" style="font-weight:800; padding:6px 22px;">
+          💾 저장하기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- 7. RULE CODEBOOK REFERENCE MODAL (통합 오류코드 사전 69종) -->
+  <!-- ========================================================= -->
+  <div class="modal-backdrop" id="monitoring-codebook-modal" style="z-index: 10012;">
+    <div class="modal-dialog" style="max-width: 980px; width: 96vw; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="background: #0f172a; color: #ffffff; padding: 1rem 1.25rem;">
+        <div>
+          <div class="modal-title" style="font-size: 1.12rem; font-weight: 800; color: #ffffff;">📖 자동검출 Rule 연계 통합 오류코드 사전 (Rule_Codebook)</div>
+          <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 2px;">
+            ADVM · EWSV 자동검출 Rule 및 수동관리 표준 오류코드별 판단기준, 1차 확인사항, 권고 조치 매뉴얼
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="window.errorLedgerManager.closeCodebookModal()" style="color:#ffffff;">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1rem 1.25rem; overflow-y: auto; flex: 1;">
+        <div style="display:flex; gap:0.5rem; margin-bottom:0.85rem; flex-wrap:wrap;">
+          <select id="codebook-filter-eq" class="filter-select" onchange="window.errorLedgerManager.renderCodebookTable()">
+            <option value="all">전체 장비구분</option>
+            <option value="ADVM">ADVM</option>
+            <option value="EWSV">EWSV</option>
+            <option value="ADVM/EWSV">ADVM/EWSV (복합)</option>
+            <option value="공통">공통 (수동·운영)</option>
+          </select>
+          <input type="text" id="codebook-search-input" class="form-input" placeholder="오류코드, 오류명, 판단기준, 권고조치 검색..." style="flex:1; min-width:220px;" oninput="window.errorLedgerManager.renderCodebookTable()">
+        </div>
+        <div class="table-responsive" style="max-height: 62vh; overflow-y: auto;">
+          <table class="custom-table" style="width:100%; font-size:0.8rem;">
+            <thead>
+              <tr>
+                <th style="width:120px;">통합 오류코드</th>
+                <th style="width:80px; text-align:center;">장비구분</th>
+                <th style="width:150px;">표준 오류명</th>
+                <th style="width:70px; text-align:center;">우선순위</th>
+                <th>자동 판단기준</th>
+                <th>1차 확인사항</th>
+                <th>권고 조치</th>
+              </tr>
+            </thead>
+            <tbody id="codebook-table-tbody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content: flex-end; padding: 0.75rem 1.25rem;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="window.errorLedgerManager.closeCodebookModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- 8. STATION ASSIGNMENTS MANAGEMENT MODAL (지점별 담당자 별도 관리 & 엑셀 일괄 업로드) -->
+  <!-- ========================================================= -->
+  <div class="modal-backdrop" id="station-assignments-modal" style="z-index: 10015;">
+    <div class="modal-dialog" style="max-width: 980px; width: 96vw; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="background: #1e3a8a; color: #ffffff; padding: 1rem 1.4rem; border-bottom: none;">
+        <div>
+          <div class="modal-title" style="font-size: 1.12rem; font-weight: 800; color: #ffffff;">
+            👥 전국 관측소 지점별 담당팀 · 담당자 관리 (엑셀 일괄 업로드/다운로드)
+          </div>
+          <div style="font-size: 0.78rem; color: #bfdbfe; margin-top: 2px;">
+            수계별 조직도(한강·낙동강 1~6팀, 금강·영산강 1~5팀) 기준 지점 담당자를 관리하고, 변경 시 엑셀 파일로 일괄 밀어넣을 수 있습니다.
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="window.errorLedgerManager.closeStationAssignmentsModal()" style="color:#ffffff;">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.1rem 1.4rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 0.85rem;">
+        <!-- 1. Excel Bulk Upload / Download Action Banner -->
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.85rem 1.1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="font-size: 0.8rem; color: #1e3a8a; line-height: 1.5;">
+            <b>💡 엑셀 일괄 변경 안내:</b> 우측 <b>[📥 담당자 양식 엑셀 다운로드]</b>로 현재 목록을 받아 담당팀·담당자를 수정한 뒤, <b>[📤 엑셀로 담당자 일괄 밀어넣기]</b>로 업로드하면 전체 지점 및 대장에 즉시 반영됩니다. *(기존 엑셀의 `시설목록` 시트도 그대로 업로드 가능)*
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="window.errorLedgerManager.exportStationAssignmentsExcel()" style="background:#ffffff; color:#047857; border-color:#6ee7b7; font-weight:800; padding:6px 12px;">
+              📥 담당자 양식 엑셀 다운로드 (.xlsx)
+            </button>
+            <input type="file" id="st-assign-excel-file-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="if(this.files && this.files[0]) { window.errorLedgerManager.handleStationAssignmentsExcelUpload(this.files[0]); this.value=''; }">
+            <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('st-assign-excel-file-input').click()" style="background:#1d4ed8; border-color:#1d4ed8; font-weight:800; padding:6px 14px;">
+              📤 엑셀로 담당자 일괄 밀어넣기 (.xlsx)
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Filter & Search Row -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex: 1;">
+            <select id="st-assign-filter-region" class="filter-select" onchange="window.errorLedgerManager.onStationAssignFilterRegionChange(this.value)" style="font-weight:700;">
+              <option value="all">전체 수계 (한강·낙동강·금강·영산강)</option>
+              <option value="한강">한강 (1~6팀)</option>
+              <option value="낙동강">낙동강 (1~6팀)</option>
+              <option value="금강">금강 (1~5팀)</option>
+              <option value="영산강">영산강 (1~5팀)</option>
+            </select>
+            <select id="st-assign-filter-team" class="filter-select" onchange="window.errorLedgerManager.renderStationAssignmentsTable()" style="font-weight:600;">
+              <option value="all">전체 담당팀</option>
+              <option value="1">1팀</option>
+              <option value="2">2팀</option>
+              <option value="3">3팀</option>
+              <option value="4">4팀</option>
+              <option value="5">5팀</option>
+              <option value="6">6팀 (한강·낙동강)</option>
+            </select>
+            <input type="text" id="st-assign-search-input" class="form-input" placeholder="관측소명, 관측소코드, 담당자 성명 검색..." oninput="window.errorLedgerManager.renderStationAssignmentsTable()" style="flex:1; min-width:200px; height:34px !important; padding:0 10px !important; font-size:0.82rem !important;">
+          </div>
+          <div style="font-size: 0.82rem; color: #475569; font-weight: 700;">
+            조회 관측소: <b id="st-assign-count" style="color:#1e40af; font-size:0.95rem;">0</b>개소
+          </div>
+        </div>
+
+        <!-- 3. Station Assignments Table -->
+        <div class="table-responsive" style="max-height: 55vh; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <table class="custom-table" style="width: 100%; font-size: 0.81rem;">
+            <thead style="position: sticky; top: 0; z-index: 2; background: #f1f5f9;">
+              <tr>
+                <th style="width: 50px; text-align: center;">No</th>
+                <th style="width: 105px; text-align: center;">관측소코드</th>
+                <th>관측소명</th>
+                <th style="width: 100px; text-align: center;">측정방식</th>
+                <th style="width: 130px; text-align: center;">수계 (권역)</th>
+                <th style="width: 145px; text-align: center;">담당팀 (수계별)</th>
+                <th style="width: 170px; text-align: center;">지점 담당자</th>
+                <th style="width: 90px; text-align: center;">개별 저장</th>
+              </tr>
+            </thead>
+            <tbody id="st-assign-tbody">
+              <tr><td colspan="8" style="text-align:center; padding:2.5rem; color:#94a3b8;">지점 담당자 목록을 불러오는 중...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="justify-content: flex-end; padding: 0.75rem 1.4rem; background: #f8fafc;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="window.errorLedgerManager.closeStationAssignmentsModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container"></div>
 
@@ -3983,23 +4705,24 @@
   <script src="data/real_standard_basins.js?v=4.0"></script>
 
   <!-- Application Modules -->
-  <script src="js/api.js?v=4.6"></script>
+  <script src="js/api.js?v=5.0"></script>
   <script src="js/data.js?v=4.4"></script>
   <script src="js/gis.js?v=4.5"></script>
   <script src="js/table.js?v=3.7"></script>
   <script src="js/stats.js?v=4.1"></script>
   <script src="js/maintenance.js?v=3.7"></script>
-  <script src="js/history.js?v=3.9"></script>
+  <script src="js/history.js?v=4.0"></script>
   <script src="js/calibration.js?v=3.7"></script>
   <script src="js/equipment.js?v=1.8"></script>
   <script src="js/schedule.js?v=3.7"></script>
-  <script src="js/monitor.js?v=4.0"></script>
+  <script src="js/errorLedger.js?v=2.5"></script>
+  <script src="js/monitor.js?v=5.0"></script>
   <script src="js/waterlevel.js?v=3.7"></script>
   <script src="js/logs.js?v=3.7"></script>
   <script src="js/timeseriesChart.js?v=4.6"></script>
   <script src="js/timeseriesMenu.js?v=4.6"></script>
-  <script src="js/modal.js?v=4.5"></script>
+  <script src="js/modal.js?v=4.6"></script>
   <script src="js/excel.js?v=4.4"></script>
-  <script src="js/app.js?v=3.7"></script>
+  <script src="js/app.js?v=4.5"></script>
 </body>
 </html>

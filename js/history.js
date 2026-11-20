@@ -411,83 +411,109 @@ class MaintenanceHistoryManager {
     const container = document.getElementById(`station-history-container-${stationId}`) || document.getElementById("station-history-container");
     if (!container) return;
 
-    container.innerHTML = `<div style="text-align:center; padding:1.5rem; color:#64748b;">⏳ 유지관리 조치 이력을 불러오는 중...</div>`;
+    container.innerHTML = `<div style="text-align:center; padding:1.5rem; color:#64748b;">⏳ 모니터링 조치 및 현장 유지관리 통합 이력을 불러오는 중...</div>`;
 
     try {
-      const res = await window.apiClient.getStationMaintenanceHistory(stationId);
-      if (!res.success) throw new Error(res.message);
+      const st = window.dataManager ? window.dataManager.getById(stationId) : null;
+      const res = await window.apiClient.getUnifiedActionHistory({
+        stationId: stationId || "",
+        stationCode: st ? st.code : "",
+        stationName: st ? st.name : ""
+      });
 
-      this.currentStationHistory = res.data || [];
+      const rows = (res && res.rows) || [];
+      this.currentStationHistory = rows;
 
-      if (this.currentStationHistory.length === 0) {
+      if (rows.length === 0) {
         container.innerHTML = `
           <div style="padding:1.5rem; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; text-align:center;">
             <div style="font-size:1.5rem; margin-bottom:4px;">📜</div>
-            <div style="font-size:0.85rem; font-weight:700; color:#475569;">등록된 과거 유지관리 조치 이력이 없습니다.</div>
-            <div style="font-size:0.78rem; color:#94a3b8; margin-top:2px;">상단의 [+ 새 조치 이력 등록] 버튼으로 현장 점검, 부품 교체, 보수 내역을 기록할 수 있습니다.</div>
+            <div style="font-size:0.85rem; font-weight:700; color:#475569;">등록된 모니터링 조치 및 현장 유지관리 이력이 없습니다.</div>
+            <div style="font-size:0.78rem; color:#94a3b8; margin-top:2px;">상단의 [+ 새 조치 이력 등록] 버튼으로 현장 점검, 부품 교체, 품질 이상 조치 내역을 기록할 수 있습니다.</div>
           </div>
         `;
         return;
       }
 
+      const stName = st ? st.name : "";
+      const stCode = st ? (st.code || "") : "";
+
       container.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:0.6rem; max-height:300px; overflow-y:auto; padding-right:4px;">
-          ${this.currentStationHistory.map(item => {
-            const typeBadge = this.getActionTypeBadge(item.action_type);
-            const statusBadge = this.getResultStatusBadge(item.result_status);
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:0.45rem 0.75rem; margin-bottom:0.6rem; flex-wrap:wrap; gap:6px;">
+          <div style="font-size:0.78rem; color:#1e40af; font-weight:700;">
+            통합 이력 <b>${res.count || rows.length}건</b> 
+            (🛰️ 모니터링 <b style="color:#b91c1c;">${res.monitoringCount || 0}건</b> / 🛠️ 현장 유지관리 <b style="color:#15803d;">${res.maintenanceCount || 0}건</b>)
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-outline btn-sm" onclick="window.monitorManager ? window.monitorManager.openStationActionHistoryModal(${stationId}, '${stName.replace(/'/g, "\\'")}', '${stCode}') : null" style="font-size:0.72rem; padding:2px 8px; color:#1e40af; border-color:#93c5fd; background:#ffffff; font-weight:700;">
+              📜 통합 타임라인 팝업 열기
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="if(window.modalManager) window.modalManager.closeDetailModal(); if(window.errorLedgerManager) window.errorLedgerManager.focusStationInUnifiedLedger(${stationId});" style="font-size:0.72rem; padding:2px 8px; color:#0f766e; border-color:#99f6e4; background:#ffffff; font-weight:700;">
+              📋 전체 통합대장에서 보기 ➔
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:0.6rem; max-height:320px; overflow-y:auto; padding-right:4px;">
+          ${rows.map(item => {
+            const isMon = item.source === "MONITORING";
+            const sourceBadge = isMon
+              ? `<span class="badge" style="background:#fee2e2; color:#991b1b; font-weight:800; font-size:0.68rem;">🛰️ 모니터링</span>`
+              : `<span class="badge" style="background:#dcfce7; color:#15803d; font-weight:800; font-size:0.68rem;">🛠️ 유지관리</span>`;
+            
+            const statusBadge = isMon
+              ? (window.errorLedgerManager ? window.errorLedgerManager.getStatusBadgeHtml(item.status) : `<span class="badge badge-gray">${item.status}</span>`)
+              : `<span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:700; font-size:0.68rem;">${this.escapeHtml(item.status || "조치완료")}</span>`;
             
             let actorBadge = "";
-            if (item.actor_type?.includes("리버앤씨") || item.actor_type?.includes("RNS")) {
-              actorBadge = `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.7rem; font-weight:700;">용역사(리버앤씨)</span>`;
-            } else if (item.actor_type?.includes("기술원")) {
-              actorBadge = `<span class="badge" style="background:#eff6ff; color:#1e40af; font-size:0.7rem; font-weight:700;">기술원(자체)</span>`;
-            } else {
-              actorBadge = `<span class="badge" style="background:#f3e8ff; color:#6b21a8; font-size:0.7rem; font-weight:700;">${this.escapeHtml(item.actor_type || "기타")}</span>`;
+            if (item.actor_category?.includes("용역사") || item.actor_category?.includes("RNS")) {
+              actorBadge = `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.68rem; font-weight:700;">용역사(RNS)</span>`;
+            } else if (item.actor_category?.includes("내부") || item.actor_category?.includes("담당팀")) {
+              actorBadge = `<span class="badge" style="background:#eff6ff; color:#1e40af; font-size:0.68rem; font-weight:700;">내부출장직</span>`;
             }
 
-            let dateDisplay = "";
-            if (item.issue_date && item.issue_date !== item.action_date) {
-              dateDisplay = `<span style="font-size:0.75rem; color:#dc2626; font-weight:700;" title="발생일">🚨 발생 ${item.issue_date}</span> <span style="font-size:0.75rem; color:#64748b;">➔</span> <span style="font-size:0.82rem; font-weight:800; color:#1e293b;" title="조치일">🛠️ 조치 ${item.action_date}</span>`;
-            } else {
-              dateDisplay = `<span style="font-size:0.82rem; font-weight:800; color:#1e293b;">📅 ${item.action_date}</span>`;
-            }
+            const borderStyle = isMon && item.is_unresolved
+              ? "border:1.5px solid #fca5a5; background:#fffafa;"
+              : "border:1px solid #e2e8f0; background:#ffffff;";
 
             return `
-              <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:0.65rem 0.85rem; transition:all 0.15s ease;" class="hover-shadow-sm">
+              <div style="${borderStyle} border-radius:6px; padding:0.65rem 0.85rem; transition:all 0.15s ease;" class="hover-shadow-sm">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem; flex-wrap:wrap; gap:4px;">
-                  <div style="display:flex; align-items:center; gap:6px;">
-                    ${dateDisplay}
-                    ${typeBadge}
-                    ${item.target_equipment ? `<span class="badge badge-gray" style="font-size:0.72rem;">⚙️ ${item.target_equipment}</span>` : ""}
+                  <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
+                    ${sourceBadge}
+                    <span style="font-size:0.8rem; font-weight:800; color:#1e293b;">📅 ${item.date || "-"}</span>
+                    ${item.code ? `<span class="badge" style="font-family:monospace; font-weight:800; background:#f1f5f9; color:#334155; font-size:0.68rem;">${this.escapeHtml(item.code)}</span>` : ""}
+                    <span style="font-weight:700; color:#0f172a; font-size:0.82rem;">${this.escapeHtml(item.title || "")}</span>
                   </div>
-                  <div style="display:flex; align-items:center; gap:6px;">
+                  <div style="display:flex; align-items:center; gap:5px;">
                     ${actorBadge}
                     ${statusBadge}
-                    <button class="btn btn-outline btn-sm" onclick="window.maintenanceHistoryManager.openEditModal(${item.id})" style="padding:1px 6px; font-size:0.7rem;">✏️ 수정</button>
-                    <button class="btn btn-outline btn-sm" onclick="window.maintenanceHistoryManager.deleteRecord(${item.id}, ${stationId})" style="padding:1px 6px; font-size:0.7rem; color:#dc2626; border-color:#fca5a5;">🗑️</button>
+                    ${isMon ? `
+                      <button class="btn btn-outline btn-sm" onclick="window.errorLedgerManager.openEditModal(${item.id})" style="padding:1px 6px; font-size:0.7rem;">✏️ 수정</button>
+                    ` : `
+                      <button class="btn btn-outline btn-sm" onclick="window.maintenanceHistoryManager.openEditModal(${item.id})" style="padding:1px 6px; font-size:0.7rem;">✏️ 수정</button>
+                    `}
                   </div>
                 </div>
 
-                <div style="font-size:0.85rem; color:#1e293b; line-height:1.45;">
-                  ${this.escapeHtml(item.description)}
+                <div style="font-size:0.8rem; color:#334155; line-height:1.45; background:#f8fafc; padding:0.35rem 0.6rem; border-radius:4px;">
+                  <span><b>• ${isMon ? "추정원인" : "교체장비"}:</b> ${this.escapeHtml(item.cause_or_part || "-")}</span>
+                  <span style="margin-left:8px;"><b>• 조치내용:</b> <b style="color:#1e40af;">${this.escapeHtml(item.action_summary || "-")}</b></span>
+                  ${item.worker ? `<span style="margin-left:8px;"><b>• 조치자:</b> ${this.escapeHtml(item.worker)}</span>` : ""}
                 </div>
 
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.35rem; font-size:0.75rem; color:#64748b; border-top:1px dashed #f1f5f9; padding-top:0.25rem;">
-                  <div>
-                    ${item.worker_name ? `<span>작업자: <b>${item.worker_name}</b></span>` : ""}
-                    ${item.memo ? `<span style="margin-left:8px;">비고: <i>${this.escapeHtml(item.memo)}</i></span>` : ""}
+                ${item.detail && item.detail !== item.action_summary && item.detail !== item.cause_or_part ? `
+                  <div style="margin-top:0.3rem; font-size:0.76rem; color:#64748b;">
+                    📝 ${this.escapeHtml(item.detail)}
                   </div>
-                  <div>
-                    ${item.cost ? `<span style="color:#059669; font-weight:700;">비용: ₩${Number(item.cost).toLocaleString()}</span>` : ""}
-                  </div>
-                </div>
+                ` : ""}
               </div>
             `;
           }).join("")}
         </div>
       `;
     } catch (e) {
-      console.error("Load station history error:", e);
+      console.error("Load station unified history error:", e);
       container.innerHTML = `<div style="padding:1rem; color:#dc2626; font-size:0.8rem;">이력 로딩 실패: ${e.message}</div>`;
     }
   }

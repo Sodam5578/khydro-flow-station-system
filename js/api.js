@@ -81,11 +81,15 @@ class ApiClient {
       </div>
     `;
 
-    // Admin & Manager can see Audit Logs Navigation Menu
+    // Admin & Manager can see Audit Logs Navigation Menu & Email Notification Logs
     const canViewLogs = this.user && (this.user.role === "admin" || this.user.role === "manager");
     const navLogsBtn = document.getElementById("nav-logs-btn");
     if (navLogsBtn) {
       navLogsBtn.style.display = canViewLogs ? "flex" : "none";
+    }
+    const emailLogsBtn = document.getElementById("monitor-admin-email-logs-btn");
+    if (emailLogsBtn) {
+      emailLogsBtn.style.display = canViewLogs ? "inline-flex" : "none";
     }
 
     // Only SuperAdmin (role === 'admin') can access Data Import (엑셀 밀어넣기), Restore, Reset, and Delete
@@ -285,6 +289,97 @@ class ApiClient {
     return await res.json();
   }
 
+  // REST API: Monitoring Error Response Ledger (오류관리대장 & Rule_Codebook)
+  async getMonitoringMetadata() {
+    const res = await fetch(`${this.baseUrl}/monitoring-logs/metadata`, {
+      headers: this.getHeaders()
+    });
+    return await res.json();
+  }
+
+  async updateStationAssignment(data) {
+    const res = await fetch(`${this.baseUrl}/monitoring-logs/station-assignment`, {
+      method: "PUT",
+      headers: this.getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return await res.json();
+  }
+
+  async getMonitoringErrorLogs(filters = {}) {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach(k => {
+      if (filters[k] !== undefined && filters[k] !== null && filters[k] !== "") {
+        params.append(k, filters[k]);
+      }
+    });
+    const res = await fetch(`${this.baseUrl}/monitoring-logs?${params.toString()}`, {
+      headers: this.getHeaders()
+    });
+    return await res.json();
+  }
+
+  async getStationMonitoringErrorLogs(params = {}) {
+    const query = new URLSearchParams();
+    Object.keys(params).forEach(k => {
+      if (params[k] !== undefined && params[k] !== null && params[k] !== "") {
+        query.append(k, params[k]);
+      }
+    });
+    const res = await fetch(`${this.baseUrl}/monitoring-logs/station?${query.toString()}`, {
+      headers: this.getHeaders()
+    });
+    return await res.json();
+  }
+
+  async getUnifiedActionHistory(params = {}) {
+    const query = new URLSearchParams();
+    Object.keys(params).forEach(k => {
+      if (params[k] !== undefined && params[k] !== null && params[k] !== "") {
+        query.append(k, params[k]);
+      }
+    });
+    const res = await fetch(`${this.baseUrl}/monitoring-logs/unified?${query.toString()}`, {
+      headers: this.getHeaders()
+    });
+    return await res.json();
+  }
+
+  async createMonitoringErrorLog(data) {
+    const res = await fetch(`${this.baseUrl}/monitoring-logs`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return await res.json();
+  }
+
+  async updateMonitoringErrorLog(id, data) {
+    const res = await fetch(`${this.baseUrl}/monitoring-logs/${id}`, {
+      method: "PUT",
+      headers: this.getHeaders(),
+      body: JSON.stringify(data)
+    });
+    return await res.json();
+  }
+
+  async deleteMonitoringErrorLog(id) {
+    const res = await fetch(`${this.baseUrl}/monitoring-logs/${id}`, {
+      method: "DELETE",
+      headers: this.getHeaders()
+    });
+    return await res.json();
+  }
+
+  async bulkUpdateStationAssignments(records) {
+    const res = await fetch(`${this.baseUrl}/monitoring-logs/station-assignments/bulk`, {
+      method: "PUT",
+      headers: this.getHeaders(),
+      body: JSON.stringify({ records })
+    });
+    return await res.json();
+  }
+
   // REST API: Admin Only Batch Update & Reset
   async batchUpdateStations(stations) {
     const res = await fetch(`${this.baseUrl}/stations/batch`, {
@@ -341,8 +436,9 @@ class ApiClient {
     return await res.json();
   }
 
-  async getNotificationLogs() {
-    const res = await fetch(`${this.baseUrl}/notifications/logs`, { headers: this.getHeaders() });
+  async getNotificationLogs(forceRefresh = false) {
+    const q = forceRefresh ? "?refresh=true" : "";
+    const res = await fetch(`${this.baseUrl}/notifications/logs${q}`, { headers: this.getHeaders() });
     return await res.json();
   }
 

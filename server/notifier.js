@@ -1,7 +1,11 @@
 const nodemailer = require("nodemailer");
 const fs = require("fs");
 const path = require("path");
+const dns = require("dns");
+try { dns.setDefaultResultOrder("ipv4first"); } catch (_) {}
 const { dbService } = require("./db");
+
+const DEFAULT_RECIPIENTS = ["psn5578@naver.com"];
 
 class SmartNotifierService {
   constructor() {
@@ -12,8 +16,8 @@ class SmartNotifierService {
     this.notificationLogs = [];
     this.maxLogs = 500;
 
-    // Default values
-    this.thresholdCount = parseInt(process.env.ALERT_THRESHOLD_COUNT, 10) || 3;
+    // Default values (Hardened Fallback to prevent resets across deploys and restarts)
+    this.thresholdCount = parseInt(process.env.ALERT_THRESHOLD_COUNT, 10) || 6;
     this.provider = process.env.EMAIL_PROVIDER || "BREVO"; // "RESEND" | "BREVO" | "SMTP" | "AUTO"
     this.apiKey = process.env.EMAIL_API_KEY || process.env.RESEND_API_KEY || process.env.BREVO_API_KEY || "";
     this.apiSender = process.env.EMAIL_API_SENDER || "seyoo123456789@gmail.com";
@@ -27,8 +31,9 @@ class SmartNotifierService {
       },
       from: process.env.SMTP_FROM || ""
     };
-    this.recipients = (process.env.ALERT_RECIPIENTS || "").split(",").map(e => e.trim()).filter(Boolean);
-    this.enabled = process.env.ENABLE_EMAIL_ALERTS === "true" || true;
+    this.recipients = (process.env.ALERT_RECIPIENTS || "psn5578@naver.com").split(",").map(e => e.trim()).filter(Boolean);
+    if (this.recipients.length === 0) this.recipients = [...DEFAULT_RECIPIENTS];
+    this.enabled = true;
     this.transporter = null;
 
     // NEW: 매 정각 1회 전국 종합 리포트 발송 설정
@@ -36,10 +41,39 @@ class SmartNotifierService {
     this.minContinuousHours = parseInt(process.env.MIN_CONTINUOUS_HOURS, 10) || 1; // 1시간(60분, 6회 이상)
     this.selectedRules = (process.env.EMAIL_SELECTED_RULES || "DATA_MISSING,BATTERY_VOLTAGE").split(",").map(r => r.trim()).filter(Boolean);
     this.lastReportedHourKey = ""; // "YYYY-MM-DD-HH" 중복 발송 방지용 키
+    this.brevoEventsCache = { fetchedAt: 0, items: [] };
 
-    // Load persisted configuration from storage
+    // Load persisted configuration from storage (Local + Cloud DB)
     this.loadPersistedConfig();
     this.initTransporter();
+    this.syncConfigFromCloud();
+  }
+
+  applyConfigObject(saved, sourceLabel = "storage") {
+    if (!saved || typeof saved !== "object") return;
+    if (saved.thresholdCount) this.thresholdCount = saved.thresholdCount;
+    if (saved.provider) this.provider = saved.provider;
+    // Hardening: Never wipe apiKey with empty string or masked bullets
+    if (saved.apiKey && typeof saved.apiKey === "string" && saved.apiKey.trim() && !saved.apiKey.includes("••••")) {
+      this.apiKey = saved.apiKey.trim();
+    }
+    if (saved.apiSender) this.apiSender = saved.apiSender;
+    if (saved.host) this.smtpConfig.host = saved.host;
+    if (saved.port) this.smtpConfig.port = saved.port;
+    if (saved.user) this.smtpConfig.auth.user = saved.user;
+    if (saved.pass) this.smtpConfig.auth.pass = saved.pass;
+    if (saved.from) this.smtpConfig.from = saved.from;
+    if (saved.recipients && Array.isArray(saved.recipients)) {
+      const validRecips = saved.recipients.map(e => (e || "").trim()).filter(Boolean);
+      if (validRecips.length > 0) this.recipients = validRecips;
+    }
+    if (saved.enabled !== undefined) this.enabled = !!saved.enabled;
+    if (saved.reportMode) this.reportMode = saved.reportMode;
+    if (saved.minContinuousHours) this.minContinuousHours = saved.minContinuousHours;
+    if (saved.selectedRules && Array.isArray(saved.selectedRules) && saved.selectedRules.length > 0) {
+      this.selectedRules = saved.selectedRules;
+    }
+    console.log(`📁 [SmartNotifier] Loaded config from ${sourceLabel} (mode: ${this.reportMode}, recipients: ${this.recipients.join(",") || "none"}, provider: ${this.getEffectiveProvider()})`);
   }
 
   loadPersistedConfig() {
@@ -47,21 +81,7 @@ class SmartNotifierService {
       if (fs.existsSync(this.configFilePath)) {
         const raw = fs.readFileSync(this.configFilePath, "utf-8");
         const saved = JSON.parse(raw);
-        if (saved.thresholdCount) this.thresholdCount = saved.thresholdCount;
-        if (saved.provider) this.provider = saved.provider;
-        if (saved.apiKey) this.apiKey = saved.apiKey;
-        if (saved.apiSender) this.apiSender = saved.apiSender;
-        if (saved.host) this.smtpConfig.host = saved.host;
-        if (saved.port) this.smtpConfig.port = saved.port;
-        if (saved.user) this.smtpConfig.auth.user = saved.user;
-        if (saved.pass) this.smtpConfig.auth.pass = saved.pass;
-        if (saved.from) this.smtpConfig.from = saved.from;
-        if (saved.recipients && Array.isArray(saved.recipients)) this.recipients = saved.recipients;
-        if (saved.enabled !== undefined) this.enabled = saved.enabled;
-        if (saved.reportMode) this.reportMode = saved.reportMode;
-        if (saved.minContinuousHours) this.minContinuousHours = saved.minContinuousHours;
-        if (saved.selectedRules && Array.isArray(saved.selectedRules)) this.selectedRules = saved.selectedRules;
-        console.log(`📁 [SmartNotifier] Loaded persisted config from disk (mode: ${this.reportMode}, minHours: ${this.minContinuousHours}h, rules: ${this.selectedRules.join(",")}, provider: ${this.getEffectiveProvider()})`);
+        this.applyConfigObject(saved, "disk");
       }
 
       // Check .env if apiKey is not yet set
@@ -78,40 +98,65 @@ class SmartNotifierService {
     }
   }
 
+  async syncConfigFromCloud() {
+    try {
+      const cloudCfg = await dbService.loadCloudEmailConfig();
+      if (cloudCfg) {
+        this.applyConfigObject(cloudCfg, "Supabase Cloud DB");
+        this.initTransporter();
+      } else if (this.apiKey || this.recipients.length > 0) {
+        // Seed initial cloud config so future Render deploys/restarts never lose it
+        this.persistConfig();
+      }
+    } catch (e) {
+      console.warn("⚠️ Failed to sync notification config from Cloud DB:", e.message);
+    }
+  }
+
   persistConfig() {
     try {
       const dataDir = path.dirname(this.configFilePath);
       if (!fs.existsSync(dataDir)) {
         fs.mkdirSync(dataDir, { recursive: true });
       }
-      const dataToSave = {
+      const fullConfig = {
         thresholdCount: this.thresholdCount,
         provider: this.provider,
-        apiKey: (process.env.BREVO_API_KEY || fs.existsSync(path.join(__dirname, "../.env"))) ? "" : this.apiKey,
+        apiKey: this.apiKey || "",
         apiSender: this.apiSender,
         host: this.smtpConfig.host,
         port: this.smtpConfig.port,
         user: this.smtpConfig.auth.user,
         pass: this.smtpConfig.auth.pass,
         from: this.smtpConfig.from,
-        recipients: this.recipients,
+        recipients: this.recipients.length > 0 ? this.recipients : DEFAULT_RECIPIENTS,
         enabled: this.enabled,
         reportMode: this.reportMode,
         minContinuousHours: this.minContinuousHours,
         selectedRules: this.selectedRules,
         savedAt: new Date().toISOString()
       };
-      fs.writeFileSync(this.configFilePath, JSON.stringify(dataToSave, null, 2), "utf-8");
-      console.log("💾 [SmartNotifier] Notification settings saved permanently to disk.");
+
+      // 1. Save to Cloud DB (Supabase) WITH full config so Render restarts never wipe API key or recipients
+      dbService.saveCloudEmailConfig(fullConfig).catch(() => {});
+
+      // 2. Save to local disk (safely omit raw secret key from git file; apiKey is preserved in Cloud DB & memory)
+      const diskToSave = {
+        ...fullConfig,
+        apiKey: ""
+      };
+      fs.writeFileSync(this.configFilePath, JSON.stringify(diskToSave, null, 2), "utf-8");
+      console.log("💾 [SmartNotifier] Notification settings saved permanently to Cloud DB & disk.");
     } catch (e) {
       console.warn("⚠️ Failed to persist notification config:", e.message);
     }
   }
 
   getEffectiveProvider() {
-    if (this.apiKey) {
-      if (this.apiKey.startsWith("xkeysib-") || this.provider === "BREVO") return "BREVO";
-      if (this.apiKey.startsWith("re_") || this.provider === "RESEND") return "RESEND";
+    const key = this.apiKey;
+    if (key) {
+      if (key.startsWith("xkeysib-") || this.provider === "BREVO") return "BREVO";
+      if (key.startsWith("re_") || this.provider === "RESEND") return "RESEND";
       return this.provider || "BREVO";
     }
     if (this.smtpConfig.auth.user && this.smtpConfig.auth.pass) {
@@ -151,20 +196,27 @@ class SmartNotifierService {
   }
 
   updateConfig(config) {
-    if (config.thresholdCount) this.thresholdCount = Math.max(1, parseInt(config.thresholdCount, 10) || 3);
+    if (config.thresholdCount) this.thresholdCount = Math.max(1, parseInt(config.thresholdCount, 10) || 6);
     if (config.provider !== undefined) this.provider = config.provider;
-    if (config.apiKey !== undefined) this.apiKey = config.apiKey.trim();
-    if (config.apiSender !== undefined) this.apiSender = config.apiSender.trim();
+    // Hardening: Only overwrite apiKey if a real, valid non-masked key is provided
+    if (config.apiKey && typeof config.apiKey === "string" && config.apiKey.trim() && !config.apiKey.includes("••••")) {
+      this.apiKey = config.apiKey.trim();
+    }
+    if (config.apiSender !== undefined && config.apiSender.trim()) this.apiSender = config.apiSender.trim();
     if (config.host) this.smtpConfig.host = config.host;
     if (config.port) this.smtpConfig.port = parseInt(config.port, 10);
     if (config.user !== undefined) this.smtpConfig.auth.user = config.user.trim();
     if (config.pass !== undefined) this.smtpConfig.auth.pass = config.pass.trim();
     if (config.from !== undefined) this.smtpConfig.from = (config.from || "").trim();
     if (config.recipients !== undefined) {
+      let filtered = [];
       if (Array.isArray(config.recipients)) {
-        this.recipients = config.recipients.map(e => (e || "").trim()).filter(Boolean);
+        filtered = config.recipients.map(e => (e || "").trim()).filter(Boolean);
       } else if (typeof config.recipients === "string") {
-        this.recipients = config.recipients.split(",").map(e => e.trim()).filter(Boolean);
+        filtered = config.recipients.split(",").map(e => e.trim()).filter(Boolean);
+      }
+      if (filtered.length > 0) {
+        this.recipients = filtered;
       }
     }
     if (config.enabled !== undefined) this.enabled = !!config.enabled;
@@ -190,7 +242,7 @@ class SmartNotifierService {
       user: this.smtpConfig.auth.user || "",
       pass: this.smtpConfig.auth.pass || "",
       from: this.smtpConfig.from,
-      recipients: this.recipients.join(", "),
+      recipients: (this.recipients && this.recipients.length > 0 ? this.recipients : DEFAULT_RECIPIENTS).join(", "),
       enabled: this.enabled,
       reportMode: this.reportMode,
       minContinuousHours: this.minContinuousHours,
@@ -201,6 +253,173 @@ class SmartNotifierService {
 
   getLogs() {
     return this.notificationLogs;
+  }
+
+  async fetchBrevoHistoricalEvents(forceRefresh = false) {
+    if (!this.apiKey || !this.apiKey.startsWith("xkeysib-")) return [];
+    const now = Date.now();
+    if (!forceRefresh && this.brevoEventsCache.items.length > 0 && (now - this.brevoEventsCache.fetchedAt < 60000)) {
+      return this.brevoEventsCache.items;
+    }
+
+    try {
+      const allEvents = [];
+      for (let offset = 0; offset < 1200; offset += 100) {
+        const res = await fetch(`https://api.brevo.com/v3/smtp/statistics/events?limit=100&offset=${offset}&sort=desc`, {
+          headers: { "api-key": this.apiKey, "accept": "application/json" }
+        });
+        if (!res.ok) break;
+        const data = await res.json();
+        if (!data.events || data.events.length === 0) break;
+        allEvents.push(...data.events);
+        if (data.events.length < 100) break;
+      }
+
+      // Group raw events by messageId
+      const byMsg = new Map();
+      for (const ev of allEvents) {
+        const msgId = ev.messageId || `${ev.date}_${ev.subject}`;
+        if (!byMsg.has(msgId)) {
+          byMsg.set(msgId, {
+            id: msgId,
+            messageId: msgId,
+            timestamp: ev.date,
+            subject: ev.subject || "",
+            recipientsSet: new Set(),
+            eventsSet: new Set(),
+            openedAt: "",
+            deliveredAt: ""
+          });
+        }
+        const entry = byMsg.get(msgId);
+        if (ev.email) entry.recipientsSet.add(ev.email);
+        if (ev.event) entry.eventsSet.add(ev.event);
+        if (ev.event === "opened" && (!entry.openedAt || new Date(ev.date) > new Date(entry.openedAt))) {
+          entry.openedAt = ev.date;
+        }
+        if (ev.event === "delivered") {
+          entry.deliveredAt = ev.date;
+        }
+        if ((ev.event === "requests" || ev.event === "delivered") && new Date(ev.date) < new Date(entry.timestamp)) {
+          entry.timestamp = ev.date;
+        }
+      }
+
+      const items = Array.from(byMsg.values()).map(m => {
+        const subj = m.subject || "";
+        let level = "DIGEST";
+        let stationName = "전국 관측소 정기 종합 리포트";
+        let count = 0;
+
+        const cntMatch = subj.match(/(?:총|잔여\s*이상)\s*(\d+)건/);
+        if (cntMatch) count = parseInt(cntMatch[1], 10);
+
+        if (subj.includes("[테스트]")) {
+          level = "TEST";
+          stationName = subj.includes("정기 리포트") ? "전국 종합 리포트 (테스트)" : "연동 테스트 메일";
+        } else if (subj.includes("임시 비밀번호")) {
+          level = "PASSWORD_RESET";
+          stationName = "계정 비밀번호 재설정";
+          count = 1;
+        } else if (subj.includes("[관측품질 변동알림]") || subj.includes("[관측품질 신규이상]")) {
+          level = "CRITICAL";
+          const stMatch = subj.match(/🚨([^\s]+(?:\s*등\s*\d+개소)?)/);
+          if (stMatch) stationName = `정각 리포트 (${stMatch[1]})`;
+        } else if (subj.includes("[관측품질 정상복구]") || subj.includes("[관측품질 전 지점 정상화]")) {
+          level = "RESOLVED";
+          const stMatch = subj.match(/✅([^\s]+(?:\s*등\s*\d+개소)?)/);
+          if (stMatch) stationName = `정각 리포트 (${stMatch[1]} 복구)`;
+        } else if (subj.includes("[관측품질 정각 기준현황]") || subj.includes("[전국 관측소 품질감시 정기 리포트]")) {
+          level = "DIGEST";
+          stationName = "전국 관측소 정각 기준현황";
+        } else if (subj.includes("[자동유량관측 경보]") || subj.includes("[자동유량관측 주의]")) {
+          level = subj.includes("경보") ? "CRITICAL" : "WARNING";
+          const stMatch = subj.match(/\]\s*([^\s]+\([^)]+\))/);
+          if (stMatch) stationName = `${stMatch[1]} (개별알림)`;
+          const cMatch = subj.match(/연속\s*(\d+)회/);
+          if (cMatch) count = parseInt(cMatch[1], 10);
+        } else if (subj.includes("[자동유량관측 복구완료]")) {
+          level = "RESOLVED";
+          const stMatch = subj.match(/\]\s*([^\s]+\([^)]+\))/);
+          if (stMatch) stationName = `${stMatch[1]} (개별복구)`;
+        }
+
+        const evs = m.eventsSet;
+        let status = "SUCCESS";
+        if (evs.has("opened")) status = "OPENED";
+        else if (evs.has("delivered")) status = "DELIVERED";
+        else if (evs.has("hardBounces") || evs.has("softBounces") || evs.has("error") || evs.has("blocked")) status = "FAILED";
+        else if (evs.has("deferred")) status = "DEFERRED";
+
+        return {
+          id: m.messageId,
+          messageId: m.messageId,
+          timestamp: m.timestamp,
+          stationName,
+          level,
+          count,
+          subject: subj,
+          recipients: Array.from(m.recipientsSet).join(", "),
+          status,
+          openedAt: m.openedAt || "",
+          deliveredAt: m.deliveredAt || "",
+          mode: "HTTP_API (Brevo)"
+        };
+      });
+
+      this.brevoEventsCache = { fetchedAt: now, items };
+      return items;
+    } catch (e) {
+      console.warn("⚠️ Failed to fetch Brevo historical events:", e.message);
+      return this.brevoEventsCache.items || [];
+    }
+  }
+
+  async getLogsAsync(forceRefresh = false) {
+    const dbLogs = await dbService.getEmailNotificationLogs(500);
+    const merged = new Map();
+
+    // 1. Load persisted DB logs (the 73 seeded historical records + newly sent actual emails)
+    for (const d of dbLogs) {
+      if (d.status === "SKIPPED_NO_CHANGE" || d.level === "SKIPPED") continue;
+      const key = d.messageId || d.id;
+      merged.set(key, d);
+    }
+
+    // 2. If forceRefresh requested, enrich read receipts (OPENED/DELIVERED) from Brevo & add any new actual sent digest emails after 2026-11-18
+    if (forceRefresh) {
+      const brevoLogs = await this.fetchBrevoHistoricalEvents(true);
+      const cutoffAfterSeed = new Date("2026-11-18T10:00:00+09:00");
+      for (const b of brevoLogs) {
+        const key = b.messageId || b.id;
+        if (merged.has(key)) {
+          const existing = merged.get(key);
+          merged.set(key, {
+            ...existing,
+            status: (b.status === "OPENED" || b.status === "DELIVERED") ? b.status : existing.status,
+            openedAt: b.openedAt || existing.openedAt || ""
+          });
+        } else if (new Date(b.timestamp) > cutoffAfterSeed && b.status !== "FAILED") {
+          const s = b.subject || "";
+          const isLegacyIndividual = s.startsWith("[자동유량관측 경보]") || s.startsWith("[자동유량관측 주의]") || s.startsWith("[자동유량관측 복구완료]");
+          if (!isLegacyIndividual) {
+            merged.set(key, b);
+            dbService.saveEmailNotificationLog(b).catch(() => {});
+          }
+        }
+      }
+    }
+
+    // 3. Merge in-memory actually-sent logs
+    for (const m of this.notificationLogs) {
+      if (m.status !== "SUCCESS" && m.status !== "DELIVERED" && m.status !== "OPENED") continue;
+      const key = m.messageId || m.id;
+      if (!merged.has(key)) {
+        merged.set(key, m);
+      }
+    }
+
+    return Array.from(merged.values()).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   }
 
   getFromAddress() {
@@ -431,25 +650,11 @@ class SmartNotifierService {
       console.log(`ℹ️ [SmartNotifier] 1시간 전 대비 변동사항 없음 (신규: 0, 복구: 0, 지속: ${diff.ongoingIssues.length}건). 이메일 발송 생략(Skip).`);
       this.lastReportedHourKey = hourKey;
 
-      // Update snapshot slot and run 30-day retention cleanup
+      // Update snapshot slot and run 30-day retention cleanup (do not register skipped items in email history)
       try {
         await dbService.saveHourlySnapshot(displayTime, currentReportIssues);
         await dbService.cleanupOldSnapshots(30);
       } catch (e) {}
-
-      const logItem = {
-        id: Date.now() + Math.random().toString(36).substr(2, 4),
-        timestamp: new Date().toISOString(),
-        stationName: "전국 관측소 정기 종합 리포트",
-        level: "NORMAL",
-        count: currentReportIssues.length,
-        subject: `[발송 생략] 1시간 전 대비 변동사항 없음 (${displayTime})`,
-        recipients: this.recipients.join(", "),
-        status: "SKIPPED_NO_CHANGE",
-        mode: this.getEffectiveProvider()
-      };
-      this.notificationLogs.unshift(logItem);
-      if (this.notificationLogs.length > 50) this.notificationLogs.pop();
 
       return { success: true, skipped: true, message: "1시간 전 대비 변동사항이 없어 발송을 생략했습니다." };
     }
@@ -824,6 +1029,7 @@ class SmartNotifierService {
       subject,
       recipients: actualRecipients.join(", "),
       status: "SENT",
+      messageId: "",
       mode: eff === "RESEND" ? "HTTP_API (Resend)" : (eff === "BREVO" ? "HTTP_API (Brevo)" : (eff === "SMTP" ? "REAL_SMTP" : "SIMULATED"))
     };
 
@@ -832,6 +1038,10 @@ class SmartNotifierService {
         const res = await this.sendViaResend(actualRecipients, subject, html);
         if (res.success) {
           logItem.status = "SUCCESS";
+          if (res.id) {
+            logItem.messageId = res.id;
+            logItem.id = res.id;
+          }
           console.log(`📧 [SmartNotifier (Resend)] Sent to ${actualRecipients.join(", ")} - ${subject}`);
         } else {
           logItem.status = "FAILED";
@@ -847,6 +1057,10 @@ class SmartNotifierService {
         const res = await this.sendViaBrevo(actualRecipients, subject, html);
         if (res.success) {
           logItem.status = "SUCCESS";
+          if (res.id) {
+            logItem.messageId = res.id;
+            logItem.id = res.id;
+          }
           console.log(`📧 [SmartNotifier (Brevo)] Sent to ${actualRecipients.join(", ")} - ${subject}`);
         } else {
           logItem.status = "FAILED";
@@ -877,9 +1091,13 @@ class SmartNotifierService {
       console.log(`📨 [SmartNotifier Simulation] Auto email logged for ${stationName} (${level}, ${count}회)`);
     }
 
-    this.notificationLogs.unshift(logItem);
-    if (this.notificationLogs.length > this.maxLogs) {
-      this.notificationLogs = this.notificationLogs.slice(0, this.maxLogs);
+    // 앞으로는 실제로 메일이 성공적으로 발송된 건(SUCCESS)에 대해서만 발송 이력 DB에 등록
+    if (logItem.status === "SUCCESS") {
+      this.notificationLogs.unshift(logItem);
+      if (this.notificationLogs.length > this.maxLogs) {
+        this.notificationLogs = this.notificationLogs.slice(0, this.maxLogs);
+      }
+      dbService.saveEmailNotificationLog(logItem).catch(() => {});
     }
 
     return logItem;
@@ -968,35 +1186,13 @@ class SmartNotifierService {
       </div>
     `;
 
-    if (eff === "RESEND") {
-      const res = await this.sendViaResend([testRecipient], subject, html);
-      if (res.success) {
-        return { success: true, message: `[Resend HTTP API] 테스트 메일이 ${testRecipient}로 성공적으로 발송되었습니다!` };
-      } else {
-        return { success: false, message: `Resend 발송 실패: ${res.error}` };
-      }
-    } else if (eff === "BREVO") {
-      const res = await this.sendViaBrevo([testRecipient], subject, html);
-      if (res.success) {
-        return { success: true, message: `[Brevo HTTP API] 테스트 메일이 ${testRecipient}로 성공적으로 발송되었습니다!` };
-      } else {
-        return { success: false, message: `Brevo 발송 실패: ${res.error}` };
-      }
-    } else if (eff === "SMTP" && this.transporter) {
-      try {
-        const fromAddr = this.getFromAddress();
-        await this.transporter.sendMail({
-          from: fromAddr,
-          to: testRecipient,
-          subject,
-          html
-        });
-        return { success: true, message: `테스트 메일이 ${testRecipient}로 성공적으로 발송되었습니다! (REAL SMTP)` };
-      } catch (e) {
-        return { success: false, message: `SMTP 발송 실패 (${e.message}). 클라우드 호스팅 방화벽 정책으로 인해 HTTP REST API (Resend/Brevo) 사용을 권장합니다.` };
-      }
+    const resItem = await this.deliverEmail(subject, html, "연동 테스트 메일", "TEST", 0, testRecipient);
+    if (resItem.status === "SUCCESS") {
+      return { success: true, message: `[${eff}] 테스트 메일이 ${testRecipient}로 성공적으로 발송되었습니다!` };
+    } else if (eff === "SIMULATION") {
+      return { success: true, simulated: true, message: `가상 시뮬레이션 모드: 메일 발송 테스트 로그가 생성되었습니다. (API Key 또는 SMTP 계정 입력 필요)` };
     } else {
-      return { success: true, simulated: true, message: `가상 시뮬레이션 모드: 메일 발송 테스트 로그가 성공적으로 생성되었습니다. (API Key 또는 SMTP 계정 입력 필요)` };
+      return { success: false, message: `${eff} 발송 실패: ${resItem.error || "알 수 없는 오류"}` };
     }
   }
 
@@ -1057,6 +1253,7 @@ class SmartNotifierService {
       stationName: `계정 [${username}]`,
       level: "PASSWORD_RESET",
       count: 1,
+      subject,
       recipients: targetEmail,
       mode: eff,
       status: "PENDING"
@@ -1065,10 +1262,12 @@ class SmartNotifierService {
     if (eff === "RESEND") {
       const res = await this.sendViaResend([targetEmail], subject, html);
       logItem.status = res.success ? "SUCCESS" : "FAILED";
+      if (res.id) { logItem.messageId = res.id; logItem.id = res.id; }
       if (!res.success) logItem.error = res.error;
     } else if (eff === "BREVO") {
       const res = await this.sendViaBrevo([targetEmail], subject, html);
       logItem.status = res.success ? "SUCCESS" : "FAILED";
+      if (res.id) { logItem.messageId = res.id; logItem.id = res.id; }
       if (!res.success) logItem.error = res.error;
     } else if (eff === "SMTP" && this.transporter) {
       try {
@@ -1093,6 +1292,7 @@ class SmartNotifierService {
     if (this.notificationLogs.length > this.maxLogs) {
       this.notificationLogs = this.notificationLogs.slice(0, this.maxLogs);
     }
+    dbService.saveEmailNotificationLog(logItem).catch(() => {});
 
     return {
       success: logItem.status === "SUCCESS" || logItem.status === "SIMULATED",

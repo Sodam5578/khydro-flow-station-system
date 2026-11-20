@@ -18,6 +18,9 @@ class MonitorManager {
 
   async init() {
     this.bindEvents();
+    if (window.errorLedgerManager) {
+      await window.errorLedgerManager.init();
+    }
     await this.loadData();
     if (!this.timer) {
       this.timer = setInterval(() => this.loadData(true), this.pollingInterval);
@@ -303,12 +306,32 @@ class MonitorManager {
         categoryBadge = `<span class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.72rem; margin-right:4px; font-weight:700;">🔋 배터리</span>`;
       }
 
-      // Find local station id
+      // Find local station id & assignment
       let stId = null;
       if (window.dataManager) {
         const found = window.dataManager.getAll().find(s => String(s.code) === String(item.stCode) || s.name === item.stationName);
         if (found) stId = found.id;
       }
+
+      const assign = window.errorLedgerManager ? window.errorLedgerManager.getStationAssignment(item.stCode, item.stationName) : null;
+      const assignFormatted = (assign && assign.assigned_manager && window.errorLedgerManager)
+        ? window.errorLedgerManager.formatBasinTeamManager(assign.region || item.basin, assign.assigned_team, assign.assigned_manager)
+        : (assign && assign.assigned_manager ? `${assign.assigned_team ? `${assign.assigned_team}팀 ` : ""}${assign.assigned_manager}` : "");
+      const assignHtml = assignFormatted
+        ? `<span style="color:#0f766e; font-weight:700; margin-left:4px;">· 🏃${this.escapeHtml(assignFormatted)}</span>`
+        : "";
+
+      const activeLedger = window.errorLedgerManager ? window.errorLedgerManager.getActiveIssueForStation(item.stCode, item.stationName) : null;
+      const activeLedgerHtml = activeLedger
+        ? `
+          <div style="margin-top:5px; padding:4px 8px; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; font-size:0.74rem; display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; cursor:pointer;" onclick="window.errorLedgerManager.openEditModal(${activeLedger.id}, true)" title="클릭하여 진행중인 오류관리대장 상태를 즉시 갱신합니다">
+            <span style="font-weight:800; color:#b45309;">📋 [${this.escapeHtml(activeLedger.error_status)}]</span>
+            <span style="color:#0f172a; font-weight:700;">${this.escapeHtml(activeLedger.action_actor_category)} (${this.escapeHtml(activeLedger.action_request)})</span>
+            ${activeLedger.duration_days !== null ? `<span style="color:#dc2626; font-weight:800;">D+${activeLedger.duration_days}일</span>` : ""}
+            <span style="color:#2563eb; text-decoration:underline; font-weight:700;">갱신➔</span>
+          </div>
+        `
+        : "";
 
       return `
         <tr>
@@ -320,7 +343,7 @@ class MonitorManager {
             <div style="font-weight:700; color:#0f172a; cursor:pointer;" onclick="${stId ? `window.modalManager.openDetail(${stId})` : ""}">
               📍 ${item.stationName}
             </div>
-            <div style="font-size:0.75rem; color:#64748b;">코드: <code>${item.stCode}</code></div>
+            <div style="font-size:0.74rem; color:#64748b;">코드: <code>${item.stCode}</code>${assignHtml}</div>
           </td>
           <td style="text-align:center;"><b>${item.sensorNo ? `No.${item.sensorNo}` : "-"}</b></td>
           <td style="text-align:center;">
@@ -334,6 +357,7 @@ class MonitorManager {
               <span>${item.problem}</span>
             </div>
             <div style="font-size:0.75rem; color:#475569; margin-top:2px;">${item.detail}</div>
+            ${activeLedgerHtml}
           </td>
           <td style="text-align:center;">
             <b style="color:#b91c1c;">${item.continuousCount}회</b>
@@ -347,13 +371,13 @@ class MonitorManager {
               </button>
               <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:#0f766e; border-color:#99f6e4; background:#f0fdfa; font-weight:700;" 
                       onclick="window.monitorManager.openStationActionHistoryModal(${stId || "null"}, '${(item.stationName||'').replace(/'/g, "\\'")}', '${item.stCode||""}', '${item.ruleId||""}', '${(item.problem||'').replace(/'/g, "\\'")}', '${(item.detail||'').replace(/'/g, "\\'")}', ${item.continuousCount||1})" 
-                      title="이 지점의 과거 조치 이력 확인 및 관리">
+                      title="이 지점의 오류관리대장 및 조치 이력 확인">
                 📜 조치이력
               </button>
-              <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:#b91c1c; border-color:#fecaca; background:#fef2f2; font-weight:700;" 
+              <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:${activeLedger ? "#b45309" : "#b91c1c"}; border-color:${activeLedger ? "#fcd34d" : "#fecaca"}; background:${activeLedger ? "#fffbeb" : "#fef2f2"}; font-weight:800;" 
                       onclick="window.monitorManager.openQuickActionRegister(${stId || "null"}, '${(item.stationName||'').replace(/'/g, "\\'")}', '${item.stCode||""}', '${item.ruleId||""}', '${(item.problem||'').replace(/'/g, "\\'")}', '${(item.detail||'').replace(/'/g, "\\'")}', ${item.continuousCount||1})" 
-                      title="이 이상 항목에 대한 현장/원격 조치 내역 즉시 등록">
-                ✍️ 조치등록
+                      title="오류관리대장에 5초 원클릭으로 조치 배정(용역사/출장직) 및 상태를 등록·갱신합니다">
+                ${activeLedger ? "🔄 조치갱신" : "✍️ 조치등록"}
               </button>
               ${stId ? `
                 <button class="btn btn-outline btn-sm" style="padding:2px 6px; font-size:0.72rem; color:#1e40af; border-color:#93c5fd; background:#eff6ff; font-weight:700;" onclick="window.equipmentManager.navigateToStation(${stId}, '${(item.stationName||'').replace(/'/g, "\\'")}', 'devices')" title="해당 지점의 장비 목록 및 교체이력 조회">
@@ -437,7 +461,11 @@ class MonitorManager {
     this.currentStationActionId = stationId || (station ? station.id : null);
     const finalName = station ? station.name : (stationName || "관측시설");
     const finalCode = station ? (station.code || "-") : (stCode || "-");
-    const finalRiver = station ? `${station.basin || ""} / ${station.river || station.region || ""}` : "-";
+    const basinText = station ? (station.basin || station.region || "") : "";
+    const riverText = station ? (station.river || station.region || "") : "";
+    const finalRiver = (basinText && riverText && basinText !== riverText)
+      ? `${basinText} / ${riverText}`
+      : (basinText || riverText || "-");
     const finalGauge = station ? (station.gaugeType || "-") : "-";
 
     // 1. Header Information
@@ -499,29 +527,42 @@ class MonitorManager {
       }
     }
 
-    // 3. Setup Add Button
+    // 3. Setup Add Buttons
     const addBtn = document.getElementById("st-hist-modal-add-btn");
     if (addBtn) {
       addBtn.onclick = () => {
-        window.maintenanceHistoryManager.openCreateModal(stationId, {
-          stationName: finalName,
-          stCode: finalCode
-        });
+        if (window.errorLedgerManager) {
+          window.errorLedgerManager.openRegisterModal({
+            stationId,
+            stationName: finalName,
+            stCode: finalCode,
+            ruleId: ruleId || ""
+          }, true);
+        }
       };
     }
+
+    const addMaintBtn = document.getElementById("st-hist-modal-add-maint-btn");
+    if (addMaintBtn) {
+      addMaintBtn.onclick = () => {
+        if (window.maintenanceHistoryManager) {
+          window.maintenanceHistoryManager.openCreateModal(stationId, {
+            stationName: finalName,
+            stCode: finalCode
+          });
+        }
+      };
+    }
+
+    // Reset Filter to ALL
+    this.stationModalFilter = "ALL";
+    this.updateStationModalFilterUI();
 
     // 4. Open Modal & Refresh Data
     const modal = document.getElementById("station-action-history-modal");
     if (modal) modal.classList.add("active");
 
-    if (stationId) {
-      await this.refreshStationActionHistory(stationId);
-    } else {
-      const listEl = document.getElementById("st-hist-modal-list");
-      if (listEl) {
-        listEl.innerHTML = `<div style="text-align:center; padding:2rem; color:#94a3b8;">관측소 정보가 연계되지 않아 이력을 조회할 수 없습니다.</div>`;
-      }
-    }
+    await this.refreshStationActionHistory(stationId, finalCode, finalName);
   }
 
   closeStationActionHistoryModal() {
@@ -530,95 +571,73 @@ class MonitorManager {
     this.currentStationActionId = null;
   }
 
-  async refreshStationActionHistory(stationId) {
-    if (!stationId) return;
-    const targetId = parseInt(stationId, 10);
+  updateStationModalFilterUI() {
+    const filter = this.stationModalFilter || "ALL";
+    const tabAll = document.getElementById("st-hist-tab-all");
+    const tabMon = document.getElementById("st-hist-tab-mon");
+    const tabMaint = document.getElementById("st-hist-tab-maint");
+
+    const activeStyle = "background:#1e3a8a; color:#ffffff; font-weight:800; font-size:0.78rem; padding:5px 11px; border:none; border-radius:6px;";
+    const inactiveStyle = "background:#ffffff; color:#334155; font-weight:700; font-size:0.78rem; padding:5px 11px; border:1px solid #cbd5e1; border-radius:6px;";
+
+    if (tabAll) tabAll.style.cssText = filter === "ALL" ? activeStyle : inactiveStyle;
+    if (tabMon) tabMon.style.cssText = filter === "MONITORING" ? activeStyle : inactiveStyle;
+    if (tabMaint) tabMaint.style.cssText = filter === "MAINTENANCE" ? activeStyle : inactiveStyle;
+  }
+
+  setStationModalSourceFilter(sourceKey) {
+    this.stationModalFilter = sourceKey || "ALL";
+    this.updateStationModalFilterUI();
+    this.renderStationActionHistoryList();
+  }
+
+  async refreshStationActionHistory(stationId, stCode = "", stName = "") {
     const listEl = document.getElementById("st-hist-modal-list");
     const countEl = document.getElementById("st-hist-modal-count");
+    const monCountEl = document.getElementById("st-hist-modal-mon-count");
+    const maintCountEl = document.getElementById("st-hist-modal-maint-count");
 
     if (listEl) {
-      listEl.innerHTML = `<div style="text-align:center; padding:2rem; color:#64748b;">⏳ 이 지점의 조치 이력을 불러오는 중...</div>`;
+      listEl.innerHTML = `<div style="text-align:center; padding:2rem; color:#64748b;">⏳ 이 지점의 모니터링 조치 및 현장 유지관리 통합 이력을 불러오는 중...</div>`;
     }
 
     try {
-      const res = await window.apiClient.getStationMaintenanceHistory(targetId);
-      if (!res.success) throw new Error(res.message);
+      const station = (window.dataManager && stationId)
+        ? window.dataManager.getAll().find(s => Number(s.id) === Number(stationId))
+        : null;
+      const code = stCode || (station ? station.code : "");
+      const name = stName || (station ? station.name : "");
 
-      const items = res.data || [];
-      if (countEl) countEl.textContent = `${items.length}건`;
+      const res = await window.apiClient.getUnifiedActionHistory({
+        stationId: stationId || "",
+        stationCode: code || "",
+        stationName: name || ""
+      });
 
-      if (!listEl) return;
+      this.stationUnifiedData = res || {};
+      this.stationUnifiedRows = (res && res.rows) || [];
+      this.currentStationMeta = {
+        id: stationId,
+        code,
+        name,
+        region: station ? station.region : ""
+      };
 
-      if (items.length === 0) {
-        listEl.innerHTML = `
-          <div style="padding:2.5rem 1.5rem; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; text-align:center;">
-            <div style="font-size:1.8rem; margin-bottom:6px;">📜</div>
-            <div style="font-size:0.92rem; font-weight:700; color:#334155;">등록된 과거 조치 및 점검 이력이 없습니다.</div>
-            <div style="font-size:0.8rem; color:#64748b; margin-top:4px;">
-              상단의 <b>[➕ 새 조치 내역 등록]</b> 버튼을 눌러 점검, 통신/전원 복구, 부품 교체 등의 조치 이력을 기록해보세요.
-            </div>
-          </div>
-        `;
-        return;
-      }
+      const totalCount = (res && res.counts && res.counts.total !== undefined)
+        ? res.counts.total
+        : (this.stationUnifiedRows.length);
+      const monCount = (res && res.counts && res.counts.monitoring !== undefined)
+        ? res.counts.monitoring
+        : (this.stationUnifiedRows.filter(r => r.source === "MONITORING").length);
+      const maintCount = (res && res.counts && res.counts.maintenance !== undefined)
+        ? res.counts.maintenance
+        : (this.stationUnifiedRows.filter(r => r.source === "MAINTENANCE").length);
 
-      listEl.innerHTML = items.map(item => {
-        const typeBadge = this.getActionTypeBadge(item.action_type);
-        const statusBadge = this.getResultStatusBadge(item.result_status);
+      if (countEl) countEl.textContent = `${totalCount}건`;
+      if (monCountEl) monCountEl.textContent = `${monCount}건`;
+      if (maintCountEl) maintCountEl.textContent = `${maintCount}건`;
 
-        let actorBadge = "";
-        if (item.actor_type?.includes("리버앤씨") || item.actor_type?.includes("RNS")) {
-          actorBadge = `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:0.72rem; font-weight:700;">용역사(리버앤씨)</span>`;
-        } else if (item.actor_type?.includes("기술원")) {
-          actorBadge = `<span class="badge" style="background:#eff6ff; color:#1e40af; font-size:0.72rem; font-weight:700;">기술원(자체)</span>`;
-        } else {
-          actorBadge = `<span class="badge" style="background:#f3e8ff; color:#6b21a8; font-size:0.72rem; font-weight:700;">${this.escapeHtml(item.actor_type || "기타")}</span>`;
-        }
-
-        let dateDisplay = "";
-        if (item.issue_date && item.issue_date !== item.action_date) {
-          dateDisplay = `
-            <span style="font-size:0.75rem; color:#dc2626; font-weight:700;" title="문제 인지일">🚨 발생 ${item.issue_date}</span>
-            <span style="font-size:0.75rem; color:#64748b;">➔</span>
-            <span style="font-size:0.85rem; font-weight:800; color:#0f172a;" title="조치 완료일">🛠️ 조치 ${item.action_date}</span>
-          `;
-        } else {
-          dateDisplay = `<span style="font-size:0.85rem; font-weight:800; color:#0f172a;">📅 ${item.action_date}</span>`;
-        }
-
-        return `
-          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:0.85rem 1rem; box-shadow:0 1px 3px rgba(0,0,0,0.04); transition:all 0.15s ease;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.45rem; flex-wrap:wrap; gap:6px;">
-              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                ${dateDisplay}
-                ${typeBadge}
-                ${item.category ? `<span class="badge badge-gray" style="font-size:0.72rem;">🏷️ ${this.escapeHtml(item.category)}</span>` : ""}
-                ${item.cause_category ? `<span class="badge" style="font-size:0.72rem; background:#fee2e2; color:#991b1b; font-weight:700;">원인: ${this.escapeHtml(item.cause_category)}</span>` : ""}
-                ${item.target_equipment ? `<span class="badge badge-gray" style="font-size:0.72rem; font-weight:700; color:#1e3a8a; background:#dbeafe;">⚙️ ${this.escapeHtml(item.target_equipment)}</span>` : ""}
-                ${item.action_method ? `<span class="badge" style="font-size:0.72rem; background:#e0f2fe; color:#0369a1; font-weight:700;">조치: ${this.escapeHtml(item.action_method)}</span>` : ""}
-              </div>
-              <div style="display:flex; align-items:center; gap:6px;">
-                ${actorBadge}
-                ${statusBadge}
-                <button class="btn btn-outline btn-sm" onclick="window.maintenanceHistoryManager.openEditModal(${item.id})" style="padding:2px 7px; font-size:0.72rem;">✏️ 수정</button>
-                <button class="btn btn-outline btn-sm" onclick="window.maintenanceHistoryManager.deleteRecord(${item.id}, ${targetId})" style="padding:2px 7px; font-size:0.72rem; color:#dc2626; border-color:#fca5a5;">🗑️ 삭제</button>
-              </div>
-            </div>
-
-            <div style="font-size:0.88rem; color:#1e293b; line-height:1.5; white-space:pre-wrap; background:#f8fafc; padding:0.6rem 0.8rem; border-radius:6px; border:1px solid #f1f5f9;">${this.escapeHtml(item.description)}</div>
-
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem; font-size:0.78rem; color:#64748b; border-top:1px dashed #f1f5f9; padding-top:0.35rem; flex-wrap:wrap; gap:6px;">
-              <div>
-                ${item.worker_name ? `<span>작업자: <b>${this.escapeHtml(item.worker_name)}</b></span>` : ""}
-                ${item.memo ? `<span style="margin-left:10px;">비고: <i>${this.escapeHtml(item.memo)}</i></span>` : ""}
-              </div>
-              <div>
-                ${item.cost ? `<span style="color:#059669; font-weight:700;">비용: ₩${Number(item.cost).toLocaleString()}</span>` : ""}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join("");
+      this.renderStationActionHistoryList();
     } catch (e) {
       console.error("refreshStationActionHistory error:", e);
       if (listEl) {
@@ -627,68 +646,218 @@ class MonitorManager {
     }
   }
 
+  renderStationActionHistoryList() {
+    const listEl = document.getElementById("st-hist-modal-list");
+    if (!listEl) return;
+
+    const allRows = this.stationUnifiedRows || [];
+    const filter = this.stationModalFilter || "ALL";
+
+    let rows = allRows;
+    if (filter === "MONITORING") {
+      rows = allRows.filter(r => r.source === "MONITORING");
+    } else if (filter === "MAINTENANCE") {
+      rows = allRows.filter(r => r.source === "MAINTENANCE");
+    }
+
+    if (rows.length === 0) {
+      listEl.innerHTML = `
+        <div style="padding:2.5rem 1.5rem; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; text-align:center;">
+          <div style="font-size:1.8rem; margin-bottom:6px;">📋</div>
+          <div style="font-size:0.92rem; font-weight:700; color:#334155;">
+            ${filter === "MONITORING" ? "등록된 모니터링 오류 조치대장 이력이 없습니다." : (filter === "MAINTENANCE" ? "등록된 현장 유지관리·장비교체 이력이 없습니다." : "이 지점에 등록된 조치 및 유지관리 이력이 없습니다.")}
+          </div>
+          <div style="font-size:0.8rem; color:#64748b; margin-top:5px; line-height:1.5;">
+            상단의 <b>[✍️ 모니터링 조치 등록]</b> 또는 <b>[🛠️ 현장 유지관리·교체 등록]</b> 버튼으로<br>
+            원격 품질 이상 조치 또는 현장 출동·부품 교체 내역을 기록해보세요.
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    listEl.innerHTML = rows.map((item, idx) => {
+      const isMon = item.source === "MONITORING";
+      const isUnres = item.is_unresolved;
+      
+      // Source & Status Badges
+      let sourceBadge = "";
+      let statusBadge = "";
+      let borderStyle = "";
+
+      if (isMon) {
+        sourceBadge = `<span class="badge" style="background:#fee2e2; color:#991b1b; font-weight:800; font-size:0.75rem;">🛰️ 모니터링 조치</span>`;
+        statusBadge = window.errorLedgerManager ? window.errorLedgerManager.getStatusBadgeHtml(item.status) : `<span class="badge badge-gray">${item.status}</span>`;
+        borderStyle = isUnres ? "border:1.5px solid #fca5a5; background:#fffafa;" : "border:1px solid #e2e8f0; background:#ffffff;";
+      } else {
+        sourceBadge = `<span class="badge" style="background:#dcfce7; color:#15803d; font-weight:800; font-size:0.75rem;">🛠️ 현장 유지관리</span>`;
+        statusBadge = `<span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:700; font-size:0.75rem;">${this.escapeHtml(item.status || "조치완료")}</span>`;
+        borderStyle = "border:1px solid #bbf7d0; background:#ffffff;";
+      }
+
+      // Actor Badge
+      let actorBadge = "";
+      if (item.actor_category?.includes("용역사") || item.actor_category?.includes("RNS")) {
+        actorBadge = `<span class="badge" style="background:#fef3c7; color:#92400e; font-weight:700; font-size:0.72rem;">용역사(RNS)</span>`;
+      } else if (item.actor_category?.includes("내부") || item.actor_category?.includes("담당팀")) {
+        actorBadge = `<span class="badge" style="background:#eff6ff; color:#1e40af; font-weight:700; font-size:0.72rem;">내부출장직</span>`;
+      } else if (item.actor_category) {
+        actorBadge = `<span class="badge badge-gray" style="font-size:0.72rem;">${this.escapeHtml(item.actor_category)}</span>`;
+      }
+
+      // Date Display
+      let dateText = `📅 ${item.date || "-"}`;
+      if (item.subDate && item.subDate !== item.date) {
+        dateText = `🚨 발생: <b>${item.date}</b> <span style="color:#64748b;">➔</span> 🏁 종료: <b>${item.subDate}</b>`;
+      }
+
+      return `
+        <div style="${borderStyle} border-radius:8px; padding:0.85rem 1rem; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.45rem; flex-wrap:wrap; gap:6px;">
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              ${sourceBadge}
+              <span style="font-size:0.83rem; font-weight:800; color:#0f172a;">${dateText}</span>
+              ${item.code ? `<span class="badge" style="font-family:monospace; font-weight:800; background:#f1f5f9; color:#334155; font-size:0.74rem;">${this.escapeHtml(item.code)}</span>` : ""}
+              <span style="font-weight:700; color:#1e293b; font-size:0.88rem;">${this.escapeHtml(item.title || "")}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              ${actorBadge}
+              ${statusBadge}
+              ${isMon ? `
+                ${isUnres ? `<button class="btn btn-sm" onclick="window.errorLedgerManager.quickResolve(${item.id})" style="padding:2px 8px; font-size:0.72rem; background:#16a34a; color:#fff; border:none; font-weight:800;">🏁 즉시완료</button>` : ""}
+                <button class="btn btn-outline btn-sm" onclick="window.errorLedgerManager.openEditModal(${item.id})" style="padding:2px 7px; font-size:0.72rem; font-weight:700;">✏️ ${isUnres ? "갱신" : "수정"}</button>
+                <button class="btn btn-outline btn-sm" onclick="window.errorLedgerManager.deleteLog(${item.id})" style="padding:2px 7px; font-size:0.72rem; color:#dc2626; border-color:#fca5a5;">🗑️</button>
+              ` : `
+                <button class="btn btn-outline btn-sm" onclick="window.maintenanceHistoryManager ? window.maintenanceHistoryManager.openEditModal(${item.id}) : null" style="padding:2px 7px; font-size:0.72rem; font-weight:700;">✏️ 수정</button>
+              `}
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:0.8rem; color:#334155; background:#f8fafc; padding:0.5rem 0.75rem; border-radius:6px; border:1px solid #f1f5f9;">
+            <span><b>• ${isMon ? "추정원인" : "교체장비/부품"}:</b> ${this.escapeHtml(item.cause_or_part || "-")}</span>
+            <span><b>• 조치내용:</b> <b style="color:#1e40af;">${this.escapeHtml(item.action_summary || "-")}</b></span>
+            ${item.worker ? `<span><b>• 실제 조치자:</b> <b style="color:#0f766e;">${this.escapeHtml(item.worker)}</b></span>` : ""}
+          </div>
+
+          ${item.detail && item.detail !== item.action_summary && item.detail !== item.cause_or_part ? `
+            <div style="margin-top:0.4rem; font-size:0.8rem; color:#475569; line-height:1.4;">
+              📝 <b>상세경과:</b> ${this.escapeHtml(item.detail)}
+            </div>
+          ` : ""}
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.4rem; font-size:0.74rem; color:#64748b; border-top:1px dashed #e2e8f0; padding-top:0.3rem;">
+            <span>구분: <b>${item.sourceLabel || (isMon ? "모니터링 오류 조치대장" : "현장 유지관리·장비교체")}</b></span>
+            ${item.duration_days !== null && item.duration_days !== undefined ? `<span>이상 지속일수: <b>${item.duration_days}일</b></span>` : `<span>이력 ID: <code>${item.uid || item.id}</code></span>`}
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  exportStationUnifiedHistoryExcel() {
+    if (!window.XLSX) {
+      alert("엑셀 생성 라이브러리(SheetJS)가 로드되지 않았습니다.");
+      return;
+    }
+
+    const rows = this.stationUnifiedRows || [];
+    const meta = this.currentStationMeta || {};
+    const stationName = meta.name || "관측시설";
+
+    if (rows.length === 0) {
+      alert("다운로드할 조치 및 유지관리 이력이 없습니다.");
+      return;
+    }
+
+    const wb = window.XLSX.utils.book_new();
+
+    // 1. Unified Sheet
+    const unifiedData = [
+      ["No", "구분", "발생/작업일자", "완료/확인일자", "관측소명", "관측소코드", "규칙코드/작업유형", "명칭/과업명", "추정원인/교체장비", "조치내용 요약", "조치주체", "실제 조치자", "상태", "지속일수", "상세내용"],
+      ...rows.map((r, i) => [
+        i + 1,
+        r.sourceLabel || (r.source === "MONITORING" ? "모니터링 조치" : "현장 유지관리"),
+        r.date || "",
+        r.subDate || "",
+        r.station_name || meta.name || "",
+        r.station_code || meta.code || "",
+        r.code || "",
+        r.title || "",
+        r.cause_or_part || "",
+        r.action_summary || "",
+        r.actor_category || "",
+        r.worker || "",
+        r.status || "",
+        r.duration_days !== null && r.duration_days !== undefined ? r.duration_days : "",
+        r.detail || ""
+      ])
+    ];
+    const wsUnified = window.XLSX.utils.aoa_to_sheet(unifiedData);
+    window.XLSX.utils.book_append_sheet(wb, wsUnified, "1.지점_통합타임라인");
+
+    // 2. Monitoring Sheet
+    const monRows = rows.filter(r => r.source === "MONITORING");
+    if (monRows.length > 0) {
+      const monData = [
+        ["No", "발생일자", "확인일자", "종료일자", "오류코드", "오류명칭", "현상", "추정원인", "조치요청내용", "조치구분", "실제 조치자", "상태", "지속일수", "비고"],
+        ...monRows.map((r, i) => [
+          i + 1,
+          r.date || "",
+          r.subDate || "",
+          r.is_unresolved ? "미종료" : (r.subDate || ""),
+          r.code || "",
+          r.title || "",
+          r.phenomenon || "",
+          r.cause_or_part || "",
+          r.action_summary || "",
+          r.actor_category || "",
+          r.worker || "",
+          r.status || "",
+          r.duration_days !== null && r.duration_days !== undefined ? r.duration_days : "",
+          r.detail || ""
+        ])
+      ];
+      const wsMon = window.XLSX.utils.aoa_to_sheet(monData);
+      window.XLSX.utils.book_append_sheet(wb, wsMon, "2.모니터링_오류대장");
+    }
+
+    // 3. Maintenance Sheet
+    const maintRows = rows.filter(r => r.source === "MAINTENANCE");
+    if (maintRows.length > 0) {
+      const maintData = [
+        ["No", "작업일자", "작업유형", "작업제목", "교체장비/부품", "작업내용 요약", "작업자/업체", "결과상태", "상세내역"],
+        ...maintRows.map((r, i) => [
+          i + 1,
+          r.date || "",
+          r.code || "",
+          r.title || "",
+          r.cause_or_part || "",
+          r.action_summary || "",
+          r.worker || r.actor_category || "",
+          r.status || "",
+          r.detail || ""
+        ])
+      ];
+      const wsMaint = window.XLSX.utils.aoa_to_sheet(maintData);
+      window.XLSX.utils.book_append_sheet(wb, wsMaint, "3.현장유지관리_장비교체");
+    }
+
+    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const fileName = `${stationName}_모니터링_유지관리_통합이력_${todayStr}.xlsx`;
+    window.XLSX.writeFile(wb, fileName);
+  }
+
   openQuickActionRegister(stationId, stationName, stCode, ruleId, problem, detail, count) {
-    const allStations = window.dataManager ? window.dataManager.getAll() : [];
-    let station = null;
-    if (stationId) {
-      station = allStations.find(s => s.id === parseInt(stationId, 10));
-    }
-    if (!station && (stCode || stationName)) {
-      station = allStations.find(s => 
-        (stCode && String(s.code) === String(stCode)) || 
-        (stationName && (s.name === stationName || s.name.includes(stationName)))
-      );
-      if (station) stationId = station.id;
-    }
-
-    const isMissing = this.isDataMissing({ ruleId, problem, detail });
-    const isBattery = this.isBatteryVoltage({ ruleId, problem, detail });
-
-    let actionType = "긴급보수";
-    let category = "센서·계측";
-    let causeCategory = "센서 수광부 오염 / 유송잡물 걸림";
-    let targetEquipment = "유속계 센서 (ADVM/EWSV)";
-    let actionMethod = "센서 수광부 세척 및 유송잡물 제거";
-
-    if (isMissing) {
-      actionType = "통신/전원조치";
-      category = "통신·데이터";
-      causeCategory = "통신망 불안정 / 일시적 지연";
-      targetEquipment = "통신 모뎀 (LTE/CDMA Router)";
-      actionMethod = "단말기/RTU 원격 명령 재부팅";
-    } else if (isBattery) {
-      actionType = "부품교체";
-      category = "전원·안전";
-      causeCategory = "배터리 저전압 / 방전";
-      targetEquipment = "주 전원 배터리 (DC 12V/24V)";
-      actionMethod = "신품 배터리 교체";
-    }
-
-    const finalName = station ? station.name : (stationName || "관측시설");
-    const today = new Date().toISOString().slice(0, 10);
-    const issueSummary = ruleId ? `[실시간 이상 조치] [${ruleId}] ${problem || "관측 이상"}` : `[실시간 이상 조치] ${problem || "관측 이상"}`;
-    const prefillDesc = `[원인] ${causeCategory} (${issueSummary}, 연속 ${count || 1}회) ➔ [조치] ${actionMethod} (${targetEquipment}) 완료 후 관측 데이터 정상 송수신 상태를 최종 복구·확인하였습니다.`;
-
-    const prefill = {
-      stationName: finalName,
-      stCode: station ? station.code : stCode,
-      ruleId,
-      issueDate: today,
-      actionDate: today,
-      actionType,
-      category,
-      causeCategory,
-      targetEquipment,
-      actionMethod,
-      actorType: "기술원(자체)",
-      workerName: window.apiClient?.user?.name || "",
-      resultStatus: "완료",
-      description: prefillDesc,
-      memo: `실시간 모니터링 룰 위반 즉시 조치 (${today})`
-    };
-
-    if (window.maintenanceHistoryManager) {
-      window.maintenanceHistoryManager.openCreateModal(stationId, prefill);
+    if (window.errorLedgerManager) {
+      window.errorLedgerManager.openRegisterModal({
+        stationId,
+        stationName,
+        stCode,
+        ruleId,
+        problem,
+        detail,
+        count
+      });
     }
   }
 }

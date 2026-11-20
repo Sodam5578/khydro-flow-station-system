@@ -375,6 +375,219 @@ async function initDb() {
     sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_action_work ON equipment_action (work_id)`);
     sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_calib_hist_eq ON equipment_calibration_history (equipment_id)`);
     sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_eq_calib_hist_date ON equipment_calibration_history (calib_date)`);
+
+    // -------------------------------------------------------------
+    // Monitoring Error Response Ledger (오류관리대장 & Rule_Codebook & 시설목록)
+    // -------------------------------------------------------------
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS station_assignments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        station_code TEXT UNIQUE NOT NULL,
+        station_name TEXT NOT NULL,
+        region TEXT,
+        install_method TEXT,
+        assigned_team TEXT,
+        assigned_manager TEXT,
+        standard_name TEXT,
+        memo TEXT
+      )
+    `);
+
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS error_rule_codebook (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        rule_code TEXT UNIQUE NOT NULL,
+        equipment_type TEXT DEFAULT '공통',
+        auto_rule TEXT DEFAULT '-',
+        standard_name TEXT NOT NULL,
+        criteria TEXT,
+        legacy_code TEXT,
+        code_type TEXT,
+        default_priority TEXT DEFAULT '보통',
+        check_points TEXT,
+        recommended_action TEXT,
+        usage_status TEXT DEFAULT '사용',
+        memo TEXT
+      )
+    `);
+
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS monitoring_error_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        station_id INTEGER,
+        station_code TEXT,
+        station_name TEXT NOT NULL,
+        region TEXT,
+        install_method TEXT,
+        assigned_team TEXT,
+        assigned_manager TEXT,
+        check_date TEXT NOT NULL,
+        first_occur_date TEXT NOT NULL,
+        discoverer TEXT DEFAULT '미기록',
+        error_code TEXT NOT NULL,
+        error_name TEXT NOT NULL,
+        error_status TEXT DEFAULT '조치요청',
+        priority TEXT DEFAULT '높음',
+        logger_status TEXT DEFAULT '-',
+        sender_status TEXT DEFAULT '-',
+        phenomenon TEXT DEFAULT '결측',
+        cause_basis TEXT DEFAULT '-',
+        action_request TEXT DEFAULT '-',
+        action_actor_category TEXT DEFAULT '용역사(RNS)',
+        end_date TEXT DEFAULT '',
+        duration_days INTEGER,
+        memo TEXT DEFAULT '',
+        created_by TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    sqliteDb.run(`ALTER TABLE monitoring_error_logs ADD COLUMN actual_worker TEXT DEFAULT ''`, () => {});
+    sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_mon_err_st_code ON monitoring_error_logs (station_code)`);
+    sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_mon_err_st_name ON monitoring_error_logs (station_name)`);
+    sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_mon_err_status ON monitoring_error_logs (error_status)`);
+    sqliteDb.run(`CREATE INDEX IF NOT EXISTS idx_mon_err_first_date ON monitoring_error_logs (first_occur_date)`);
+
+    // Seed from data/monitoring_error_seed.json if empty
+    const monSeedPath = path.join(__dirname, "../data/monitoring_error_seed.json");
+    if (fs.existsSync(monSeedPath)) {
+      try {
+        const seedRaw = JSON.parse(fs.readFileSync(monSeedPath, "utf-8"));
+
+        sqliteDb.get("SELECT COUNT(*) as cnt FROM station_assignments", (err, row) => {
+          if (!err && row && row.cnt === 0 && Array.isArray(seedRaw.stationAssignments)) {
+            const stmt = sqliteDb.prepare(`
+              INSERT OR IGNORE INTO station_assignments
+              (station_code, station_name, region, install_method, assigned_team, assigned_manager, standard_name, memo)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+            for (const sa of seedRaw.stationAssignments) {
+              stmt.run([
+                sa.station_code, sa.station_name, sa.region, sa.install_method,
+                sa.assigned_team, sa.assigned_manager, sa.standard_name, sa.memo || ""
+              ]);
+            }
+            stmt.finalize();
+            console.log(`✓ [SQLite] Seeded ${seedRaw.stationAssignments.length} station assignment records.`);
+          }
+        });
+
+        sqliteDb.get("SELECT COUNT(*) as cnt FROM error_rule_codebook", (err, row) => {
+          if (!err && row && row.cnt === 0 && Array.isArray(seedRaw.ruleCodebook)) {
+            const stmt = sqliteDb.prepare(`
+              INSERT OR IGNORE INTO error_rule_codebook
+              (rule_code, equipment_type, auto_rule, standard_name, criteria, legacy_code, code_type, default_priority, check_points, recommended_action, usage_status, memo)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+            for (const rc of seedRaw.ruleCodebook) {
+              stmt.run([
+                rc.rule_code, rc.equipment_type, rc.auto_rule, rc.standard_name,
+                rc.criteria, rc.legacy_code, rc.code_type, rc.default_priority,
+                rc.check_points, rc.recommended_action, rc.usage_status, rc.memo || ""
+              ]);
+            }
+            stmt.finalize();
+            console.log(`✓ [SQLite] Seeded ${seedRaw.ruleCodebook.length} error rule codebook entries.`);
+          }
+        });
+
+        sqliteDb.get("SELECT COUNT(*) as cnt FROM monitoring_error_logs", (err, row) => {
+          if (!err && row && row.cnt === 0 && Array.isArray(seedRaw.errorLogs)) {
+            sqliteDb.all("SELECT id, code, name FROM stations", (stErr, stRows) => {
+              const codeMap = new Map();
+              const nameMap = new Map();
+              if (!stErr && stRows) {
+                for (const s of stRows) {
+                  if (s.code) codeMap.set(String(s.code).trim(), s.id);
+                  if (s.name) nameMap.set(String(s.name).trim(), s.id);
+                }
+              }
+              const stmt = sqliteDb.prepare(`
+                INSERT INTO monitoring_error_logs
+                (station_id, station_code, station_name, region, install_method, assigned_team, assigned_manager,
+                 check_date, first_occur_date, discoverer, error_code, error_name, error_status, priority,
+                 logger_status, sender_status, phenomenon, cause_basis, action_request, action_actor_category,
+                 end_date, duration_days, memo, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              `);
+              for (const log of seedRaw.errorLogs) {
+                const stId = codeMap.get(String(log.station_code).trim()) || nameMap.get(String(log.station_name).trim()) || null;
+                stmt.run([
+                  stId, log.station_code, log.station_name, log.region, log.install_method,
+                  log.assigned_team, log.assigned_manager, log.check_date, log.first_occur_date,
+                  log.discoverer, log.error_code, log.error_name, log.error_status, log.priority,
+                  log.logger_status, log.sender_status, log.phenomenon, log.cause_basis,
+                  log.action_request, log.action_actor_category, log.end_date || "",
+                  log.duration_days, log.memo || "", "엑셀초기이관"
+                ]);
+              }
+              stmt.finalize();
+              console.log(`✓ [SQLite] Seeded ${seedRaw.errorLogs.length} monitoring error logs (오류관리대장).`);
+            });
+          }
+        });
+      } catch (seedErr) {
+        console.warn("⚠️ Monitoring error seed warning:", seedErr.message);
+      }
+    }
+
+    // 7. Email Notification Logs Table (Persistent Email Dispatch History)
+    sqliteDb.run(`
+      CREATE TABLE IF NOT EXISTS email_notification_logs (
+        id TEXT PRIMARY KEY,
+        timestamp TEXT NOT NULL,
+        station_name TEXT,
+        level TEXT,
+        count INTEGER DEFAULT 0,
+        subject TEXT,
+        recipients TEXT,
+        status TEXT,
+        mode TEXT,
+        error_msg TEXT,
+        message_id TEXT,
+        opened_at TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `, () => {
+      const emailSeedPath = path.join(__dirname, "../data/email_history_seed_73.json");
+      if (fs.existsSync(emailSeedPath)) {
+        sqliteDb.get("SELECT COUNT(*) AS cnt FROM email_notification_logs", [], (err, row) => {
+          if (!err && (!row || row.cnt === 0)) {
+            try {
+              const seedItems = JSON.parse(fs.readFileSync(emailSeedPath, "utf-8"));
+              sqliteDb.serialize(() => {
+                const stmt = sqliteDb.prepare(`
+                  INSERT OR REPLACE INTO email_notification_logs
+                  (id, timestamp, station_name, level, count, subject, recipients, status, mode, error_msg, message_id, opened_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `);
+                for (const item of seedItems) {
+                  stmt.run([
+                    item.id,
+                    item.timestamp,
+                    item.stationName || "전국 관측소 정기 종합 리포트",
+                    item.level || "DIGEST",
+                    Number(item.count) || 0,
+                    item.subject || "",
+                    item.recipients || "",
+                    item.status || "DELIVERED",
+                    item.mode || "HTTP_API (Brevo)",
+                    item.error || "",
+                    item.messageId || item.id,
+                    item.openedAt || ""
+                  ]);
+                }
+                stmt.finalize();
+                console.log(`✓ [SQLite] Seeded ${seedItems.length} historical email digest logs.`);
+              });
+            } catch (e) {
+              console.warn("⚠️ Email history seed warning:", e.message);
+            }
+          }
+        });
+      }
+    });
   });
 
   // B. Seed Supabase Cloud DB
@@ -1072,7 +1285,12 @@ const dbService = {
   async getActivityLogs(options = {}) {
     const limit = options.limit || 200;
     if (supabase) {
-      let query = supabase.from("activity_logs").select("*").order("id", { ascending: false }).limit(limit);
+      let query = supabase
+        .from("activity_logs")
+        .select("*")
+        .not("action_type", "in", '("SYS_EMAIL_CONFIG","SYS_EMAIL_LOG","SYS_HOURLY_SNAPSHOT")')
+        .order("id", { ascending: false })
+        .limit(limit);
       if (options.username && options.username !== "all") query = query.eq("username", options.username);
       if (options.actionType && options.actionType !== "all") query = query.eq("action_type", options.actionType);
       const { data, error } = await query;
@@ -1081,7 +1299,7 @@ const dbService = {
     return new Promise((resolve, reject) => {
       let q = "SELECT * FROM activity_logs";
       let p = [];
-      let conds = [];
+      let conds = ["action_type NOT IN ('SYS_EMAIL_CONFIG','SYS_EMAIL_LOG','SYS_HOURLY_SNAPSHOT')"];
       if (options.username && options.username !== "all") { conds.push("username = ?"); p.push(options.username); }
       if (options.actionType && options.actionType !== "all") { conds.push("action_type = ?"); p.push(options.actionType); }
       if (conds.length > 0) q += " WHERE " + conds.join(" AND ");
@@ -1122,9 +1340,312 @@ const dbService = {
   },
 
   // -------------------------------------------------------------
+  // Cloud-Persisted Email Config & Email Dispatch History
+  // -------------------------------------------------------------
+  async saveCloudEmailConfig(configObj) {
+    if (!supabase || !configObj) return;
+    try {
+      const jsonStr = JSON.stringify(configObj);
+      const { data: existing } = await supabase
+        .from("activity_logs")
+        .select("id")
+        .eq("action_type", "SYS_EMAIL_CONFIG")
+        .eq("target_name", "EMAIL_NOTIFICATION_CONFIG")
+        .order("id", { ascending: false })
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        await supabase
+          .from("activity_logs")
+          .update({ details: jsonStr, ip_address: new Date().toISOString() })
+          .eq("id", existing[0].id);
+      } else {
+        await supabase.from("activity_logs").insert([{
+          username: "system",
+          name: "자동알림엔진",
+          position: "시스템",
+          action_type: "SYS_EMAIL_CONFIG",
+          target_name: "EMAIL_NOTIFICATION_CONFIG",
+          details: jsonStr,
+          ip_address: new Date().toISOString()
+        }]);
+      }
+    } catch (e) {
+      console.warn("⚠️ [Supabase] Failed to save cloud email config:", e.message);
+    }
+  },
+
+  async loadCloudEmailConfig() {
+    if (!supabase) return null;
+    try {
+      const { data, error } = await supabase
+        .from("activity_logs")
+        .select("details")
+        .eq("action_type", "SYS_EMAIL_CONFIG")
+        .eq("target_name", "EMAIL_NOTIFICATION_CONFIG")
+        .order("id", { ascending: false })
+        .limit(1);
+      if (!error && data && data.length > 0 && data[0].details) {
+        return JSON.parse(data[0].details);
+      }
+    } catch (e) {
+      console.warn("⚠️ [Supabase] Failed to load cloud email config:", e.message);
+    }
+    return null;
+  },
+
+  async saveEmailNotificationLog(logItem) {
+    if (!logItem || !logItem.id) return;
+    const id = String(logItem.id);
+    const timestamp = logItem.timestamp || new Date().toISOString();
+    const stationName = logItem.stationName || "전국 관측소 정기 종합 리포트";
+    const level = logItem.level || "NORMAL";
+    const count = Number(logItem.count) || 0;
+    const subject = logItem.subject || "";
+    const recipients = logItem.recipients || "";
+    const status = logItem.status || "SENT";
+    const mode = logItem.mode || "BREVO";
+    const errorMsg = logItem.error || "";
+    const messageId = logItem.messageId || "";
+    const openedAt = logItem.openedAt || "";
+
+    // 1. Save to Local SQLite
+    sqliteDb.run(
+      `INSERT OR REPLACE INTO email_notification_logs
+       (id, timestamp, station_name, level, count, subject, recipients, status, mode, error_msg, message_id, opened_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, timestamp, stationName, level, count, subject, recipients, status, mode, errorMsg, messageId, openedAt],
+      (err) => {
+        if (err) console.warn("Failed to save local email notification log:", err.message);
+      }
+    );
+
+    // 2. Save to Supabase Cloud DB so deploy/restart never wipes email logs
+    if (supabase) {
+      try {
+        await supabase.from("activity_logs").insert([{
+          username: "system",
+          name: "자동알림엔진",
+          position: "시스템",
+          action_type: "SYS_EMAIL_LOG",
+          target_name: messageId || id,
+          details: JSON.stringify({
+            id,
+            timestamp,
+            stationName,
+            level,
+            count,
+            subject,
+            recipients,
+            status,
+            mode,
+            error: errorMsg,
+            messageId,
+            openedAt
+          }),
+          ip_address: status
+        }]);
+      } catch (e) {
+        console.warn("⚠️ [Supabase] Failed to save cloud email log:", e.message);
+      }
+    }
+  },
+
+  async getEmailNotificationLogs(limit = 300) {
+    const mergedMap = new Map();
+
+    // 1. Load from Supabase Cloud DB
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("activity_logs")
+          .select("details, created_at")
+          .eq("action_type", "SYS_EMAIL_LOG")
+          .order("id", { ascending: false })
+          .limit(limit);
+        if (!error && Array.isArray(data)) {
+          for (const row of data) {
+            try {
+              const parsed = JSON.parse(row.details);
+              const key = parsed.messageId || parsed.id;
+              if (key && !mergedMap.has(key)) {
+                mergedMap.set(key, parsed);
+              }
+            } catch (_) {}
+          }
+        }
+      } catch (e) {
+        console.warn("⚠️ [Supabase] Failed to load cloud email logs:", e.message);
+      }
+    }
+
+    // 2. Load from Local SQLite
+    const localRows = await new Promise((resolve) => {
+      sqliteDb.all(
+        `SELECT * FROM email_notification_logs ORDER BY timestamp DESC LIMIT ?`,
+        [limit],
+        (err, rows) => resolve(err ? [] : (rows || []))
+      );
+    });
+
+    for (const r of localRows) {
+      const key = r.message_id || r.id;
+      if (key && !mergedMap.has(key)) {
+        mergedMap.set(key, {
+          id: r.id,
+          timestamp: r.timestamp,
+          stationName: r.station_name,
+          level: r.level,
+          count: r.count,
+          subject: r.subject,
+          recipients: r.recipients,
+          status: r.status,
+          mode: r.mode,
+          error: r.error_msg,
+          messageId: r.message_id,
+          openedAt: r.opened_at
+        });
+      }
+    }
+
+    return Array.from(mergedMap.values()).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  },
+
+  async getReconstructedSnapshotChangeEvents() {
+    const allRows = await new Promise((resolve) => {
+      sqliteDb.all(`SELECT * FROM quality_hourly_snapshots ORDER BY id ASC`, [], (err, rows) => {
+        resolve(err ? [] : (rows || []));
+      });
+    });
+
+    const slots = [];
+    const slotMap = new Map();
+    for (const r of allRows) {
+      if (!slotMap.has(r.hourly_slot)) {
+        const entry = { slot: r.hourly_slot, created_at: r.created_at, issueMap: new Map() };
+        slotMap.set(r.hourly_slot, entry);
+        slots.push(entry);
+      }
+      if (r.st_code !== "__EMPTY__") {
+        const key = `${r.st_code || r.station_name}_${r.category || r.rule_id}`;
+        slotMap.get(r.hourly_slot).issueMap.set(key, r);
+      }
+    }
+
+    const changeEvents = [];
+    for (let i = 0; i < slots.length; i++) {
+      const curr = slots[i];
+      const prev = i > 0 ? slots[i - 1] : null;
+      const currIssues = Array.from(curr.issueMap.values());
+      const prevIssues = prev ? Array.from(prev.issueMap.values()) : [];
+
+      const prevKeys = new Map(prevIssues.map(x => [`${x.st_code || x.station_name}_${x.category || x.rule_id}`, x]));
+      const currKeys = new Map(currIssues.map(x => [`${x.st_code || x.station_name}_${x.category || x.rule_id}`, x]));
+
+      const newIssues = currIssues.filter(x => !prevKeys.has(`${x.st_code || x.station_name}_${x.category || x.rule_id}`));
+      const resolvedIssues = prevIssues.filter(x => !currKeys.has(`${x.st_code || x.station_name}_${x.category || x.rule_id}`));
+
+      const hasChanges = (i === 0) || newIssues.length > 0 || resolvedIssues.length > 0;
+      if (!hasChanges) continue;
+
+      const totalAbnormalCount = currIssues.length;
+      const timeLabel = curr.slot;
+      let subject = "";
+      let level = "DIGEST";
+      if (i === 0) {
+        subject = `[관측품질 정각 기준현황] 1시간 이상 이상지점 총 ${totalAbnormalCount}건 (기준점 등록, ${timeLabel} 기준)`;
+        level = "DIGEST";
+      } else if (newIssues.length > 0 && resolvedIssues.length > 0) {
+        subject = `[관측품질 변동알림] 🚨신규 ${newIssues.length}건 발생 / ✅${resolvedIssues.length}건 복구 (총 ${totalAbnormalCount}건 지속, ${timeLabel})`;
+        level = "CRITICAL";
+      } else if (newIssues.length > 0) {
+        subject = `[관측품질 신규이상] 🚨${newIssues[0].station_name} 등 ${newIssues.length}개소 신규 감지 (총 ${totalAbnormalCount}건, ${timeLabel})`;
+        level = "CRITICAL";
+      } else if (resolvedIssues.length > 0 && totalAbnormalCount === 0) {
+        subject = `[관측품질 전 지점 정상화] 🎉전국 223개 관측소 정상 수신 복구 확인 (${timeLabel} 기준)`;
+        level = "RESOLVED";
+      } else if (resolvedIssues.length > 0) {
+        subject = `[관측품질 정상복구] ✅${resolvedIssues[0].station_name} 등 ${resolvedIssues.length}개소 복구 완료 (잔여 이상 ${totalAbnormalCount}건, ${timeLabel})`;
+        level = "RESOLVED";
+      }
+
+      const newDesc = newIssues.map(n => `${n.station_name}(${n.category === "DATA_MISSING" ? "미수신" : "배터리"})`).join(", ");
+      const resDesc = resolvedIssues.map(r => `${r.station_name}(${r.category === "DATA_MISSING" ? "미수신해소" : "배터리정상"})`).join(", ");
+      const summaryDetail = [
+        newDesc ? `신규: ${newDesc}` : "",
+        resDesc ? `복구: ${resDesc}` : ""
+      ].filter(Boolean).join(" / ");
+
+      const isoTs = curr.created_at ? (curr.created_at.includes("T") ? curr.created_at : curr.created_at.replace(" ", "T") + "Z") : new Date().toISOString();
+
+      changeEvents.push({
+        id: `missed_snap_${curr.slot}`,
+        slot: curr.slot,
+        timestamp: isoTs,
+        stationName: "전국 관측소 정기 종합 리포트",
+        level,
+        count: totalAbnormalCount,
+        subject,
+        summaryDetail,
+        recipients: "미설정 (배포/리셋으로 초기화됨)",
+        status: "MISSED_RESET",
+        error: summaryDetail ? `[변동상세] ${summaryDetail}` : "수신처 초기화 상태에서 정각 변동 감지됨",
+        mode: "SNAPSHOT_RECOVERED"
+      });
+    }
+
+    return changeEvents;
+  },
+
+  // -------------------------------------------------------------
   // Quality Hourly Snapshots (Diff-based Email Alert & 30-Day Retention)
   // -------------------------------------------------------------
   async saveHourlySnapshot(hourlySlot, abnormalStations = []) {
+    // 1. Also persist latest snapshot in Supabase so Render restarts keep the baseline diff
+    if (supabase) {
+      try {
+        const payload = JSON.stringify({
+          hourlySlot,
+          issues: (abnormalStations || []).map(st => ({
+            stCode: st.stCode || "",
+            stationName: st.stationName || "",
+            gaugeType: st.gaugeType || st.method || "ADVM",
+            region: st.region || st.basin || "전국",
+            ruleId: st.ruleId || "",
+            category: st.category || "",
+            continuousCount: st.continuousCount || 6,
+            detail: st.detail || st.problem || "",
+            problem: st.problem || st.detail || ""
+          }))
+        });
+        const { data: existing } = await supabase
+          .from("activity_logs")
+          .select("id")
+          .eq("action_type", "SYS_HOURLY_SNAPSHOT")
+          .eq("target_name", "LATEST_HOURLY_SNAPSHOT")
+          .order("id", { ascending: false })
+          .limit(1);
+        if (existing && existing.length > 0) {
+          await supabase
+            .from("activity_logs")
+            .update({ details: payload, ip_address: hourlySlot })
+            .eq("id", existing[0].id);
+        } else {
+          await supabase.from("activity_logs").insert([{
+            username: "system",
+            name: "자동알림엔진",
+            position: "시스템",
+            action_type: "SYS_HOURLY_SNAPSHOT",
+            target_name: "LATEST_HOURLY_SNAPSHOT",
+            details: payload,
+            ip_address: hourlySlot
+          }]);
+        }
+      } catch (e) {
+        console.warn("⚠️ [Supabase] Failed to save cloud hourly snapshot:", e.message);
+      }
+    }
+
     return new Promise((resolve, reject) => {
       if (!Array.isArray(abnormalStations) || abnormalStations.length === 0) {
         sqliteDb.run(
@@ -1173,6 +1694,31 @@ const dbService = {
   },
 
   async getLastHourlySnapshot() {
+    // 1. Check Supabase Cloud Snapshot first (survives container restarts)
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("activity_logs")
+          .select("details")
+          .eq("action_type", "SYS_HOURLY_SNAPSHOT")
+          .eq("target_name", "LATEST_HOURLY_SNAPSHOT")
+          .order("id", { ascending: false })
+          .limit(1);
+        if (!error && data && data.length > 0 && data[0].details) {
+          const parsed = JSON.parse(data[0].details);
+          if (parsed && parsed.hourlySlot) {
+            return {
+              hourlySlot: parsed.hourlySlot,
+              issues: Array.isArray(parsed.issues) ? parsed.issues : []
+            };
+          }
+        }
+      } catch (e) {
+        console.warn("⚠️ [Supabase] Failed to read cloud hourly snapshot:", e.message);
+      }
+    }
+
+    // 2. Fallback to Local SQLite
     return new Promise((resolve, reject) => {
       sqliteDb.get(
         `SELECT hourly_slot FROM quality_hourly_snapshots ORDER BY id DESC LIMIT 1`,
@@ -1224,6 +1770,505 @@ const dbService = {
           resolve();
         }
       );
+    });
+  },
+
+  // -------------------------------------------------------------
+  // Monitoring Error Response Ledger (오류관리대장 & Rule_Codebook & 시설목록)
+  // -------------------------------------------------------------
+  _computeDurationDays(firstOccurDate, endDate, errorStatus) {
+    if (!firstOccurDate) return null;
+    try {
+      const start = new Date(firstOccurDate + "T00:00:00");
+      if (isNaN(start.getTime())) return null;
+      if (endDate && String(endDate).trim() && String(endDate).trim() !== "-") {
+        const end = new Date(String(endDate).trim() + "T00:00:00");
+        if (!isNaN(end.getTime())) {
+          return Math.max(0, Math.round((end - start) / (1000 * 60 * 60 * 24)));
+        }
+      }
+      if (errorStatus === "종료" || errorStatus === "참고") {
+        return 0;
+      }
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return Math.max(0, Math.round((today - start) / (1000 * 60 * 60 * 24)));
+    } catch (e) {
+      return null;
+    }
+  },
+
+  _classifyActorCategory(actionReq, memo) {
+    const combined = `${actionReq || ""} ${memo || ""}`;
+    if (/유지관리업체|업체|RNS|리버앤씨/i.test(combined)) return "용역사(RNS)";
+    if (/수문정보|RVB/i.test(combined)) return "수문정보관리팀";
+    if (/AI품질팀/i.test(combined)) return "AI품질팀";
+    if (/담당팀|금강1팀|금강2팀|한강|낙동강|영산강|출장|현장 확인/i.test(combined)) return "내부출장직(담당팀)";
+    if (/인프라팀|원격점검|전송시스템|수위 영점|선조치/i.test(combined)) return "인프라팀(자체)";
+    return "기타/관망";
+  },
+
+  async getMonitoringMetadata() {
+    const codebook = await new Promise((resolve, reject) => {
+      sqliteDb.all("SELECT * FROM error_rule_codebook ORDER BY id ASC", [], (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows || []);
+      });
+    });
+    const stationAssignments = await new Promise((resolve, reject) => {
+      sqliteDb.all("SELECT * FROM station_assignments ORDER BY station_name ASC", [], (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows || []);
+      });
+    });
+    return { codebook, stationAssignments };
+  },
+
+  async getMonitoringErrorLogs(filters = {}) {
+    const allRows = await new Promise((resolve, reject) => {
+      sqliteDb.all(
+        `SELECT * FROM monitoring_error_logs
+         ORDER BY 
+           CASE WHEN error_status NOT IN ('종료', '참고') THEN 0 ELSE 1 END ASC,
+           check_date DESC,
+           id DESC`,
+        [],
+        (err, rows) => {
+          if (err) return reject(err);
+          resolve(rows || []);
+        }
+      );
+    });
+
+    // Enrich duration_days dynamically and compute global summary KPIs
+    const summary = {
+      total: allRows.length,
+      unresolvedTotal: 0,
+      unresolvedHigh: 0,
+      byStatus: {
+        "신규": 0,
+        "원인확인": 0,
+        "조치요청": 0,
+        "조치중": 0,
+        "정상화확인": 0,
+        "종료": 0,
+        "보류": 0,
+        "참고": 0
+      },
+      byMethod: {
+        "ADVM": 0,
+        "EWSV": 0,
+        "ADVM/EWSV": 0
+      },
+      byActor: {
+        "용역사(RNS)": { total: 0, active: 0 },
+        "내부출장직(담당팀)": { total: 0, active: 0 },
+        "수문정보관리팀": { total: 0, active: 0 },
+        "AI품질팀": { total: 0, active: 0 },
+        "인프라팀(자체)": { total: 0, active: 0 },
+        "기타/관망": { total: 0, active: 0 }
+      },
+      activeByStationCode: {}
+    };
+
+    const enriched = allRows.map(r => {
+      const isUnresolved = r.error_status !== "종료" && r.error_status !== "참고";
+      const calcDur = this._computeDurationDays(r.first_occur_date, r.end_date, r.error_status);
+      const duration_days = (r.end_date || isUnresolved) ? calcDur : (r.duration_days !== null ? r.duration_days : calcDur);
+      const actorCat = r.action_actor_category || this._classifyActorCategory(r.action_request, r.memo);
+
+      if (summary.byStatus[r.error_status] !== undefined) {
+        summary.byStatus[r.error_status]++;
+      } else {
+        summary.byStatus[r.error_status] = 1;
+      }
+
+      if (r.install_method && summary.byMethod[r.install_method] !== undefined) {
+        summary.byMethod[r.install_method]++;
+      }
+
+      if (!summary.byActor[actorCat]) {
+        summary.byActor[actorCat] = { total: 0, active: 0 };
+      }
+      summary.byActor[actorCat].total++;
+
+      if (isUnresolved) {
+        summary.unresolvedTotal++;
+        if (r.priority === "높음") summary.unresolvedHigh++;
+        summary.byActor[actorCat].active++;
+        if (r.station_code && !summary.activeByStationCode[r.station_code]) {
+          summary.activeByStationCode[r.station_code] = {
+            id: r.id,
+            error_code: r.error_code,
+            error_name: r.error_name,
+            error_status: r.error_status,
+            priority: r.priority,
+            action_request: r.action_request,
+            action_actor_category: actorCat,
+            first_occur_date: r.first_occur_date,
+            check_date: r.check_date,
+            duration_days,
+            memo: r.memo
+          };
+        }
+      }
+
+      return {
+        ...r,
+        duration_days,
+        action_actor_category: actorCat,
+        is_unresolved: isUnresolved
+      };
+    });
+
+    // Apply filters
+    let filtered = enriched;
+
+    if (filters.stationId && filters.stationId !== "all") {
+      filtered = filtered.filter(r => String(r.station_id) === String(filters.stationId));
+    }
+    if (filters.stationCode && filters.stationCode !== "all") {
+      filtered = filtered.filter(r => String(r.station_code) === String(filters.stationCode));
+    }
+    if (filters.region && filters.region !== "all") {
+      filtered = filtered.filter(r => r.region && r.region.includes(filters.region));
+    }
+    if (filters.installMethod && filters.installMethod !== "all") {
+      filtered = filtered.filter(r => r.install_method === filters.installMethod);
+    }
+    if (filters.errorStatus && filters.errorStatus !== "all") {
+      if (filters.errorStatus === "UNRESOLVED") {
+        filtered = filtered.filter(r => r.is_unresolved);
+      } else if (filters.errorStatus === "UNRESOLVED_HIGH") {
+        filtered = filtered.filter(r => r.is_unresolved && r.priority === "높음");
+      } else {
+        filtered = filtered.filter(r => r.error_status === filters.errorStatus);
+      }
+    }
+    if (filters.priority && filters.priority !== "all") {
+      filtered = filtered.filter(r => r.priority === filters.priority);
+    }
+    if (filters.actorCategory && filters.actorCategory !== "all") {
+      filtered = filtered.filter(r => r.action_actor_category === filters.actorCategory);
+    }
+    if (filters.assignedTeam && filters.assignedTeam !== "all") {
+      const teamFilterStr = String(filters.assignedTeam);
+      if (teamFilterStr.includes("|")) {
+        const [fBasin, fTeam] = teamFilterStr.split("|");
+        filtered = filtered.filter(r => (r.region && r.region.includes(fBasin)) && String(r.assigned_team) === String(fTeam));
+      } else {
+        filtered = filtered.filter(r => String(r.assigned_team) === teamFilterStr);
+      }
+    }
+    if (filters.startDate) {
+      filtered = filtered.filter(r => (r.first_occur_date || r.check_date) >= filters.startDate);
+    }
+    if (filters.endDate) {
+      filtered = filtered.filter(r => (r.first_occur_date || r.check_date) <= filters.endDate);
+    }
+    if (filters.keyword) {
+      const kw = String(filters.keyword).trim().toLowerCase();
+      if (kw) {
+        filtered = filtered.filter(r =>
+          (r.station_name || "").toLowerCase().includes(kw) ||
+          (r.station_code || "").toLowerCase().includes(kw) ||
+          (r.error_code || "").toLowerCase().includes(kw) ||
+          (r.error_name || "").toLowerCase().includes(kw) ||
+          (r.discoverer || "").toLowerCase().includes(kw) ||
+          (r.assigned_manager || "").toLowerCase().includes(kw) ||
+          (r.phenomenon || "").toLowerCase().includes(kw) ||
+          (r.cause_basis || "").toLowerCase().includes(kw) ||
+          (r.action_request || "").toLowerCase().includes(kw) ||
+          (r.memo || "").toLowerCase().includes(kw)
+        );
+      }
+    }
+
+    const limit = filters.limit ? parseInt(filters.limit, 10) : 1000;
+    return {
+      summary,
+      totalFiltered: filtered.length,
+      data: filtered.slice(0, limit)
+    };
+  },
+
+  async getStationMonitoringErrorLogs(stationId, stationCode, stationName) {
+    const allRes = await this.getMonitoringErrorLogs({ limit: 2000 });
+    const rows = allRes.data.filter(r => {
+      if (stationCode && r.station_code && String(r.station_code) === String(stationCode)) return true;
+      if (stationId && r.station_id && String(r.station_id) === String(stationId)) return true;
+      if (stationName && r.station_name && (r.station_name === stationName || r.station_name.includes(stationName))) return true;
+      return false;
+    });
+    const activeIssue = rows.find(r => r.is_unresolved) || null;
+    return { rows, activeIssue };
+  },
+
+  async createMonitoringErrorLog(data) {
+    const today = new Date().toISOString().slice(0, 10);
+    const check_date = data.check_date || today;
+    const first_occur_date = data.first_occur_date || check_date;
+    const error_status = data.error_status || "조치요청";
+    const end_date = error_status === "종료" ? (data.end_date || today) : (data.end_date || "");
+    const duration_days = this._computeDurationDays(first_occur_date, end_date, error_status);
+    const action_actor_category = data.action_actor_category || this._classifyActorCategory(data.action_request, data.memo);
+
+    return new Promise((resolve, reject) => {
+      sqliteDb.run(
+        `INSERT INTO monitoring_error_logs
+         (station_id, station_code, station_name, region, install_method, assigned_team, assigned_manager,
+          check_date, first_occur_date, discoverer, error_code, error_name, error_status, priority,
+          logger_status, sender_status, phenomenon, cause_basis, action_request, action_actor_category,
+          actual_worker, end_date, duration_days, memo, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          data.station_id || null,
+          String(data.station_code || "").trim(),
+          String(data.station_name || "").trim(),
+          String(data.region || "").trim(),
+          String(data.install_method || "EWSV").trim(),
+          String(data.assigned_team || "").trim(),
+          String(data.assigned_manager || "").trim(),
+          check_date,
+          first_occur_date,
+          String(data.discoverer || "미기록").trim(),
+          String(data.error_code || "EWSV-R01").trim(),
+          String(data.error_name || "자료 미수신").trim(),
+          error_status,
+          String(data.priority || "높음").trim(),
+          "-",
+          "-",
+          String(data.phenomenon || "결측").trim(),
+          String(data.cause_basis || "-").trim(),
+          String(data.action_request || "-").trim(),
+          action_actor_category,
+          String(data.actual_worker || "").trim(),
+          end_date,
+          duration_days,
+          String(data.memo || "").trim(),
+          data.created_by || "관리자"
+        ],
+        function(err) {
+          if (err) return reject(err);
+          resolve({ id: this.lastID, ...data, check_date, first_occur_date, end_date, duration_days, action_actor_category });
+        }
+      );
+    });
+  },
+
+  async updateMonitoringErrorLog(id, data) {
+    const existing = await new Promise((resolve, reject) => {
+      sqliteDb.get("SELECT * FROM monitoring_error_logs WHERE id = ?", [id], (err, row) => {
+        if (err) return reject(err);
+        resolve(row);
+      });
+    });
+    if (!existing) throw new Error("해당 오류관리대장 이력을 찾을 수 없습니다.");
+
+    const today = new Date().toISOString().slice(0, 10);
+    const merged = { ...existing, ...data };
+    if (merged.error_status === "종료" && !merged.end_date) {
+      merged.end_date = today;
+    } else if (merged.error_status !== "종료" && data.error_status && data.error_status !== "종료" && data.clear_end_date) {
+      merged.end_date = "";
+    }
+    const duration_days = this._computeDurationDays(merged.first_occur_date, merged.end_date, merged.error_status);
+    const action_actor_category = data.action_actor_category || this._classifyActorCategory(merged.action_request, merged.memo);
+
+    return new Promise((resolve, reject) => {
+      sqliteDb.run(
+        `UPDATE monitoring_error_logs SET
+           station_id = ?, station_code = ?, station_name = ?, region = ?, install_method = ?,
+           assigned_team = ?, assigned_manager = ?, check_date = ?, first_occur_date = ?,
+           discoverer = ?, error_code = ?, error_name = ?, error_status = ?, priority = ?,
+           phenomenon = ?, cause_basis = ?, action_request = ?, action_actor_category = ?,
+           actual_worker = ?, end_date = ?, duration_days = ?, memo = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [
+          merged.station_id || null,
+          String(merged.station_code || "").trim(),
+          String(merged.station_name || "").trim(),
+          String(merged.region || "").trim(),
+          String(merged.install_method || "").trim(),
+          String(merged.assigned_team || "").trim(),
+          String(merged.assigned_manager || "").trim(),
+          String(merged.check_date || today).trim(),
+          String(merged.first_occur_date || today).trim(),
+          String(merged.discoverer || "미기록").trim(),
+          String(merged.error_code || "").trim(),
+          String(merged.error_name || "").trim(),
+          String(merged.error_status || "조치요청").trim(),
+          String(merged.priority || "높음").trim(),
+          String(merged.phenomenon || "-").trim(),
+          String(merged.cause_basis || "-").trim(),
+          String(merged.action_request || "-").trim(),
+          action_actor_category,
+          String(merged.actual_worker || "").trim(),
+          String(merged.end_date || "").trim(),
+          duration_days,
+          String(merged.memo || "").trim(),
+          id
+        ],
+        function(err) {
+          if (err) return reject(err);
+          resolve({ ...merged, id, duration_days, action_actor_category });
+        }
+      );
+    });
+  },
+
+  async upsertStationAssignment(data) {
+    const code = String(data.station_code || "").trim();
+    const name = String(data.station_name || "").trim();
+    const region = String(data.region || "").trim();
+    const method = String(data.install_method || "EWSV").trim();
+    const team = String(data.assigned_team || "").trim();
+    const manager = String(data.assigned_manager || "").trim();
+    if (!code && !name) throw new Error("관측소 코드 또는 관측소명이 필요합니다.");
+
+    return new Promise((resolve, reject) => {
+      sqliteDb.serialize(() => {
+        sqliteDb.run(
+          `INSERT INTO station_assignments (station_code, station_name, region, install_method, assigned_team, assigned_manager, standard_name)
+           VALUES (?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(station_code) DO UPDATE SET
+             station_name = excluded.station_name,
+             region = CASE WHEN excluded.region != '' THEN excluded.region ELSE station_assignments.region END,
+             install_method = CASE WHEN excluded.install_method != '' THEN excluded.install_method ELSE station_assignments.install_method END,
+             assigned_team = excluded.assigned_team,
+             assigned_manager = excluded.assigned_manager`,
+          [code, name, region, method, team, manager, name]
+        );
+        if (code) {
+          sqliteDb.run(
+            `UPDATE monitoring_error_logs SET region = CASE WHEN ? != '' THEN ? ELSE region END, assigned_team = ?, assigned_manager = ? WHERE station_code = ?`,
+            [region, region, team, manager, code]
+          );
+        }
+        if (name) {
+          sqliteDb.run(
+            `UPDATE monitoring_error_logs SET region = CASE WHEN ? != '' THEN ? ELSE region END, assigned_team = ?, assigned_manager = ? WHERE station_name = ?`,
+            [region, region, team, manager, name],
+            (err) => {
+              if (err) return reject(err);
+              resolve({ station_code: code, station_name: name, region, install_method: method, assigned_team: team, assigned_manager: manager });
+            }
+          );
+        } else {
+          resolve({ station_code: code, station_name: name, region, install_method: method, assigned_team: team, assigned_manager: manager });
+        }
+      });
+    });
+  },
+
+  async bulkUpsertStationAssignments(records = []) {
+    if (!Array.isArray(records) || records.length === 0) {
+      throw new Error("업로드할 지점 담당자 데이터가 없습니다.");
+    }
+
+    const cleaned = records
+      .map(r => ({
+        station_code: String(r.station_code || "").trim(),
+        station_name: String(r.station_name || "").trim(),
+        region: String(r.region || "").trim(),
+        install_method: String(r.install_method || "EWSV").trim(),
+        assigned_team: String(r.assigned_team || "").replace(/팀/g, "").trim(),
+        assigned_manager: String(r.assigned_manager || "").trim()
+      }))
+      .filter(r => (r.station_code || r.station_name) && r.assigned_manager);
+
+    if (cleaned.length === 0) {
+      throw new Error("유효한 관측소 및 지점 담당자 행이 없습니다.");
+    }
+
+    return new Promise((resolve, reject) => {
+      sqliteDb.serialize(() => {
+        sqliteDb.run("BEGIN TRANSACTION");
+        const upsertStmt = sqliteDb.prepare(`
+          INSERT INTO station_assignments (station_code, station_name, region, install_method, assigned_team, assigned_manager, standard_name)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(station_code) DO UPDATE SET
+            station_name = CASE WHEN excluded.station_name != '' THEN excluded.station_name ELSE station_assignments.station_name END,
+            region = CASE WHEN excluded.region != '' THEN excluded.region ELSE station_assignments.region END,
+            install_method = CASE WHEN excluded.install_method != '' THEN excluded.install_method ELSE station_assignments.install_method END,
+            assigned_team = excluded.assigned_team,
+            assigned_manager = excluded.assigned_manager
+        `);
+        const updateLogByCodeStmt = sqliteDb.prepare(`
+          UPDATE monitoring_error_logs
+          SET region = CASE WHEN ? != '' THEN ? ELSE region END,
+              assigned_team = ?,
+              assigned_manager = ?
+          WHERE station_code = ?
+        `);
+        const updateLogByNameStmt = sqliteDb.prepare(`
+          UPDATE monitoring_error_logs
+          SET region = CASE WHEN ? != '' THEN ? ELSE region END,
+              assigned_team = ?,
+              assigned_manager = ?
+          WHERE station_name = ?
+        `);
+
+        for (const item of cleaned) {
+          const codeKey = item.station_code || item.station_name;
+          upsertStmt.run([
+            codeKey,
+            item.station_name || codeKey,
+            item.region,
+            item.install_method,
+            item.assigned_team,
+            item.assigned_manager,
+            item.station_name || codeKey
+          ]);
+          if (item.station_code) {
+            updateLogByCodeStmt.run([item.region, item.region, item.assigned_team, item.assigned_manager, item.station_code]);
+          }
+          if (item.station_name) {
+            updateLogByNameStmt.run([item.region, item.region, item.assigned_team, item.assigned_manager, item.station_name]);
+          }
+        }
+
+        upsertStmt.finalize();
+        updateLogByCodeStmt.finalize();
+        updateLogByNameStmt.finalize();
+
+        sqliteDb.run("COMMIT", (err) => {
+          if (err) return reject(err);
+          // Also sync seed file if present
+          try {
+            const seedPath = path.join(__dirname, "../data/monitoring_error_seed.json");
+            if (fs.existsSync(seedPath)) {
+              const seedData = JSON.parse(fs.readFileSync(seedPath, "utf-8"));
+              const map = new Map((seedData.stationAssignments || []).map(a => [String(a.station_code || a.station_name), a]));
+              for (const c of cleaned) {
+                const k = String(c.station_code || c.station_name);
+                const prev = map.get(k) || {};
+                map.set(k, {
+                  ...prev,
+                  station_code: c.station_code || prev.station_code || "",
+                  station_name: c.station_name || prev.station_name || "",
+                  region: c.region || prev.region || "한강",
+                  install_method: c.install_method || prev.install_method || "EWSV",
+                  assigned_team: c.assigned_team,
+                  assigned_manager: c.assigned_manager
+                });
+              }
+              seedData.stationAssignments = Array.from(map.values());
+              fs.writeFileSync(seedPath, JSON.stringify(seedData, null, 2), "utf-8");
+            }
+          } catch (_) {}
+          resolve({ count: cleaned.length });
+        });
+      });
+    });
+  },
+
+  async deleteMonitoringErrorLog(id) {
+    return new Promise((resolve, reject) => {
+      sqliteDb.run("DELETE FROM monitoring_error_logs WHERE id = ?", [id], function(err) {
+        if (err) return reject(err);
+        resolve({ deleted: this.changes });
+      });
     });
   }
 };

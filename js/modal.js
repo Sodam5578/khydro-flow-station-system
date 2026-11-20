@@ -448,14 +448,19 @@ class ModalManager {
         ${checklistHtml}
       </div>
 
-      <div class="detail-section-title" style="display:flex; justify-content:space-between; align-items:center; margin-top:1.25rem;">
-        <span>📜 시설 유지관리 조치 이력 (누적 로그)</span>
-        <button class="btn btn-primary btn-sm" onclick="window.maintenanceHistoryManager.openCreateModal(${st.id})" style="font-size:0.75rem; padding:3px 10px;">
-          ➕ 새 조치 이력 등록
-        </button>
+      <div class="detail-section-title" style="display:flex; justify-content:space-between; align-items:center; margin-top:1.25rem; flex-wrap:wrap; gap:6px;">
+        <span>📜 모니터링 조치 & 현장 유지관리 통합 이력</span>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-outline btn-sm" onclick="window.monitorManager ? window.monitorManager.openStationActionHistoryModal(${st.id}, '${safeName}', '${st.code || ""}') : null" style="font-size:0.75rem; padding:3px 10px; color:#1e40af; border-color:#93c5fd; background:#eff6ff; font-weight:700;">
+            📜 통합 타임라인 창 열기
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="window.maintenanceHistoryManager.openCreateModal(${st.id})" style="font-size:0.75rem; padding:3px 10px;">
+            ➕ 새 조치 등록
+          </button>
+        </div>
       </div>
       <div id="station-history-container-${st.id}" style="margin-bottom:1.25rem;">
-        <div style="text-align:center; padding:1rem; color:#64748b;">⏳ 유지관리 조치 이력을 불러오는 중...</div>
+        <div style="text-align:center; padding:1rem; color:#64748b;">⏳ 모니터링 조치 및 현장 유지관리 이력을 불러오는 중...</div>
       </div>
     `;
   }

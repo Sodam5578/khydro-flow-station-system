@@ -8,7 +8,9 @@
   "user": "",
   "pass": "",
   "from": "",
-  "recipients": [],
+  "recipients": [
+    "psn5578@naver.com"
+  ],
   "enabled": true,
   "reportMode": "HOURLY_DIGEST",
   "minContinuousHours": 1,
@@ -16,5 +18,5 @@
     "DATA_MISSING",
     "BATTERY_VOLTAGE"
   ],
-  "savedAt": "2026-10-30T07:31:20.935Z"
+  "savedAt": "2026-11-20T07:20:00.000Z"
 }
